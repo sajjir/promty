@@ -4,9 +4,10 @@ import { Copy, Check } from "lucide-react";
 interface CopyButtonProps {
   text: string;
   className?: string;
+  label?: string;
 }
 
-export default function CopyButton({ text, className = "" }: CopyButtonProps) {
+export default function CopyButton({ text, className = "", label }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -37,7 +38,7 @@ export default function CopyButton({ text, className = "" }: CopyButtonProps) {
       ) : (
         <>
           <Copy className="w-5 h-5" />
-          <span>کپی کردن پرامپت</span>
+          <span>{label || "کپی کردن پرامپت"}</span>
         </>
       )}
     </button>

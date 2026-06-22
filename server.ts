@@ -29,9 +29,14 @@ interface Prompt {
   updatedAt: string;
 }
 
+interface DBSettings {
+  n8nWebhookUrl: string;
+}
+
 interface DB {
   prompts: Prompt[];
   categories: { id: string; name: string; slug: string; icon: string }[];
+  settings: DBSettings;
 }
 
 const DB_FILE = path.join(process.cwd(), "db.json");
@@ -41,7 +46,15 @@ function readDB(): DB {
   try {
     if (fs.existsSync(DB_FILE)) {
       const data = fs.readFileSync(DB_FILE, "utf-8");
-      return JSON.parse(data);
+      const parsed = JSON.parse(data) as any;
+      
+      // Ensure settings exists
+      if (!parsed.settings) {
+        parsed.settings = { n8nWebhookUrl: "" };
+        fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), "utf-8");
+      }
+      
+      return parsed as DB;
     }
   } catch (error) {
     console.error("Error reading database file, using fallback:", error);
@@ -49,6 +62,9 @@ function readDB(): DB {
 
   // Fallback / Initial Seed Data
   const initialDB: DB = {
+    settings: {
+      n8nWebhookUrl: ""
+    },
     categories: [
       { id: "1", name: "تبلیغات", slug: "advertising", icon: "Megaphone" },
       { id: "2", name: "وبسایت", slug: "website", icon: "Globe" },
@@ -361,6 +377,120 @@ async function startServer() {
     writeDB(db);
 
     res.json({ success: true, message: "پرامپت با موفقیت حذف شد." });
+  });
+
+  // API - Get Settings (admin only)
+  app.get("/api/settings", adminAuth, (req, res) => {
+    const db = readDB();
+    res.json({ settings: db.settings || { n8nWebhookUrl: "" } });
+  });
+
+  // API - Update Settings (admin only)
+  app.post("/api/settings", adminAuth, (req, res) => {
+    const { n8nWebhookUrl } = req.body;
+    const db = readDB();
+    db.settings = {
+      n8nWebhookUrl: n8nWebhookUrl || ""
+    };
+    writeDB(db);
+    res.json({ success: true, settings: db.settings });
+  });
+
+  // API - Get Public settings to know if n8n is configured
+  app.get("/api/settings/public", (req, res) => {
+    const db = readDB();
+    res.json({
+      isWebhookConfigured: !!(db.settings && db.settings.n8nWebhookUrl)
+    });
+  });
+
+  // API - Refine Prompt with n8n Webhook or high fidelity fallback
+  app.post("/api/refine-prompt", async (req, res) => {
+    const { promptId, originalPrompt } = req.body;
+    if (!originalPrompt) {
+      return res.status(400).json({ success: false, message: "متن پرامپت ارسال نشده است." });
+    }
+
+    const db = readDB();
+    const n8nUrl = db.settings?.n8nWebhookUrl;
+
+    // Increment usage count if tracked
+    if (promptId) {
+      const index = db.prompts.findIndex(p => p.id === promptId);
+      if (index !== -1) {
+        db.prompts[index].usageCount += 1;
+        writeDB(db);
+      }
+    }
+
+    // High fidelity template-based or local refinement fallback
+    const mockRefine = (text: string) => {
+      // Enhance with professional prompt directives for incredible outputs
+      let output = text;
+      // English-friendly addition for detailed generative results
+      output += "\n\n--ar 16:9 --v 6.0 --style raw --stylize 250 --quality 2.0 --fast";
+      output += "\n\n/* Enhanced with Promty AI Refined System: High resolution details, volumetric light, professional cinematic color grading, hyper-detailed photography style, dynamic focal blur */";
+      return output;
+    };
+
+    if (!n8nUrl) {
+      return res.json({
+        success: true,
+        refinedPrompt: mockRefine(originalPrompt),
+        fallbackUsed: true,
+        message: "تنظیمات وب‌هوک n8n خالی است. یک بهبود آزمایشی تولید شد."
+      });
+    }
+
+    try {
+      const response = await fetch(n8nUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          promptId,
+          originalPrompt,
+          action: "refine_prompt",
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`مشکل در اتصال به منبع وب‌هوک کلاس n8n: وضعیت ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      let refinedPrompt = "";
+
+      if (typeof responseData === "string") {
+        refinedPrompt = responseData;
+      } else if (Array.isArray(responseData) && responseData.length > 0) {
+        const item = responseData[0];
+        refinedPrompt = item.refinedPrompt || item.output || item.text || JSON.stringify(item);
+      } else if (responseData && typeof responseData === "object") {
+        refinedPrompt = responseData.refinedPrompt || responseData.output || responseData.text || responseData.refined || JSON.stringify(responseData);
+      }
+
+      if (!refinedPrompt) {
+        throw new Error("پاسخ وب‌هوک n8n خالی یا فاقد فیلد متنی بود.");
+      }
+
+      return res.json({
+         success: true,
+         refinedPrompt,
+         fallbackUsed: false
+      });
+
+    } catch (err: any) {
+      console.warn("n8n call failed, falling back gracefully:", err);
+      return res.json({
+        success: true,
+        refinedPrompt: mockRefine(originalPrompt),
+        fallbackUsed: true,
+        message: `خطا در فراخوانی وب‌هوک n8n (${err.message}). از الگوی بهبود محلی سیستم استفاده شد.`
+      });
+    }
   });
 
   // API - Render Prompt (substitutes values dynamically)

@@ -19,6 +19,82 @@ export default function PromptDetail() {
   const [showWizard, setShowWizard] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // States for AI Refinement MVP
+  const [refineLoading, setRefineLoading] = useState(false);
+  const [refinedPrompt, setRefinedPrompt] = useState<string | null>(null);
+  const [originalBeforeRefining, setOriginalBeforeRefining] = useState<string>("");
+  const [isn8nConfigured, setIsn8nConfigured] = useState(false);
+  const [refineMessage, setRefineMessage] = useState<string | null>(null);
+  const [loadingStep, setLoadingStep] = useState("درحال برقراری ارتباط با وب‌هوک n8n...");
+
+  useEffect(() => {
+    async function checkn8n() {
+      try {
+        const res = await fetch("/api/settings/public");
+        if (res.ok) {
+          const data = await res.json();
+          setIsn8nConfigured(data.isWebhookConfigured);
+        }
+      } catch (err) {
+        console.error("Failed to query public settings:", err);
+      }
+    }
+    checkn8n();
+  }, []);
+
+  const handleRefinePrompt = async () => {
+    try {
+      setRefineLoading(true);
+      setRefinedPrompt(null);
+      setRefineMessage(null);
+      setOriginalBeforeRefining(renderedBody);
+      
+      const steps = [
+        "در حال فراخوانی عامل هوش مصنوعی (AI Agent)...",
+        "در حال مهندسی و بازنویسی متغیرها تحت گایدلاین‌های n8n...",
+        "بهینه‌سازی کلمات کلیدی، پرسپکتیو و فریم‌ورک‌های رندر...",
+        "افزودن تنظیمات کیفیت بالا (Photorealistic & 8K Directives)...",
+        "اعمال ویژگی‌های اختصاصی سبک و نورپردازی حرفه‌ای سینمایی..."
+      ];
+      
+      let stepIndex = 0;
+      setLoadingStep(steps[0]);
+      const interval = setInterval(() => {
+        if (stepIndex < steps.length - 1) {
+          stepIndex++;
+          setLoadingStep(steps[stepIndex]);
+        }
+      }, 1500);
+
+      const res = await fetch("/api/refine-prompt", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          promptId: id,
+          originalPrompt: renderedBody
+        })
+      });
+
+      clearInterval(interval);
+
+      if (res.ok) {
+        const data = await res.json();
+        setRefinedPrompt(data.refinedPrompt);
+        if (data.message) {
+          setRefineMessage(data.message);
+        }
+      } else {
+        setRefineMessage("خطایی در نهایی‌سازی ارتباط با دستیار هوشمند به وجود آمد.");
+      }
+    } catch (err: any) {
+      setRefineMessage("سیستم هوش مصنوعی موقتاً با اخلال مواجه شد. بعداً تلاش کنید.");
+    } finally {
+      setRefineLoading(false);
+    }
+  };
+
   useEffect(() => {
     async function loadPrompt() {
       try {
@@ -190,6 +266,135 @@ export default function PromptDetail() {
               </div>
             )}
           </div>
+
+          {/* Highlighted AI Assistant Action panel */}
+          <div className="bg-gradient-to-r from-[#6C47FF]/10 to-indigo-50/20 border border-[#6C47FF]/20 rounded-2xl p-5 space-y-3 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[#6C47FF] animate-pulse" />
+                <div>
+                  <h4 className="text-xs font-black text-slate-800">بهبود دهنده هوشمند پرامپت (Professional AI Refinement)</h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">افزودن لنز دوربین حرفه‌ای، نورپردازی سه بعدی و کلمات کلیدی سینمایی به متغیرها برای فهم مستقیم موتور هوشمند</p>
+                </div>
+              </div>
+              
+              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${isn8nConfigured ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                {isn8nConfigured ? "عامل متصل" : "محلی فعال"}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleRefinePrompt}
+                disabled={refineLoading}
+                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-[#6C47FF] hover:text-[#5935e6] font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition border-2 border-[#6C47FF]/30 cursor-pointer shadow-sm disabled:cursor-not-allowed"
+              >
+                {refineLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-[#6C47FF]" />
+                ) : (
+                  <Wand2 className="w-4 h-4 text-[#6C47FF]" />
+                )}
+                <span>ارتقا و بهبود فوری این پرامپت با عامل n8n 🤖✨</span>
+              </button>
+            </div>
+          </div>
+
+          {/* AI Processing Feedback */}
+          {refineLoading && (
+            <div className="bg-slate-900 text-slate-200 border border-[#6C47FF]/30 p-6 rounded-2xl flex flex-col items-center justify-center gap-4 text-center animate-pulse">
+              <Loader2 className="w-8 h-8 animate-spin text-[#6C47FF]" />
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-white">در حال پردازش پرامپت و همگام‌سازی با n8n...</p>
+                <p className="text-xs text-slate-400 font-mono mt-1">{loadingStep}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Side by side comparison (Before & After) */}
+          {refinedPrompt && (
+            <div className="bg-white border border-[#6C47FF]/20 rounded-2xl p-6 space-y-6 shadow-sm animate-fade-in text-right">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                    <span>🔮</span>
+                    <span>مقایسه نهایی قبل و بعد پرامپت هوشمند</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-medium">دستیار هوشمند کلمات طلایی، جزئیات پس‌زمینه و ابزارهای حرفه‌ای عکاسی را به پرامپت شما افزوده است</p>
+                </div>
+
+                <span className="text-[10px] text-[#6C47FF] bg-[#6C47FF]/10 px-2.5 py-1 rounded-full font-bold">
+                  عامل بهینه‌سازی فعال
+                </span>
+              </div>
+
+              {refineMessage && (
+                <div className="text-[11px] font-semibold bg-amber-50 text-amber-700 px-4 py-2.5 rounded-xl border border-amber-100 flex items-center gap-1.5 leading-relaxed">
+                  <span>💡 نکته سیستم:</span>
+                  <span>{refineMessage}</span>
+                </div>
+              )}
+
+              {/* Side by side containers */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Before */}
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4.5 space-y-3 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500 text-xs font-bold bg-slate-200/50 px-2.5 py-0.5 rounded">پرامپت خام اولیه (قبل)</span>
+                      <span className="text-[10px] text-slate-400 font-mono">{originalBeforeRefining.length} کاراکتر</span>
+                    </div>
+                    <div 
+                      className="text-xs text-slate-600 bg-white/70 border border-slate-100 p-3.5 rounded-lg font-mono leading-relaxed select-all overflow-y-auto max-h-[140px]"
+                      style={{ direction: "ltr", textAlign: "left" }}
+                    >
+                      {originalBeforeRefining}
+                    </div>
+                  </div>
+                  <CopyButton text={originalBeforeRefining} label="کپی پرامپت اولیه" className="w-full text-xs py-2 bg-slate-200 hover:bg-slate-300 text-slate-700" />
+                </div>
+
+                {/* After */}
+                <div className="bg-slate-900 border-2 border-[#6C47FF]/30 rounded-xl p-4.5 space-y-3 flex flex-col justify-between relative overflow-hidden shadow-sm">
+                  <div className="absolute -top-10 -right-10 w-24 h-24 bg-gradient-to-br from-[#6C47FF]/20 to-transparent rounded-full blur-xl pointer-events-none"></div>
+                  <div className="space-y-2 z-10 w-full">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white text-xs font-bold bg-[#6C47FF]/20 border border-[#6C47FF]/30 px-2.5 py-0.5 rounded flex items-center gap-1">
+                        <span>🚀</span>
+                        <span>پرامپت ارتقا یافته با هوش مصنوعی (بعد)</span>
+                      </span>
+                      <span className="text-[10px] text-indigo-300 font-mono font-bold bg-indigo-950/40 px-2 rounded-full">{refinedPrompt.length} کاراکتر</span>
+                    </div>
+                    <div 
+                      className="text-xs text-emerald-300 bg-slate-950/80 border border-[#6C47FF]/20 p-3.5 rounded-lg font-mono leading-relaxed select-all overflow-y-auto max-h-[140px]"
+                      style={{ direction: "ltr", textAlign: "left" }}
+                    >
+                      {refinedPrompt}
+                    </div>
+                  </div>
+                  <CopyButton text={refinedPrompt} label="کپی پرامپت بهبودیافته" className="w-full text-xs py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] text-white shadow-md font-bold" />
+                </div>
+              </div>
+
+              {/* Improvement bullet points */}
+              <div className="bg-slate-50 rounded-xl p-4 space-y-2 border border-slate-100">
+                <h4 className="text-xs font-black text-slate-700">تغییرات مهندسی شده توسط دستیار هوشمند:</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[10px] md:text-xs text-slate-500 font-bold">
+                  <div className="flex items-center gap-1">
+                    <span className="text-emerald-500 font-black">✓</span>
+                    <span>افزایش توصیفات پس‌زمینه و اشیاء پیرامون</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-emerald-500 font-black">✓</span>
+                    <span>افزودن لنز دوربین عکاسی مجلل (85mm focal)</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-emerald-500 font-black">✓</span>
+                    <span>نورپردازی سه‌بعدی و سایه‌های سینمایی عمیق</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Integration Status Block (Disabled buttons with Tooltips) */}
           <div className="bg-gradient-to-tr from-[#6C47FF]/5 to-indigo-50/20 border border-[#6C47FF]/10 rounded-2xl p-5 space-y-4">
