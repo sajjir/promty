@@ -544,11 +544,15 @@ async function startServer() {
 
     const db = readDB();
     const settings = db.settings;
+    
+    // Strict validation
+    const analyzeUrl = (settings?.n8nAnalyzeWebhook || "").trim();
+    const geminiKey = (settings?.geminiApiKey || "").trim();
 
     try {
-      if (settings?.n8nAnalyzeWebhook) {
+      if (analyzeUrl.length > 0) {
         // Send raw text to n8n Webhook
-        const response = await fetch(settings.n8nAnalyzeWebhook, {
+        const response = await fetch(analyzeUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -566,13 +570,11 @@ async function startServer() {
 
         const responseData = await response.json();
         
-        // Parse n8n response (handling both direct object or array responses)
         let structuredJSON = responseData;
         if (Array.isArray(responseData) && responseData.length > 0) {
           structuredJSON = responseData[0];
         }
         
-        // Some n8n nodes wrap the final JSON inside an "output" or "text" key.
         if (structuredJSON.output && typeof structuredJSON.output === "object") {
           structuredJSON = structuredJSON.output;
         } else if (structuredJSON.output && typeof structuredJSON.output === "string") {
@@ -586,11 +588,11 @@ async function startServer() {
           data: structuredJSON
         });
 
-      } else if (settings?.geminiApiKey) {
+      } else if (geminiKey.length > 0) {
         // Direct Gemini API fallback
         const { GoogleGenAI, Type } = await import("@google/genai");
         const ai = new GoogleGenAI({
-          apiKey: settings.geminiApiKey,
+          apiKey: geminiKey,
           httpOptions: {
             headers: {
               'User-Agent': 'aistudio-build',
@@ -619,7 +621,7 @@ ${sourceText}
 """`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-1.5-flash", // BUG FIXED HERE
           contents: promptToModel,
           config: {
             responseMimeType: "application/json",
@@ -636,10 +638,7 @@ ${sourceText}
                 difficulty: { type: Type.STRING },
                 outputFormat: { type: Type.STRING },
                 industry: { type: Type.STRING },
-                tags: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING }
-                },
+                tags: { type: Type.ARRAY, items: { type: Type.STRING } },
                 body: { type: Type.STRING },
                 fieldsSchema: {
                   type: Type.ARRAY,
@@ -651,10 +650,7 @@ ${sourceText}
                       type: { type: Type.STRING },
                       placeholder: { type: Type.STRING },
                       required: { type: Type.BOOLEAN },
-                      options: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING }
-                      },
+                      options: { type: Type.ARRAY, items: { type: Type.STRING } },
                       min: { type: Type.INTEGER },
                       max: { type: Type.INTEGER }
                     },
@@ -662,11 +658,7 @@ ${sourceText}
                   }
                 }
               },
-              required: [
-                "title", "description", "intent", "domain", "tool", "task", 
-                "language", "difficulty", "outputFormat", "industry", 
-                "tags", "body", "fieldsSchema"
-              ]
+              required: ["title", "description", "intent", "domain", "tool", "task", "language", "difficulty", "outputFormat", "industry", "tags", "body", "fieldsSchema"]
             }
           }
         });
@@ -674,24 +666,18 @@ ${sourceText}
         const textResult = response.text || "{}";
         const structuredJSON = JSON.parse(textResult.trim());
 
-        return res.json({
-          success: true,
-          data: structuredJSON
-        });
+        return res.json({ success: true, data: structuredJSON });
 
       } else {
         return res.status(400).json({ 
           success: false, 
-          message: "تنظیمات هوش مصنوعی در داشبورد مقداردهی نشده است. لطفاً ابتدا وب‌هوک n8n یا کلید Gemini API را در بخش تنظیمات داشبورد وارد کنید." 
+          message: "تنظیمات هوش مصنوعی خالی است. لطفاً آدرس وبهوک n8n یا کلید Gemini را وارد کنید." 
         });
       }
 
     } catch (err: any) {
       console.error("Source analysis failed:", err);
-      return res.status(500).json({
-        success: false,
-        message: "ارتباط با هوش مصنوعی یا تجزیه پرامپت با خطا مواجه شد: " + err.message
-      });
+      return res.status(500).json({ success: false, message: "ارتباط با هوش مصنوعی با خطا مواجه شد: " + err.message });
     }
   });
 
@@ -703,7 +689,7 @@ ${sourceText}
     }
 
     const db = readDB();
-    const n8nUrl = db.settings?.n8nRefineWebhook || db.settings?.n8nWebhookUrl;
+    const n8nUrl = (db.settings?.n8nRefineWebhook || db.settings?.n8nWebhookUrl || "").trim();
 
     // Increment usage count if tracked
     if (promptId) {
@@ -724,12 +710,12 @@ ${sourceText}
       return output;
     };
 
-    if (!n8nUrl) {
+    if (n8nUrl.length === 0) {
       return res.json({
         success: true,
         refinedPrompt: mockRefine(originalPrompt),
         fallbackUsed: true,
-        message: "تنظیمات وب‌هوک n8n خالی است. یک بهبود آزمایشی تولید شد."
+        message: "تنظیمات وبهوک n8n خالی است. یک بهبود آزمایشی تولید شد."
       });
     }
 
