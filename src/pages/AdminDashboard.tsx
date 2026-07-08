@@ -328,7 +328,7 @@ export default function AdminDashboard() {
                     <td className="px-6 py-4 font-semibold text-slate-800 max-w-xs truncate">
                       {p.title}
                     </td>
-                    <td className="px-6 py-4 text-xs font-semibold">{p.category}</td>
+                    <td className="px-6 py-4 text-xs font-semibold">{p.tool || p.domain || (p as any).category || "عمومی"}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                         p.isPremium ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700"
@@ -393,7 +393,7 @@ export default function AdminDashboard() {
                     <div>
                       <h4 className="font-bold text-slate-800 mb-1">{p.title}</h4>
                       <div className="flex items-center gap-2 text-xs">
-                        <span className="text-slate-400">{p.category}</span>
+                        <span className="text-slate-400">{p.tool || p.domain || (p as any).category || "عمومی"}</span>
                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                           p.isPremium ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700"
                         }`}>

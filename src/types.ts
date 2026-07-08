@@ -1,10 +1,12 @@
 export interface FieldSchema {
   key: string;
   label: string;
-  type: string; // 'text' | 'textarea' | 'color' | 'select'
+  type: 'text' | 'textarea' | 'color' | 'select' | 'radio' | 'switch' | 'slider' | 'multiselect' | 'url';
   placeholder?: string;
   required?: boolean;
-  options?: string[]; // For select type
+  options?: string[]; // for select, radio, multiselect
+  min?: number;       // for slider
+  max?: number;       // for slider
 }
 
 export interface Prompt {
@@ -13,8 +15,18 @@ export interface Prompt {
   description: string;
   body: string;
   fieldsSchema: FieldSchema[];
-  category: string;
+  category?: string;
+  // Metadata Layers
+  intent?: string;
+  domain?: string;
+  tool?: string;
+  task?: string;
+  language?: string;
+  difficulty?: string;
+  outputFormat?: string;
+  industry?: string;
   tags: string[];
+  // Stats & Status
   sampleImage?: string;
   isPremium: boolean;
   isActive: boolean;
@@ -35,3 +47,4 @@ export interface Stats {
   totalUsages: number;
   mostPopular: string;
 }
+

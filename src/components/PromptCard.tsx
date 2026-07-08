@@ -16,7 +16,8 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 export default function PromptCard({ prompt }: PromptCardProps) {
-  const IconComponent = categoryIcons[prompt.category] || Sparkles;
+  const categoryLabel = prompt.tool || prompt.domain || prompt.intent || (prompt as any).category || "عمومی";
+  const IconComponent = categoryIcons[categoryLabel] || Sparkles;
 
   return (
     <div
@@ -52,10 +53,17 @@ export default function PromptCard({ prompt }: PromptCardProps) {
 
       {/* Content */}
       <div className="p-5 flex-1 flex flex-col">
-        {/* Category Badge */}
-        <div className="flex items-center gap-1.5 text-slate-500 text-xs mb-2">
-          <IconComponent className="w-3.5 h-3.5" />
-          <span>{prompt.category}</span>
+        {/* Category & Tool Badge */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5 text-slate-500 text-xs">
+            <IconComponent className="w-3.5 h-3.5 text-[#6C47FF]" />
+            <span className="font-bold">{categoryLabel}</span>
+          </div>
+          {prompt.difficulty && (
+            <span className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-50 rounded">
+              {prompt.difficulty}
+            </span>
+          )}
         </div>
 
         {/* Title */}
@@ -64,9 +72,23 @@ export default function PromptCard({ prompt }: PromptCardProps) {
         </h3>
 
         {/* Description */}
-        <p className="text-slate-500 text-sm line-clamp-2 leading-relaxed mb-4 flex-1">
+        <p className="text-slate-500 text-sm line-clamp-2 leading-relaxed mb-4 flex-1 text-right">
           {prompt.description || "توضیحی برای این پرامپت ثبت نشده است."}
         </p>
+
+        {/* Metadata Badges tag */}
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {prompt.outputFormat && (
+            <span className="text-[10px] text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded">
+              خروجی: {prompt.outputFormat}
+            </span>
+          )}
+          {prompt.language && (
+            <span className="text-[10px] text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded">
+              زبان: {prompt.language}
+            </span>
+          )}
+        </div>
 
         {/* Footer info & Button */}
         <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-50">

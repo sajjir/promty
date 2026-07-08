@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Category, FieldSchema } from "../types";
 import PromptWizard from "../components/PromptWizard";
-import { ArrowRight, AlertTriangle, Sparkles, Code, Check, Loader2 } from "lucide-react";
+import { ArrowRight, AlertTriangle, Sparkles, Code, Check, Loader2, Wand2 } from "lucide-react";
 
 export default function AdminPromptAddEdit() {
   const { id } = useParams<{ id: string }>(); // If there is an ID, we are in Edit mode, otherwise Add mode.
@@ -15,12 +15,26 @@ export default function AdminPromptAddEdit() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("تبلیغات");
+  const [intent, setIntent] = useState("Create");
+  const [domain, setDomain] = useState("Marketing");
+  const [tool, setTool] = useState("ChatGPT");
+  const [task, setTask] = useState("");
+  const [language, setLanguage] = useState("Persian");
+  const [difficulty, setDifficulty] = useState("Beginner");
+  const [outputFormat, setOutputFormat] = useState("Text");
+  const [industry, setIndustry] = useState("Ecommerce");
   const [tagsInput, setTagsInput] = useState("");
   const [body, setBody] = useState("");
   const [schemaJson, setSchemaJson] = useState("");
   const [sampleImage, setSampleImage] = useState("");
   const [isPremium, setIsPremium] = useState(false);
   const [isActive, setIsActive] = useState(true);
+
+  // Source AI Analysis states
+  const [sourceText, setSourceText] = useState("");
+  const [analyzingSource, setAnalyzingSource] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
+  const [analysisSuccess, setAnalysisSuccess] = useState(false);
 
   // Status states
   const [categories, setCategories] = useState<Category[]>([]);
@@ -78,7 +92,15 @@ export default function AdminPromptAddEdit() {
             const p = data.prompt;
             setTitle(p.title);
             setDescription(p.description);
-            setCategory(p.category);
+            setCategory(p.category || p.tool || p.domain || "عمومی");
+            setIntent(p.intent || "Create");
+            setDomain(p.domain || "Marketing");
+            setTool(p.tool || "ChatGPT");
+            setTask(p.task || "");
+            setLanguage(p.language || "Persian");
+            setDifficulty(p.difficulty || "Beginner");
+            setOutputFormat(p.outputFormat || "Text");
+            setIndustry(p.industry || "Ecommerce");
             setTagsInput(p.tags ? p.tags.join(", ") : "");
             setBody(p.body);
             setSchemaJson(JSON.stringify(p.fieldsSchema, null, 2));
@@ -139,6 +161,51 @@ export default function AdminPromptAddEdit() {
     }
   }, [schemaJson]);
 
+  // Source AI Analysis action
+  const handleAnalyzeSource = async () => {
+    if (!sourceText.trim()) return;
+    setAnalyzingSource(true);
+    setAnalysisError("");
+    setAnalysisSuccess(false);
+
+    try {
+      const res = await fetch("/api/analyze-source", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ sourceText })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const parsed = data.data;
+        setTitle(parsed.title || "");
+        setDescription(parsed.description || "");
+        setIntent(parsed.intent || "Create");
+        setDomain(parsed.domain || "Marketing");
+        setTool(parsed.tool || "ChatGPT");
+        setTask(parsed.task || "");
+        setLanguage(parsed.language || "Persian");
+        setDifficulty(parsed.difficulty || "Beginner");
+        setOutputFormat(parsed.outputFormat || "Text");
+        setIndustry(parsed.industry || "Ecommerce");
+        setTagsInput(parsed.tags ? parsed.tags.join(", ") : "");
+        setBody(parsed.body || "");
+        setSchemaJson(JSON.stringify(parsed.fieldsSchema || [], null, 2));
+        setAnalysisSuccess(true);
+      } else {
+        setAnalysisError(data.message || "خطا در تجزیه و تحلیل متن خام پرامپت.");
+      }
+    } catch (err: any) {
+      console.error("AI Analysis error:", err);
+      setAnalysisError("خطا در برقراری ارتباط با سرویس هوش مصنوعی.");
+    } finally {
+      setAnalyzingSource(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -161,7 +228,15 @@ export default function AdminPromptAddEdit() {
     const payload = {
       title,
       description,
-      category,
+      category: tool || domain || category || "عمومی",
+      intent,
+      domain,
+      tool,
+      task,
+      language,
+      difficulty,
+      outputFormat,
+      industry,
       tags,
       body,
       fieldsSchema: parsedSchema,
@@ -229,6 +304,65 @@ export default function AdminPromptAddEdit() {
         </Link>
       </div>
 
+      {/* Source AI Analysis "چشمه" Section */}
+      <div className="bg-gradient-to-tr from-[#6C47FF]/5 to-[#8A2BE2]/5 border border-[#6C47FF]/10 rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-2.5 pb-2 border-b border-[#6C47FF]/10">
+          <div className="p-2 bg-[#6C47FF]/10 rounded-lg text-[#6C47FF]">
+            <Wand2 className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-slate-800">بخش "چشمه" (تجزیه و تحلیل متن با هوش مصنوعی) 💡</h3>
+            <p className="text-[11px] text-slate-500">متن پرامپت خام خود را وارد کنید تا هوش مصنوعی به صورت خودکار آن را به قالب استاندارد Promty.ir تبدیل کند.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1 space-y-1.5 w-full">
+            <label htmlFor="source-textarea" className="text-xs font-bold text-slate-600 block">متن خام پرامپت (Source)</label>
+            <textarea
+              id="source-textarea"
+              rows={3}
+              value={sourceText}
+              onChange={(e) => setSourceText(e.target.value)}
+              placeholder="مثال: یک پرامپت بنویس که لوگوی مینیمال عینک آفتابی بسازه و رنگ اصلیش طلایی باشه و اسمش برند X باشه..."
+              className="w-full text-xs p-3.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleAnalyzeSource}
+            disabled={analyzingSource || !sourceText.trim()}
+            className="w-full md:w-auto px-6 py-3 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 disabled:opacity-50 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition duration-200 cursor-pointer h-[50px] shadow-sm"
+          >
+            {analyzingSource ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>در حال تجزیه و ساختاردهی...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                <span>تجزیه و تحلیل با هوش مصنوعی 🪄</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {analysisSuccess && (
+          <div className="p-3 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-xl border border-emerald-100 flex items-center gap-1.5 animate-fade-in">
+            <Check className="w-4 h-4 text-emerald-500" />
+            <span>با موفقیت پردازش شد! فیلدهای پایین با اطلاعات استخراج شده مقداردهی اولیه شدند.</span>
+          </div>
+        )}
+
+        {analysisError && (
+          <div className="p-3 bg-rose-50 text-rose-600 text-xs font-bold rounded-xl border border-rose-100 flex items-center gap-1.5 animate-fade-in">
+            <AlertTriangle className="w-4 h-4 text-rose-500" />
+            <span>{analysisError}</span>
+          </div>
+        )}
+      </div>
+
       {/* Notifications */}
       {error && (
         <div className="flex items-start gap-2.5 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-xs leading-relaxed">
@@ -279,36 +413,138 @@ export default function AdminPromptAddEdit() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Category */}
+            {/* Intent */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="prompt-category" className="text-xs font-bold text-slate-600">دسته‌بندی اصلی *</label>
+              <label htmlFor="prompt-intent" className="text-xs font-bold text-slate-600">هدف اصلی (Intent) *</label>
               <select
-                id="prompt-category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                id="prompt-intent"
+                value={intent}
+                onChange={(e) => setIntent(e.target.value)}
                 className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
               >
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </option>
+                {["Create", "Write", "Code", "Design", "Market", "Analyze", "Learn", "Automate", "Research", "Productivity"].map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
             </div>
 
-            {/* Tags */}
+            {/* Domain */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="prompt-tags" className="text-xs font-bold text-slate-600">تگ‌ها (جدا شده با کاما ,)</label>
+              <label htmlFor="prompt-domain" className="text-xs font-bold text-slate-600">حوزه اصلی (Domain) *</label>
+              <select
+                id="prompt-domain"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
+              >
+                {["Business", "Marketing", "Education", "Medical", "Health", "Legal", "Finance", "Programming", "Gaming", "Food", "Travel", "Architecture", "Photography", "Real Estate", "Sports", "AI", "Robotics", "Science", "Religion", "History"].map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tool */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="prompt-tool" className="text-xs font-bold text-slate-600">ابزار هوش مصنوعی (Tool) *</label>
+              <select
+                id="prompt-tool"
+                value={tool}
+                onChange={(e) => setTool(e.target.value)}
+                className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
+              >
+                {["ChatGPT", "Claude", "Gemini", "Grok", "Midjourney", "Flux", "Stable Diffusion", "Ideogram", "Runway", "ElevenLabs", "Suno", "n8n AI Agent"].map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Specific Task */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="prompt-task" className="text-xs font-bold text-slate-600">کار مشخص (Task)</label>
               <input
                 type="text"
-                id="prompt-tags"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="مثال: عکاسی, پرتره, Midjourney"
+                id="prompt-task"
+                value={task}
+                onChange={(e) => setTask(e.target.value)}
+                placeholder="مثال: Write Instagram Caption"
                 className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition text-left"
                 style={{ direction: "ltr" }}
               />
             </div>
+
+            {/* Language */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="prompt-language" className="text-xs font-bold text-slate-600">زبان اصلی پرامپت *</label>
+              <select
+                id="prompt-language"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
+              >
+                <option value="Persian">Persian (فارسی)</option>
+                <option value="English">English (انگلیسی)</option>
+              </select>
+            </div>
+
+            {/* Difficulty */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="prompt-difficulty" className="text-xs font-bold text-slate-600">سطح دشواری (Difficulty) *</label>
+              <select
+                id="prompt-difficulty"
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
+              >
+                <option value="Beginner">Beginner (مبتدی)</option>
+                <option value="Intermediate">Intermediate (متوسط)</option>
+                <option value="Advanced">Advanced (پیشرفته)</option>
+                <option value="Expert">Expert (حرفه‌ای)</option>
+              </select>
+            </div>
+
+            {/* Output Format */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="prompt-output" className="text-xs font-bold text-slate-600">فرمت خروجی (Output Format) *</label>
+              <select
+                id="prompt-output"
+                value={outputFormat}
+                onChange={(e) => setOutputFormat(e.target.value)}
+                className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
+              >
+                {["Text", "Markdown", "JSON", "CSV", "HTML", "CSS", "JavaScript", "Python", "React", "TypeScript", "SQL", "XML", "PDF", "Table", "Checklist", "Roadmap", "Presentation"].map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Industry */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="prompt-industry" className="text-xs font-bold text-slate-600">صنعت هدف (Industry) *</label>
+              <select
+                id="prompt-industry"
+                value={industry}
+                onChange={(e) => setIndustry(e.target.value)}
+                className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
+              >
+                {["Ecommerce", "Startup", "Healthcare", "Education", "Restaurant", "Construction", "Law", "Bank", "Crypto", "Fashion", "Fitness", "Agriculture", "Tourism", "Insurance", "NGO"].map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="prompt-tags" className="text-xs font-bold text-slate-600">تگ‌ها (جدا شده با کاما ,)</label>
+            <input
+              type="text"
+              id="prompt-tags"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="مثال: عکاسی, پرتره, Midjourney"
+              className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition text-left"
+              style={{ direction: "ltr" }}
+            />
           </div>
 
           {/* Image */}
@@ -342,7 +578,7 @@ export default function AdminPromptAddEdit() {
               style={{ direction: "ltr" }}
             />
             <span className="text-[10px] text-slate-400">
-              راهنما: حتماً فیلدهای شخصی‌سازی را بدین شکل قرار دهید: <span className="font-mono text-[#6C47FF] font-bold">{"{{product_name}}"}</span> یا <span className="font-mono text-[#6C47FF] font-bold">{"{{tone}}"}</span> تا با مقادیر Wizard جایگزین شوند.
+              راهنما: حتماً فیلدهای شخصی‌سازی را بدین شکل قرار دهید: <span className="font-mono text-[#6C47FF] block md:inline font-bold">{"{{product_name}}"}</span> یا <span className="font-mono text-[#6C47FF] block md:inline font-bold">{"{{tone}}"}</span> تا با مقادیر Wizard جایگزین شوند.
             </span>
           </div>
 

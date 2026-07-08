@@ -7,10 +7,12 @@ import { createServer as createViteServer } from "vite";
 interface FieldSchema {
   key: string;
   label: string;
-  type: string;
+  type: 'text' | 'textarea' | 'color' | 'select' | 'radio' | 'switch' | 'slider' | 'multiselect' | 'url';
   placeholder?: string;
   required?: boolean;
   options?: string[];
+  min?: number;
+  max?: number;
 }
 
 interface Prompt {
@@ -19,8 +21,18 @@ interface Prompt {
   description: string;
   body: string;
   fieldsSchema: FieldSchema[];
-  category: string;
+  category?: string;
+  // Metadata Layers
+  intent?: string;
+  domain?: string;
+  tool?: string;
+  task?: string;
+  language?: string;
+  difficulty?: string;
+  outputFormat?: string;
+  industry?: string;
   tags: string[];
+  // Stats & Status
   sampleImage?: string;
   isPremium: boolean;
   isActive: boolean;
@@ -77,7 +89,15 @@ function readDB(): DB {
         title: "تصویر تبلیغاتی محصول جواهرات",
         description: "یک پرامپت عالی برای ساخت تصاویر تبلیغاتی حرفه‌ای مخصوص طلا، نقره و جواهرات مجلل",
         body: "یک عکس تبلیغاتی حرفه‌ای از {{product_name}} بساز. رنگ غالب {{brand_color}}. پس‌زمینه سفید خالص. نور استودیویی. کیفیت 4K. در پایین بنویس: {{ad_text}}",
-        category: "تبلیغات",
+        category: "Midjourney",
+        intent: "Design",
+        domain: "Photography",
+        tool: "Midjourney",
+        task: "Product Commercial Portrait",
+        language: "Persian",
+        difficulty: "Beginner",
+        outputFormat: "Presentation",
+        industry: "Ecommerce",
         tags: ["جواهرات", "تبلیغات", "Midjourney", "طلا"],
         sampleImage: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=600",
         isPremium: false,
@@ -113,7 +133,15 @@ function readDB(): DB {
         title: "لندینگ پیج کسب‌وکار",
         description: "پرامپت توسعه‌دهندگان وب برای دریافت کدهای لندینگ پیج مدرن و سازگار با فریم‌ورک‌های روز",
         body: "یک لندینگ پیج حرفه‌ای با React و Tailwind CSS برای کسب‌وکار {{business_name}} در حوزه {{business_field}} بساز. رنگ اصلی برند {{brand_color}}. لحن: {{tone}}. شامل: هدر، hero section، بخش خدمات، و فوتر.",
-        category: "وبسایت",
+        category: "ChatGPT",
+        intent: "Code",
+        domain: "Programming",
+        tool: "ChatGPT",
+        task: "React Component Coding",
+        language: "English",
+        difficulty: "Intermediate",
+        outputFormat: "React",
+        industry: "Startup",
         tags: ["برنامه‌نویسی", "کد", "React", "Tailwind"],
         sampleImage: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=600",
         isPremium: false,
@@ -157,7 +185,15 @@ function readDB(): DB {
         title: "ویدیو تیزر محصول",
         description: "پرامپت طلایی برای ساخت ویدیوهای کوتاه تبلیغاتی یا تیزرهای ۱۵ ثانیه‌ای اینستاگرام و یوتیوب",
         body: "یک تیزر ویدیویی ۱۵ ثانیه‌ای برای {{product_name}} بساز. سبک: {{style}}. موزیک: {{music_mood}}. متن روی صفحه: {{tagline}}",
-        category: "ویدیو",
+        category: "Runway",
+        intent: "Create",
+        domain: "Marketing",
+        tool: "Runway",
+        task: "Video Teaser Creation",
+        language: "Persian",
+        difficulty: "Advanced",
+        outputFormat: "Markdown",
+        industry: "Restaurant",
         tags: ["تیزر", "ویدیو", "Kling", "Sora", "اینستاگرام"],
         sampleImage: "https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&q=80&w=600",
         isPremium: true,
@@ -304,9 +340,27 @@ async function startServer() {
 
   // API - Create Prompt (admin only)
   app.post("/api/prompts", adminAuth, (req, res) => {
-    const { title, description, body, fieldsSchema, category, tags, isPremium, sampleImage, isActive } = req.body;
+    const { 
+      title, 
+      description, 
+      body, 
+      fieldsSchema, 
+      category, 
+      intent, 
+      domain, 
+      tool, 
+      task, 
+      language, 
+      difficulty, 
+      outputFormat, 
+      industry, 
+      tags, 
+      isPremium, 
+      sampleImage, 
+      isActive 
+    } = req.body;
     
-    if (!title || !body || !category) {
+    if (!title || !body) {
       return res.status(400).json({ success: false, message: "فیلدهای اجباری ارسال نشده‌اند." });
     }
 
@@ -317,7 +371,15 @@ async function startServer() {
       description: description || "",
       body,
       fieldsSchema: fieldsSchema || [],
-      category,
+      category: category || tool || domain || "عمومی",
+      intent: intent || "",
+      domain: domain || "",
+      tool: tool || "",
+      task: task || "",
+      language: language || "Persian",
+      difficulty: difficulty || "Beginner",
+      outputFormat: outputFormat || "Text",
+      industry: industry || "",
       tags: tags || [],
       sampleImage: sampleImage || "",
       isPremium: !!isPremium,
@@ -336,7 +398,25 @@ async function startServer() {
   // API - Update Prompt (admin only)
   app.put("/api/prompts/:id", adminAuth, (req, res) => {
     const { id } = req.params;
-    const { title, description, body, fieldsSchema, category, tags, isPremium, sampleImage, isActive } = req.body;
+    const { 
+      title, 
+      description, 
+      body, 
+      fieldsSchema, 
+      category, 
+      intent, 
+      domain, 
+      tool, 
+      task, 
+      language, 
+      difficulty, 
+      outputFormat, 
+      industry, 
+      tags, 
+      isPremium, 
+      sampleImage, 
+      isActive 
+    } = req.body;
 
     const db = readDB();
     const index = db.prompts.findIndex(p => p.id === id);
@@ -351,7 +431,15 @@ async function startServer() {
       description: description !== undefined ? description : db.prompts[index].description,
       body: body !== undefined ? body : db.prompts[index].body,
       fieldsSchema: fieldsSchema !== undefined ? fieldsSchema : db.prompts[index].fieldsSchema,
-      category: category !== undefined ? category : db.prompts[index].category,
+      category: category !== undefined ? category : (db.prompts[index].category || tool || domain || "عمومی"),
+      intent: intent !== undefined ? intent : db.prompts[index].intent,
+      domain: domain !== undefined ? domain : db.prompts[index].domain,
+      tool: tool !== undefined ? tool : db.prompts[index].tool,
+      task: task !== undefined ? task : db.prompts[index].task,
+      language: language !== undefined ? language : db.prompts[index].language,
+      difficulty: difficulty !== undefined ? difficulty : db.prompts[index].difficulty,
+      outputFormat: outputFormat !== undefined ? outputFormat : db.prompts[index].outputFormat,
+      industry: industry !== undefined ? industry : db.prompts[index].industry,
       tags: tags !== undefined ? tags : db.prompts[index].tags,
       sampleImage: sampleImage !== undefined ? sampleImage : db.prompts[index].sampleImage,
       isPremium: isPremium !== undefined ? !!isPremium : db.prompts[index].isPremium,
@@ -402,6 +490,117 @@ async function startServer() {
     res.json({
       isWebhookConfigured: !!(db.settings && db.settings.n8nWebhookUrl)
     });
+  });
+
+  // API - Analyze Raw Prompt Source using Gemini
+  app.post("/api/analyze-source", adminAuth, async (req, res) => {
+    const { sourceText } = req.body;
+    if (!sourceText) {
+      return res.status(400).json({ success: false, message: "متن خام پرامپت ارسال نشده است." });
+    }
+
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ success: false, message: "کلید API برای مدل هوش مصنوعی تعریف نشده است." });
+      }
+
+      const { GoogleGenAI, Type } = await import("@google/genai");
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+
+      const promptToModel = `Analyze the following raw prompt text and convert it into a structured, highly optimized JSON format according to these rules:
+1. Translate or keep title, description, and UI field labels in Persian (فارسی).
+2. Identify variable parts in the prompt (e.g., product names, colors, sizes) and replace them with {{placeholder_key}}.
+3. For every {{placeholder_key}} generated, create a corresponding FieldSchema object to determine how the user will interact with it in the UI.
+4. UI Field Types allowed: 'text', 'textarea', 'color', 'select', 'radio', 'switch', 'slider', 'multiselect', 'url'. If select/radio/multiselect is chosen, you must supply options in Persian/English. If slider is chosen, specify min and max.
+5. Strictly categorize the prompt into one of the following metadata options if possible:
+   - intent: Create, Write, Code, Design, Market, Analyze, Learn, Automate, Research, Productivity
+   - domain: Business, Marketing, Education, Medical, Health, Legal, Finance, Programming, Gaming, Food, Travel, Architecture, Photography, Real Estate, Sports, AI, Robotics, Science, Religion, History
+   - tool: ChatGPT, Claude, Gemini, Grok, Midjourney, Flux, Stable Diffusion, Ideogram, Veo, Runway, ElevenLabs, Suno, n8n AI Agent
+   - language: Persian, English
+   - difficulty: Beginner, Intermediate, Advanced, Expert
+   - outputFormat: Text, Markdown, JSON, CSV, HTML, CSS, JavaScript, Python, React, TypeScript, SQL, XML, PDF, Table, Checklist, Roadmap, Presentation
+   - industry: Ecommerce, Startup, Healthcare, Education, Restaurant, Construction, Law, Bank, Crypto, Fashion, Fitness, Agriculture, Tourism, Insurance, NGO
+6. Set the final optimized body with {{placeholders}} inside.
+
+Raw Prompt Text to Analyze:
+"""
+${sourceText}
+"""`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: promptToModel,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              description: { type: Type.STRING },
+              intent: { type: Type.STRING },
+              domain: { type: Type.STRING },
+              tool: { type: Type.STRING },
+              task: { type: Type.STRING },
+              language: { type: Type.STRING },
+              difficulty: { type: Type.STRING },
+              outputFormat: { type: Type.STRING },
+              industry: { type: Type.STRING },
+              tags: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING }
+              },
+              body: { type: Type.STRING },
+              fieldsSchema: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    key: { type: Type.STRING },
+                    label: { type: Type.STRING },
+                    type: { type: Type.STRING },
+                    placeholder: { type: Type.STRING },
+                    required: { type: Type.BOOLEAN },
+                    options: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING }
+                    },
+                    min: { type: Type.INTEGER },
+                    max: { type: Type.INTEGER }
+                  },
+                  required: ["key", "label", "type"]
+                }
+              }
+            },
+            required: [
+              "title", "description", "intent", "domain", "tool", "task", 
+              "language", "difficulty", "outputFormat", "industry", 
+              "tags", "body", "fieldsSchema"
+            ]
+          }
+        }
+      });
+
+      const structuredJSON = JSON.parse(response.text || "{}");
+      return res.json({
+        success: true,
+        data: structuredJSON
+      });
+
+    } catch (err: any) {
+      console.error("Source analysis failed:", err);
+      return res.status(500).json({
+        success: false,
+        message: "تجزیه و تحلیل پرامپت با خطا مواجه شد: " + err.message
+      });
+    }
   });
 
   // API - Refine Prompt with n8n Webhook or high fidelity fallback

@@ -11,11 +11,17 @@ interface PromptWizardProps {
 export default function PromptWizard({ fields, promptBody, onRendered }: PromptWizardProps) {
   const [values, setValues] = useState<Record<string, string>>({});
 
-  // Initialize values dictionary with empty strings
+  // Initialize values dictionary with appropriate defaults
   useEffect(() => {
     const initial: Record<string, string> = {};
     fields.forEach((field) => {
-      initial[field.key] = "";
+      if (field.type === "switch") {
+        initial[field.key] = "خیر";
+      } else if (field.type === "slider") {
+        initial[field.key] = String(field.min ?? 10);
+      } else {
+        initial[field.key] = "";
+      }
     });
     setValues(initial);
   }, [fields]);
@@ -44,7 +50,7 @@ export default function PromptWizard({ fields, promptBody, onRendered }: PromptW
           const value = values[field.key] || "";
 
           return (
-            <div key={field.key} className="flex flex-col gap-1.5">
+            <div key={field.key} className="flex flex-col gap-1.5 text-right">
               <label htmlFor={field.key} className="text-xs font-semibold text-slate-700 flex items-center gap-1">
                 <span>{field.label}</span>
                 {field.required && <span className="text-rose-500 text-xs">*</span>}
@@ -92,6 +98,86 @@ export default function PromptWizard({ fields, promptBody, onRendered }: PromptW
                     className="flex-1 text-xs p-2.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition font-mono text-left"
                   />
                 </div>
+              ) : field.type === "switch" ? (
+                <label className="flex items-center gap-2 cursor-pointer mt-1">
+                  <input
+                    type="checkbox"
+                    checked={value === "بله"}
+                    onChange={(e) => handleInputChange(field.key, e.target.checked ? "بله" : "خیر")}
+                    className="sr-only peer"
+                  />
+                  <div className="relative w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#6C47FF]"></div>
+                  <span className="text-xs text-slate-600 font-bold">{value || "خیر"}</span>
+                </label>
+              ) : field.type === "slider" ? (
+                <div className="flex items-center gap-3 w-full">
+                  <input
+                    type="range"
+                    id={field.key}
+                    min={field.min ?? 1}
+                    max={field.max ?? 100}
+                    value={value || field.min || 10}
+                    onChange={(e) => handleInputChange(field.key, e.target.value)}
+                    className="flex-1 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#6C47FF]"
+                  />
+                  <span className="text-xs font-mono font-bold bg-[#6C47FF]/10 text-[#6C47FF] px-2.5 py-0.5 rounded">
+                    {value || field.min || 10}
+                  </span>
+                </div>
+              ) : field.type === "radio" ? (
+                <div className="flex flex-wrap gap-3 mt-1">
+                  {field.options?.map((opt) => (
+                    <label key={opt} className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600">
+                      <input
+                        type="radio"
+                        name={field.key}
+                        value={opt}
+                        checked={value === opt}
+                        onChange={() => handleInputChange(field.key, opt)}
+                        className="w-3.5 h-3.5 text-[#6C47FF] focus:ring-[#6C47FF]"
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : field.type === "multiselect" ? (
+                <div className="flex flex-wrap gap-2 mt-1 p-2 bg-white border border-slate-200 rounded-lg max-h-24 overflow-y-auto w-full">
+                  {field.options?.map((opt) => {
+                    const selectedList = value ? value.split(", ") : [];
+                    const isSelected = selectedList.includes(opt);
+                    const toggleOption = () => {
+                      let newList;
+                      if (isSelected) {
+                        newList = selectedList.filter((s) => s !== opt);
+                      } else {
+                        newList = [...selectedList, opt];
+                      }
+                      handleInputChange(field.key, newList.join(", "));
+                    };
+
+                    return (
+                      <label key={opt} className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded border border-slate-100">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={toggleOption}
+                          className="w-3.5 h-3.5 text-[#6C47FF] focus:ring-[#6C47FF] rounded"
+                        />
+                        <span>{opt}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : field.type === "url" ? (
+                <input
+                  type="url"
+                  id={field.key}
+                  value={value}
+                  onChange={(e) => handleInputChange(field.key, e.target.value)}
+                  placeholder={field.placeholder || "https://example.com"}
+                  className="w-full text-xs p-2.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition text-left font-mono"
+                  style={{ direction: "ltr" }}
+                />
               ) : (
                 <input
                   type="text"
