@@ -10,7 +10,10 @@ export default function AdminDashboard() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   
   // Settings Integration state
-  const [n8nWebhookUrl, setN8nWebhookUrl] = useState("");
+  const [n8nAnalyzeWebhook, setN8nAnalyzeWebhook] = useState("");
+  const [n8nRefineWebhook, setN8nRefineWebhook] = useState("");
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -56,7 +59,11 @@ export default function AdminDashboard() {
       });
       if (settingsRes.ok) {
         const settingsData = await settingsRes.json();
-        setN8nWebhookUrl(settingsData.settings?.n8nWebhookUrl || "");
+        const s = settingsData.settings || {};
+        setN8nAnalyzeWebhook(s.n8nAnalyzeWebhook || "");
+        setN8nRefineWebhook(s.n8nRefineWebhook || s.n8nWebhookUrl || "");
+        setGeminiApiKey(s.geminiApiKey || "");
+        setOpenaiApiKey(s.openaiApiKey || "");
       }
     } catch (err) {
       console.error("Error loading admin dashboard:", err);
@@ -79,17 +86,26 @@ export default function AdminDashboard() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ n8nWebhookUrl })
+        body: JSON.stringify({
+          n8nAnalyzeWebhook,
+          n8nRefineWebhook,
+          geminiApiKey,
+          openaiApiKey
+        })
       });
       
       if (res.ok) {
-        setSettingsSuccess("آدرس وب‌هوک دستیار هوش مصنوعی n8n با موفقیت به‌روزرسانی شد.");
+        setSettingsSuccess("تنظیمات مرکز کنترل هوش مصنوعی با موفقیت به‌روزرسانی شد.");
         const sortedRes = await fetch("/api/settings", {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (sortedRes.ok) {
           const updated = await sortedRes.json();
-          setN8nWebhookUrl(updated.settings?.n8nWebhookUrl || "");
+          const s = updated.settings || {};
+          setN8nAnalyzeWebhook(s.n8nAnalyzeWebhook || "");
+          setN8nRefineWebhook(s.n8nRefineWebhook || s.n8nWebhookUrl || "");
+          setGeminiApiKey(s.geminiApiKey || "");
+          setOpenaiApiKey(s.openaiApiKey || "");
         }
       } else {
         const errData = await res.json();
@@ -247,33 +263,100 @@ export default function AdminDashboard() {
       )}
 
       {/* AI integration Settings Panel */}
-      <div className="bg-white p-6 border border-slate-100 rounded-2xl shadow-sm text-right space-y-4">
+      <div className="bg-white p-6 border border-slate-100 rounded-2xl shadow-sm text-right space-y-6">
         <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
           <Settings className="w-5 h-5 text-[#6C47FF]" />
           <div>
-            <h3 className="text-sm font-bold text-slate-800">تنظیمات وب‌هوک دستیار هوش مصنوعی (n8n AI Agent)</h3>
-            <p className="text-[11px] text-slate-400">آدرس وب‌هوک n8n خود را برای فعال‌سازی ویژگی بهبود حرفه‌ای و تعاملی پرامپت‌ها تنظیم کنید</p>
+            <h3 className="text-sm font-bold text-slate-800">مرکز کنترل و تنظیمات هوش مصنوعی (AI Control Center)</h3>
+            <p className="text-[11px] text-slate-400">تنظیم مسیر وب‌هوک‌های هوش مصنوعی و کلیدهای دسترسی مستقیم جهت خودکارسازی و ارتقای پرامپت‌ها</p>
           </div>
         </div>
 
-        <form onSubmit={handleSaveSettings} className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-3 items-end">
-            <div className="flex-1 space-y-1.5 w-full">
-              <label htmlFor="n8n_url_input" className="text-xs font-bold text-slate-500 block">آدرس وب‌هوک فراخوانی n8n Webhook Url</label>
-              <input
-                id="n8n_url_input"
-                type="url"
-                dir="ltr"
-                value={n8nWebhookUrl}
-                onChange={(e) => setN8nWebhookUrl(e.target.value)}
-                placeholder="https://n8n.your-domain.com/webhook/..."
-                className="w-full text-slate-700 bg-slate-50 placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition font-mono"
-              />
+        <form onSubmit={handleSaveSettings} className="space-y-6">
+          {/* Section 1: Webhooks */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
+              🔗 مسیرهای Webhook (n8n) - اولویت اول سیستم
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label htmlFor="n8n_analyze_input" className="text-xs font-bold text-slate-500 block">
+                  آدرس وب‌هوک تحلیل چشمه (n8n Analyze)
+                </label>
+                <input
+                  id="n8n_analyze_input"
+                  type="url"
+                  dir="ltr"
+                  value={n8nAnalyzeWebhook}
+                  onChange={(e) => setN8nAnalyzeWebhook(e.target.value)}
+                  placeholder="https://n8n.your-domain.com/webhook/analyze"
+                  className="w-full text-slate-700 bg-slate-50 placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="n8n_refine_input" className="text-xs font-bold text-slate-500 block">
+                  آدرس وب‌هوک ارتقای پرامپت (n8n Refine)
+                </label>
+                <input
+                  id="n8n_refine_input"
+                  type="url"
+                  dir="ltr"
+                  value={n8nRefineWebhook}
+                  onChange={(e) => setN8nRefineWebhook(e.target.value)}
+                  placeholder="https://n8n.your-domain.com/webhook/refine"
+                  className="w-full text-slate-700 bg-slate-50 placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition font-mono"
+                />
+              </div>
             </div>
+          </div>
+
+          {/* Section 2: API Keys Fallback */}
+          <div className="space-y-3 pt-2 border-t border-slate-50">
+            <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
+              🔑 کلیدهای API مستقیم (Fallback) - در صورت در دسترس نبودن وب‌هوک
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label htmlFor="gemini_key_input" className="text-xs font-bold text-slate-500 block">
+                  کلید مستقیم Gemini API (Fallback)
+                </label>
+                <input
+                  id="gemini_key_input"
+                  type="password"
+                  dir="ltr"
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full text-slate-700 bg-slate-50 placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="openai_key_input" className="text-xs font-bold text-slate-500 block">
+                  کلید مستقیم OpenAI API (برای آینده)
+                </label>
+                <input
+                  id="openai_key_input"
+                  type="password"
+                  dir="ltr"
+                  value={openaiApiKey}
+                  onChange={(e) => setOpenaiApiKey(e.target.value)}
+                  placeholder="sk-..."
+                  className="w-full text-slate-700 bg-slate-50 placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <p className="text-[10px] text-slate-400">
+              💡 سیستم در بخش تحلیل ابتدا وب‌هوک را بررسی می‌کند؛ در صورت خالی بودن به عنوان جایگزین از کلید مستقیم Gemini استفاده می‌نماید.
+            </p>
             <button
               type="submit"
               disabled={settingsLoading}
-              className="w-full md:w-auto px-6 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition duration-200 cursor-pointer h-[42px]"
+              className="w-full sm:w-auto px-6 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition duration-200 cursor-pointer h-[42px]"
             >
               {settingsLoading ? (
                 <>
@@ -281,7 +364,7 @@ export default function AdminDashboard() {
                   <span>در حال ذخیره‌سازی...</span>
                 </>
               ) : (
-                <span>ذخیره تنظیمات شبکه ⚙️</span>
+                <span>ذخیره تنظیمات هوش مصنوعی ⚙️</span>
               )}
             </button>
           </div>

@@ -43,6 +43,10 @@ interface Prompt {
 
 interface DBSettings {
   n8nWebhookUrl: string;
+  n8nAnalyzeWebhook: string; // وبهوک مخصوص تحلیل چشمه
+  n8nRefineWebhook: string;  // وبهوک مخصوص ارتقا پرامپت
+  geminiApiKey: string;      // کلید مستقیم جمینای (Fallback)
+  openaiApiKey: string;      // کلید مستقیم اوپنای‌آی (برای آینده)
 }
 
 interface DB {
@@ -60,10 +64,41 @@ function readDB(): DB {
       const data = fs.readFileSync(DB_FILE, "utf-8");
       const parsed = JSON.parse(data) as any;
       
-      // Ensure settings exists
+      // Ensure settings exists and has all keys
       if (!parsed.settings) {
-        parsed.settings = { n8nWebhookUrl: "" };
+        parsed.settings = {
+          n8nWebhookUrl: "",
+          n8nAnalyzeWebhook: "",
+          n8nRefineWebhook: "",
+          geminiApiKey: "",
+          openaiApiKey: ""
+        };
         fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), "utf-8");
+      } else {
+        let changed = false;
+        if (parsed.settings.n8nWebhookUrl === undefined) {
+          parsed.settings.n8nWebhookUrl = "";
+          changed = true;
+        }
+        if (parsed.settings.n8nAnalyzeWebhook === undefined) {
+          parsed.settings.n8nAnalyzeWebhook = "";
+          changed = true;
+        }
+        if (parsed.settings.n8nRefineWebhook === undefined) {
+          parsed.settings.n8nRefineWebhook = "";
+          changed = true;
+        }
+        if (parsed.settings.geminiApiKey === undefined) {
+          parsed.settings.geminiApiKey = "";
+          changed = true;
+        }
+        if (parsed.settings.openaiApiKey === undefined) {
+          parsed.settings.openaiApiKey = "";
+          changed = true;
+        }
+        if (changed) {
+          fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), "utf-8");
+        }
       }
       
       return parsed as DB;
@@ -75,7 +110,11 @@ function readDB(): DB {
   // Fallback / Initial Seed Data
   const initialDB: DB = {
     settings: {
-      n8nWebhookUrl: ""
+      n8nWebhookUrl: "",
+      n8nAnalyzeWebhook: "",
+      n8nRefineWebhook: "",
+      geminiApiKey: "",
+      openaiApiKey: ""
     },
     categories: [
       { id: "1", name: "تبلیغات", slug: "advertising", icon: "Megaphone" },
@@ -470,15 +509,19 @@ async function startServer() {
   // API - Get Settings (admin only)
   app.get("/api/settings", adminAuth, (req, res) => {
     const db = readDB();
-    res.json({ settings: db.settings || { n8nWebhookUrl: "" } });
+    res.json({ settings: db.settings });
   });
 
   // API - Update Settings (admin only)
   app.post("/api/settings", adminAuth, (req, res) => {
-    const { n8nWebhookUrl } = req.body;
+    const { n8nAnalyzeWebhook, n8nRefineWebhook, geminiApiKey, openaiApiKey } = req.body;
     const db = readDB();
     db.settings = {
-      n8nWebhookUrl: n8nWebhookUrl || ""
+      n8nWebhookUrl: n8nRefineWebhook || "",
+      n8nAnalyzeWebhook: n8nAnalyzeWebhook || "",
+      n8nRefineWebhook: n8nRefineWebhook || "",
+      geminiApiKey: geminiApiKey || "",
+      openaiApiKey: openaiApiKey || ""
     };
     writeDB(db);
     res.json({ success: true, settings: db.settings });
@@ -488,34 +531,74 @@ async function startServer() {
   app.get("/api/settings/public", (req, res) => {
     const db = readDB();
     res.json({
-      isWebhookConfigured: !!(db.settings && db.settings.n8nWebhookUrl)
+      isWebhookConfigured: !!(db.settings && (db.settings.n8nRefineWebhook || db.settings.n8nWebhookUrl))
     });
   });
 
-  // API - Analyze Raw Prompt Source using Gemini
+  // API - Analyze Raw Prompt Source using n8n Webhook or Gemini API direct fallback
   app.post("/api/analyze-source", adminAuth, async (req, res) => {
     const { sourceText } = req.body;
     if (!sourceText) {
       return res.status(400).json({ success: false, message: "متن خام پرامپت ارسال نشده است." });
     }
 
+    const db = readDB();
+    const settings = db.settings;
+
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        return res.status(500).json({ success: false, message: "کلید API برای مدل هوش مصنوعی تعریف نشده است." });
-      }
-
-      const { GoogleGenAI, Type } = await import("@google/genai");
-      const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: {
+      if (settings?.n8nAnalyzeWebhook) {
+        // Send raw text to n8n Webhook
+        const response = await fetch(settings.n8nAnalyzeWebhook, {
+          method: "POST",
           headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            sourceText,
+            action: "analyze_source",
+            timestamp: new Date().toISOString()
+          })
+        });
 
-      const promptToModel = `Analyze the following raw prompt text and convert it into a structured, highly optimized JSON format according to these rules:
+        if (!response.ok) {
+          throw new Error(`خطا در ارتباط با سرویس n8n: وضعیت ${response.status}`);
+        }
+
+        const responseData = await response.json();
+        
+        // Parse n8n response (handling both direct object or array responses)
+        let structuredJSON = responseData;
+        if (Array.isArray(responseData) && responseData.length > 0) {
+          structuredJSON = responseData[0];
+        }
+        
+        // Some n8n nodes wrap the final JSON inside an "output" or "text" key.
+        if (structuredJSON.output && typeof structuredJSON.output === "object") {
+          structuredJSON = structuredJSON.output;
+        } else if (structuredJSON.output && typeof structuredJSON.output === "string") {
+           try { structuredJSON = JSON.parse(structuredJSON.output); } catch(e) {}
+        } else if (structuredJSON.text && typeof structuredJSON.text === "string") {
+           try { structuredJSON = JSON.parse(structuredJSON.text); } catch(e) {}
+        }
+
+        return res.json({
+          success: true,
+          data: structuredJSON
+        });
+
+      } else if (settings?.geminiApiKey) {
+        // Direct Gemini API fallback
+        const { GoogleGenAI, Type } = await import("@google/genai");
+        const ai = new GoogleGenAI({
+          apiKey: settings.geminiApiKey,
+          httpOptions: {
+            headers: {
+              'User-Agent': 'aistudio-build',
+            }
+          }
+        });
+
+        const promptToModel = `Analyze the following raw prompt text and convert it into a structured, highly optimized JSON format according to these rules:
 1. Translate or keep title, description, and UI field labels in Persian (فارسی).
 2. Identify variable parts in the prompt (e.g., product names, colors, sizes) and replace them with {{placeholder_key}}.
 3. For every {{placeholder_key}} generated, create a corresponding FieldSchema object to determine how the user will interact with it in the UI.
@@ -535,70 +618,79 @@ Raw Prompt Text to Analyze:
 ${sourceText}
 """`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: promptToModel,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              description: { type: Type.STRING },
-              intent: { type: Type.STRING },
-              domain: { type: Type.STRING },
-              tool: { type: Type.STRING },
-              task: { type: Type.STRING },
-              language: { type: Type.STRING },
-              difficulty: { type: Type.STRING },
-              outputFormat: { type: Type.STRING },
-              industry: { type: Type.STRING },
-              tags: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-              },
-              body: { type: Type.STRING },
-              fieldsSchema: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    key: { type: Type.STRING },
-                    label: { type: Type.STRING },
-                    type: { type: Type.STRING },
-                    placeholder: { type: Type.STRING },
-                    required: { type: Type.BOOLEAN },
-                    options: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING }
+        const response = await ai.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: promptToModel,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                description: { type: Type.STRING },
+                intent: { type: Type.STRING },
+                domain: { type: Type.STRING },
+                tool: { type: Type.STRING },
+                task: { type: Type.STRING },
+                language: { type: Type.STRING },
+                difficulty: { type: Type.STRING },
+                outputFormat: { type: Type.STRING },
+                industry: { type: Type.STRING },
+                tags: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING }
+                },
+                body: { type: Type.STRING },
+                fieldsSchema: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      key: { type: Type.STRING },
+                      label: { type: Type.STRING },
+                      type: { type: Type.STRING },
+                      placeholder: { type: Type.STRING },
+                      required: { type: Type.BOOLEAN },
+                      options: {
+                        type: Type.ARRAY,
+                        items: { type: Type.STRING }
+                      },
+                      min: { type: Type.INTEGER },
+                      max: { type: Type.INTEGER }
                     },
-                    min: { type: Type.INTEGER },
-                    max: { type: Type.INTEGER }
-                  },
-                  required: ["key", "label", "type"]
+                    required: ["key", "label", "type"]
+                  }
                 }
-              }
-            },
-            required: [
-              "title", "description", "intent", "domain", "tool", "task", 
-              "language", "difficulty", "outputFormat", "industry", 
-              "tags", "body", "fieldsSchema"
-            ]
+              },
+              required: [
+                "title", "description", "intent", "domain", "tool", "task", 
+                "language", "difficulty", "outputFormat", "industry", 
+                "tags", "body", "fieldsSchema"
+              ]
+            }
           }
-        }
-      });
+        });
 
-      const structuredJSON = JSON.parse(response.text || "{}");
-      return res.json({
-        success: true,
-        data: structuredJSON
-      });
+        const textResult = response.text || "{}";
+        const structuredJSON = JSON.parse(textResult.trim());
+
+        return res.json({
+          success: true,
+          data: structuredJSON
+        });
+
+      } else {
+        return res.status(400).json({ 
+          success: false, 
+          message: "تنظیمات هوش مصنوعی در داشبورد مقداردهی نشده است. لطفاً ابتدا وب‌هوک n8n یا کلید Gemini API را در بخش تنظیمات داشبورد وارد کنید." 
+        });
+      }
 
     } catch (err: any) {
       console.error("Source analysis failed:", err);
       return res.status(500).json({
         success: false,
-        message: "تجزیه و تحلیل پرامپت با خطا مواجه شد: " + err.message
+        message: "ارتباط با هوش مصنوعی یا تجزیه پرامپت با خطا مواجه شد: " + err.message
       });
     }
   });
@@ -611,7 +703,7 @@ ${sourceText}
     }
 
     const db = readDB();
-    const n8nUrl = db.settings?.n8nWebhookUrl;
+    const n8nUrl = db.settings?.n8nRefineWebhook || db.settings?.n8nWebhookUrl;
 
     // Increment usage count if tracked
     if (promptId) {

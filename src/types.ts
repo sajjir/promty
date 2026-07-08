@@ -48,3 +48,10 @@ export interface Stats {
   mostPopular: string;
 }
 
+export interface DBSettings {
+  n8nAnalyzeWebhook: string; // وبهوک مخصوص تحلیل چشمه
+  n8nRefineWebhook: string;  // وبهوک مخصوص ارتقا پرامپت
+  geminiApiKey: string;      // کلید مستقیم جمینای (Fallback)
+  openaiApiKey: string;      // کلید مستقیم اوپنای‌آی (برای آینده)
+}
+
