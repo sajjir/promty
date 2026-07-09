@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { Category, FieldSchema } from "../types";
 import PromptWizard from "../components/PromptWizard";
 import { ArrowRight, AlertTriangle, Sparkles, Code, Check, Loader2, Wand2 } from "lucide-react";
+import { INTENT_OPTIONS, DOMAIN_OPTIONS, TOOL_OPTIONS, LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS, OUTPUT_FORMAT_OPTIONS, INDUSTRY_OPTIONS } from "../lib/taxonomy";
 
 export default function AdminPromptAddEdit() {
   const { id } = useParams<{ id: string }>(); // If there is an ID, we are in Edit mode, otherwise Add mode.
@@ -16,12 +17,12 @@ export default function AdminPromptAddEdit() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("تبلیغات");
   const [intent, setIntent] = useState("Create");
-  const [domain, setDomain] = useState("Marketing");
-  const [tool, setTool] = useState("ChatGPT");
+  const [domains, setDomains] = useState<string[]>(["Marketing"]);
+  const [tools, setTools] = useState<string[]>(["ChatGPT"]);
   const [task, setTask] = useState("");
   const [language, setLanguage] = useState("Persian");
   const [difficulty, setDifficulty] = useState("Beginner");
-  const [outputFormat, setOutputFormat] = useState("Text");
+  const [outputFormats, setOutputFormats] = useState<string[]>(["Text"]);
   const [industry, setIndustry] = useState("Ecommerce");
   const [tagsInput, setTagsInput] = useState("");
   const [body, setBody] = useState("");
@@ -92,14 +93,14 @@ export default function AdminPromptAddEdit() {
             const p = data.prompt;
             setTitle(p.title);
             setDescription(p.description);
-            setCategory(p.category || p.tool || p.domain || "عمومی");
+            setCategory(p.category || (p.tools && p.tools[0]) || (p.domains && p.domains[0]) || p.tool || p.domain || "عمومی");
             setIntent(p.intent || "Create");
-            setDomain(p.domain || "Marketing");
-            setTool(p.tool || "ChatGPT");
+            setDomains(Array.isArray(p.domains) ? p.domains : (p.domain ? [p.domain] : ["Marketing"]));
+            setTools(Array.isArray(p.tools) ? p.tools : (p.tool ? [p.tool] : ["ChatGPT"]));
             setTask(p.task || "");
             setLanguage(p.language || "Persian");
             setDifficulty(p.difficulty || "Beginner");
-            setOutputFormat(p.outputFormat || "Text");
+            setOutputFormats(Array.isArray(p.outputFormats) ? p.outputFormats : (p.outputFormat ? [p.outputFormat] : ["Text"]));
             setIndustry(p.industry || "Ecommerce");
             setTagsInput(p.tags ? p.tags.join(", ") : "");
             setBody(p.body);
@@ -184,12 +185,12 @@ export default function AdminPromptAddEdit() {
         setTitle(parsed.title || "");
         setDescription(parsed.description || "");
         setIntent(parsed.intent || "Create");
-        setDomain(parsed.domain || "Marketing");
-        setTool(parsed.tool || "ChatGPT");
+        setDomains(Array.isArray(parsed.domains) ? parsed.domains : (parsed.domain ? [parsed.domain] : ["Marketing"]));
+        setTools(Array.isArray(parsed.tools) ? parsed.tools : (parsed.tool ? [parsed.tool] : ["ChatGPT"]));
         setTask(parsed.task || "");
         setLanguage(parsed.language || "Persian");
         setDifficulty(parsed.difficulty || "Beginner");
-        setOutputFormat(parsed.outputFormat || "Text");
+        setOutputFormats(Array.isArray(parsed.outputFormats) ? parsed.outputFormats : (parsed.outputFormat ? [parsed.outputFormat] : ["Text"]));
         setIndustry(parsed.industry || "Ecommerce");
         setTagsInput(parsed.tags ? parsed.tags.join(", ") : "");
         setBody(parsed.body || "");
@@ -228,14 +229,14 @@ export default function AdminPromptAddEdit() {
     const payload = {
       title,
       description,
-      category: tool || domain || category || "عمومی",
+      category: tools[0] || domains[0] || category || "عمومی",
       intent,
-      domain,
-      tool,
+      domains,
+      tools,
       task,
       language,
       difficulty,
-      outputFormat,
+      outputFormats,
       industry,
       tags,
       body,
@@ -422,37 +423,7 @@ export default function AdminPromptAddEdit() {
                 onChange={(e) => setIntent(e.target.value)}
                 className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
               >
-                {["Create", "Write", "Code", "Design", "Market", "Analyze", "Learn", "Automate", "Research", "Productivity"].map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Domain */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="prompt-domain" className="text-xs font-bold text-slate-600">حوزه اصلی (Domain) *</label>
-              <select
-                id="prompt-domain"
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
-                className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
-              >
-                {["Business", "Marketing", "Education", "Medical", "Health", "Legal", "Finance", "Programming", "Gaming", "Food", "Travel", "Architecture", "Photography", "Real Estate", "Sports", "AI", "Robotics", "Science", "Religion", "History"].map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Tool */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="prompt-tool" className="text-xs font-bold text-slate-600">ابزار هوش مصنوعی (Tool) *</label>
-              <select
-                id="prompt-tool"
-                value={tool}
-                onChange={(e) => setTool(e.target.value)}
-                className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
-              >
-                {["ChatGPT", "Claude", "Gemini", "Grok", "Midjourney", "Flux", "Stable Diffusion", "Ideogram", "Runway", "ElevenLabs", "Suno", "n8n AI Agent"].map((opt) => (
+                {INTENT_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
@@ -481,8 +452,9 @@ export default function AdminPromptAddEdit() {
                 onChange={(e) => setLanguage(e.target.value)}
                 className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
               >
-                <option value="Persian">Persian (فارسی)</option>
-                <option value="English">English (انگلیسی)</option>
+                {LANGUAGE_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt === "Persian" ? "Persian (فارسی)" : "English (انگلیسی)"}</option>
+                ))}
               </select>
             </div>
 
@@ -495,30 +467,14 @@ export default function AdminPromptAddEdit() {
                 onChange={(e) => setDifficulty(e.target.value)}
                 className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
               >
-                <option value="Beginner">Beginner (مبتدی)</option>
-                <option value="Intermediate">Intermediate (متوسط)</option>
-                <option value="Advanced">Advanced (پیشرفته)</option>
-                <option value="Expert">Expert (حرفه‌ای)</option>
-              </select>
-            </div>
-
-            {/* Output Format */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="prompt-output" className="text-xs font-bold text-slate-600">فرمت خروجی (Output Format) *</label>
-              <select
-                id="prompt-output"
-                value={outputFormat}
-                onChange={(e) => setOutputFormat(e.target.value)}
-                className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
-              >
-                {["Text", "Markdown", "JSON", "CSV", "HTML", "CSS", "JavaScript", "Python", "React", "TypeScript", "SQL", "XML", "PDF", "Table", "Checklist", "Roadmap", "Presentation"].map((opt) => (
+                {DIFFICULTY_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
             </div>
 
             {/* Industry */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 col-span-2">
               <label htmlFor="prompt-industry" className="text-xs font-bold text-slate-600">صنعت هدف (Industry) *</label>
               <select
                 id="prompt-industry"
@@ -526,10 +482,100 @@ export default function AdminPromptAddEdit() {
                 onChange={(e) => setIndustry(e.target.value)}
                 className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
               >
-                {["Ecommerce", "Startup", "Healthcare", "Education", "Restaurant", "Construction", "Law", "Bank", "Crypto", "Fashion", "Fitness", "Agriculture", "Tourism", "Insurance", "NGO"].map((opt) => (
+                {INDUSTRY_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
+            </div>
+
+            {/* Domain - Multi Select */}
+            <div className="flex flex-col gap-1.5 col-span-2">
+              <label className="text-xs font-bold text-slate-600">حوزه‌های مرتبط (Domain) * — چندانتخابی</label>
+              <div className="flex flex-wrap gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl max-h-32 overflow-y-auto">
+                {DOMAIN_OPTIONS.map((opt) => {
+                  const isSelected = domains.includes(opt);
+                  return (
+                    <label
+                      key={opt}
+                      className={`flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition ${
+                        isSelected
+                          ? "bg-[#6C47FF] text-white border-[#6C47FF]"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {
+                          setDomains(isSelected ? domains.filter((d) => d !== opt) : [...domains, opt]);
+                        }}
+                        className="sr-only"
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Tool - Multi Select */}
+            <div className="flex flex-col gap-1.5 col-span-2">
+              <label className="text-xs font-bold text-slate-600">ابزارهای هوش مصنوعی (Tool) * — چندانتخابی</label>
+              <div className="flex flex-wrap gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl max-h-32 overflow-y-auto">
+                {TOOL_OPTIONS.map((opt) => {
+                  const isSelected = tools.includes(opt);
+                  return (
+                    <label
+                      key={opt}
+                      className={`flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition ${
+                        isSelected
+                          ? "bg-[#6C47FF] text-white border-[#6C47FF]"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {
+                          setTools(isSelected ? tools.filter((t) => t !== opt) : [...tools, opt]);
+                        }}
+                        className="sr-only"
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Output Format - Multi Select */}
+            <div className="flex flex-col gap-1.5 col-span-2">
+              <label className="text-xs font-bold text-slate-600">فرمت‌های خروجی (Output Format) * — چندانتخابی</label>
+              <div className="flex flex-wrap gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl max-h-32 overflow-y-auto">
+                {OUTPUT_FORMAT_OPTIONS.map((opt) => {
+                  const isSelected = outputFormats.includes(opt);
+                  return (
+                    <label
+                      key={opt}
+                      className={`flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition ${
+                        isSelected
+                          ? "bg-[#6C47FF] text-white border-[#6C47FF]"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {
+                          setOutputFormats(isSelected ? outputFormats.filter((o) => o !== opt) : [...outputFormats, opt]);
+                        }}
+                        className="sr-only"
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

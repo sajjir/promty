@@ -16,7 +16,8 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 export default function PromptCard({ prompt }: PromptCardProps) {
-  const categoryLabel = prompt.tool || prompt.domain || prompt.intent || (prompt as any).category || "عمومی";
+  const categoryLabel = (prompt.tools && prompt.tools[0]) || (prompt.domains && prompt.domains[0]) || prompt.intent || (prompt as any).category || "عمومی";
+  const extraToolsCount = (prompt.tools?.length || 0) > 1 ? prompt.tools!.length - 1 : 0;
   const IconComponent = categoryIcons[categoryLabel] || Sparkles;
 
   return (
@@ -58,6 +59,9 @@ export default function PromptCard({ prompt }: PromptCardProps) {
           <div className="flex items-center gap-1.5 text-slate-500 text-xs">
             <IconComponent className="w-3.5 h-3.5 text-[#6C47FF]" />
             <span className="font-bold">{categoryLabel}</span>
+            {extraToolsCount > 0 && (
+              <span className="text-[9px] text-slate-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded">+{extraToolsCount}</span>
+            )}
           </div>
           {prompt.difficulty && (
             <span className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-50 rounded">
@@ -78,9 +82,9 @@ export default function PromptCard({ prompt }: PromptCardProps) {
 
         {/* Metadata Badges tag */}
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {prompt.outputFormat && (
+          {(prompt.outputFormats && prompt.outputFormats.length > 0) && (
             <span className="text-[10px] text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded">
-              خروجی: {prompt.outputFormat}
+              خروجی: {prompt.outputFormats.slice(0, 2).join('، ')}
             </span>
           )}
           {prompt.language && (

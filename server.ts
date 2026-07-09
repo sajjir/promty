@@ -3,6 +3,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
+import { TOOL_OPTIONS, DOMAIN_OPTIONS, OUTPUT_FORMAT_OPTIONS, INTENT_OPTIONS, LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS, INDUSTRY_OPTIONS, FIELD_TYPE_OPTIONS } from "./src/lib/taxonomy";
 
 interface FieldSchema {
   key: string;
@@ -24,12 +25,12 @@ interface Prompt {
   category?: string;
   // Metadata Layers
   intent?: string;
-  domain?: string;
-  tool?: string;
+  domains?: string[];
+  tools?: string[];
   task?: string;
   language?: string;
   difficulty?: string;
-  outputFormat?: string;
+  outputFormats?: string[];
   industry?: string;
   tags: string[];
   // Stats & Status
@@ -63,6 +64,7 @@ function readDB(): DB {
     if (fs.existsSync(DB_FILE)) {
       const data = fs.readFileSync(DB_FILE, "utf-8");
       const parsed = JSON.parse(data) as any;
+      let databaseChanged = false;
       
       // Ensure settings exists and has all keys
       if (!parsed.settings) {
@@ -73,32 +75,55 @@ function readDB(): DB {
           geminiApiKey: "",
           openaiApiKey: ""
         };
-        fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), "utf-8");
+        databaseChanged = true;
       } else {
-        let changed = false;
         if (parsed.settings.n8nWebhookUrl === undefined) {
           parsed.settings.n8nWebhookUrl = "";
-          changed = true;
+          databaseChanged = true;
         }
         if (parsed.settings.n8nAnalyzeWebhook === undefined) {
           parsed.settings.n8nAnalyzeWebhook = "";
-          changed = true;
+          databaseChanged = true;
         }
         if (parsed.settings.n8nRefineWebhook === undefined) {
           parsed.settings.n8nRefineWebhook = "";
-          changed = true;
+          databaseChanged = true;
         }
         if (parsed.settings.geminiApiKey === undefined) {
           parsed.settings.geminiApiKey = "";
-          changed = true;
+          databaseChanged = true;
         }
         if (parsed.settings.openaiApiKey === undefined) {
           parsed.settings.openaiApiKey = "";
-          changed = true;
+          databaseChanged = true;
         }
-        if (changed) {
-          fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), "utf-8");
-        }
+      }
+
+      // Soft-migrate legacy singular tool/domain/outputFormat fields to arrays
+      if (Array.isArray(parsed.prompts)) {
+        parsed.prompts = parsed.prompts.map((p: any) => {
+          let promptChanged = false;
+          if (!Array.isArray(p.tools)) {
+            p.tools = p.tool ? [p.tool] : [];
+            promptChanged = true;
+          }
+          if (!Array.isArray(p.domains)) {
+            p.domains = p.domain ? [p.domain] : [];
+            promptChanged = true;
+          }
+          if (!Array.isArray(p.outputFormats)) {
+            p.outputFormats = p.outputFormat ? [p.outputFormat] : [];
+            promptChanged = true;
+          }
+          if (promptChanged) {
+            databaseChanged = true;
+          }
+          return p;
+        });
+      }
+
+      if (databaseChanged) {
+        fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), "utf-8");
       }
       
       return parsed as DB;
@@ -130,12 +155,12 @@ function readDB(): DB {
         body: "یک عکس تبلیغاتی حرفه‌ای از {{product_name}} بساز. رنگ غالب {{brand_color}}. پس‌زمینه سفید خالص. نور استودیویی. کیفیت 4K. در پایین بنویس: {{ad_text}}",
         category: "Midjourney",
         intent: "Design",
-        domain: "Photography",
-        tool: "Midjourney",
+        domains: ["Photography"],
+        tools: ["Midjourney"],
         task: "Product Commercial Portrait",
         language: "Persian",
         difficulty: "Beginner",
-        outputFormat: "Presentation",
+        outputFormats: ["Presentation"],
         industry: "Ecommerce",
         tags: ["جواهرات", "تبلیغات", "Midjourney", "طلا"],
         sampleImage: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=600",
@@ -174,12 +199,12 @@ function readDB(): DB {
         body: "یک لندینگ پیج حرفه‌ای با React و Tailwind CSS برای کسب‌وکار {{business_name}} در حوزه {{business_field}} بساز. رنگ اصلی برند {{brand_color}}. لحن: {{tone}}. شامل: هدر، hero section، بخش خدمات، و فوتر.",
         category: "ChatGPT",
         intent: "Code",
-        domain: "Programming",
-        tool: "ChatGPT",
+        domains: ["Programming"],
+        tools: ["ChatGPT"],
         task: "React Component Coding",
         language: "English",
         difficulty: "Intermediate",
-        outputFormat: "React",
+        outputFormats: ["React"],
         industry: "Startup",
         tags: ["برنامه‌نویسی", "کد", "React", "Tailwind"],
         sampleImage: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=600",
@@ -226,12 +251,12 @@ function readDB(): DB {
         body: "یک تیزر ویدیویی ۱۵ ثانیه‌ای برای {{product_name}} بساز. سبک: {{style}}. موزیک: {{music_mood}}. متن روی صفحه: {{tagline}}",
         category: "Runway",
         intent: "Create",
-        domain: "Marketing",
-        tool: "Runway",
+        domains: ["Marketing"],
+        tools: ["Runway"],
         task: "Video Teaser Creation",
         language: "Persian",
         difficulty: "Advanced",
-        outputFormat: "Markdown",
+        outputFormats: ["Markdown"],
         industry: "Restaurant",
         tags: ["تیزر", "ویدیو", "Kling", "Sora", "اینستاگرام"],
         sampleImage: "https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&q=80&w=600",
@@ -386,12 +411,12 @@ async function startServer() {
       fieldsSchema, 
       category, 
       intent, 
-      domain, 
-      tool, 
+      domains, 
+      tools, 
       task, 
       language, 
       difficulty, 
-      outputFormat, 
+      outputFormats, 
       industry, 
       tags, 
       isPremium, 
@@ -410,14 +435,14 @@ async function startServer() {
       description: description || "",
       body,
       fieldsSchema: fieldsSchema || [],
-      category: category || tool || domain || "عمومی",
+      category: category || (tools && tools[0]) || (domains && domains[0]) || "عمومی",
       intent: intent || "",
-      domain: domain || "",
-      tool: tool || "",
+      domains: domains || [],
+      tools: tools || [],
       task: task || "",
       language: language || "Persian",
       difficulty: difficulty || "Beginner",
-      outputFormat: outputFormat || "Text",
+      outputFormats: outputFormats || [],
       industry: industry || "",
       tags: tags || [],
       sampleImage: sampleImage || "",
@@ -444,12 +469,12 @@ async function startServer() {
       fieldsSchema, 
       category, 
       intent, 
-      domain, 
-      tool, 
+      domains, 
+      tools, 
       task, 
       language, 
       difficulty, 
-      outputFormat, 
+      outputFormats, 
       industry, 
       tags, 
       isPremium, 
@@ -470,14 +495,14 @@ async function startServer() {
       description: description !== undefined ? description : db.prompts[index].description,
       body: body !== undefined ? body : db.prompts[index].body,
       fieldsSchema: fieldsSchema !== undefined ? fieldsSchema : db.prompts[index].fieldsSchema,
-      category: category !== undefined ? category : (db.prompts[index].category || tool || domain || "عمومی"),
+      category: category !== undefined ? category : (db.prompts[index].category || (tools && tools[0]) || (domains && domains[0]) || "عمومی"),
       intent: intent !== undefined ? intent : db.prompts[index].intent,
-      domain: domain !== undefined ? domain : db.prompts[index].domain,
-      tool: tool !== undefined ? tool : db.prompts[index].tool,
+      domains: domains !== undefined ? domains : db.prompts[index].domains,
+      tools: tools !== undefined ? tools : db.prompts[index].tools,
       task: task !== undefined ? task : db.prompts[index].task,
       language: language !== undefined ? language : db.prompts[index].language,
       difficulty: difficulty !== undefined ? difficulty : db.prompts[index].difficulty,
-      outputFormat: outputFormat !== undefined ? outputFormat : db.prompts[index].outputFormat,
+      outputFormats: outputFormats !== undefined ? outputFormats : db.prompts[index].outputFormats,
       industry: industry !== undefined ? industry : db.prompts[index].industry,
       tags: tags !== undefined ? tags : db.prompts[index].tags,
       sampleImage: sampleImage !== undefined ? sampleImage : db.prompts[index].sampleImage,
@@ -583,6 +608,19 @@ async function startServer() {
            try { structuredJSON = JSON.parse(structuredJSON.text); } catch(e) {}
         }
 
+        // Soft-normalize in case the n8n agent still returns legacy singular fields
+        if (structuredJSON && typeof structuredJSON === "object") {
+          if (!Array.isArray(structuredJSON.tools) && structuredJSON.tool) {
+            structuredJSON.tools = [structuredJSON.tool];
+          }
+          if (!Array.isArray(structuredJSON.domains) && structuredJSON.domain) {
+            structuredJSON.domains = [structuredJSON.domain];
+          }
+          if (!Array.isArray(structuredJSON.outputFormats) && structuredJSON.outputFormat) {
+            structuredJSON.outputFormats = [structuredJSON.outputFormat];
+          }
+        }
+
         return res.json({
           success: true,
           data: structuredJSON
@@ -602,17 +640,17 @@ async function startServer() {
 
         const promptToModel = `Analyze the following raw prompt text and convert it into a structured, highly optimized JSON format according to these rules:
 1. Translate or keep title, description, and UI field labels in Persian (فارسی).
-2. Identify variable parts in the prompt (e.g., product names, colors, sizes) and replace them with {{placeholder_key}}.
+2. Identify variable parts in the prompt (e.g., product names, colors, sizes) and replace them with {{placeholder_key}}. Placeholder keys MUST be lowercase ASCII snake_case (letters, digits, underscore only — matching regex ^[a-z][a-z0-9_]*$), because the rendering engine only recognizes \\w+ inside {{...}}.
 3. For every {{placeholder_key}} generated, create a corresponding FieldSchema object to determine how the user will interact with it in the UI.
-4. UI Field Types allowed: 'text', 'textarea', 'color', 'select', 'radio', 'switch', 'slider', 'multiselect', 'url'. If select/radio/multiselect is chosen, you must supply options in Persian/English. If slider is chosen, specify min and max.
-5. Strictly categorize the prompt into one of the following metadata options if possible:
-   - intent: Create, Write, Code, Design, Market, Analyze, Learn, Automate, Research, Productivity
-   - domain: Business, Marketing, Education, Medical, Health, Legal, Finance, Programming, Gaming, Food, Travel, Architecture, Photography, Real Estate, Sports, AI, Robotics, Science, Religion, History
-   - tool: ChatGPT, Claude, Gemini, Grok, Midjourney, Flux, Stable Diffusion, Ideogram, Veo, Runway, ElevenLabs, Suno, n8n AI Agent
-   - language: Persian, English
-   - difficulty: Beginner, Intermediate, Advanced, Expert
-   - outputFormat: Text, Markdown, JSON, CSV, HTML, CSS, JavaScript, Python, React, TypeScript, SQL, XML, PDF, Table, Checklist, Roadmap, Presentation
-   - industry: Ecommerce, Startup, Healthcare, Education, Restaurant, Construction, Law, Bank, Crypto, Fashion, Fitness, Agriculture, Tourism, Insurance, NGO
+4. UI Field Types allowed: ${FIELD_TYPE_OPTIONS.join(", ")}. If select/radio/multiselect is chosen, you must supply options in Persian. If slider is chosen, specify min and max.
+5. Categorize the prompt using ONLY the following metadata options (do not invent new values):
+   - intent (choose exactly one): ${INTENT_OPTIONS.join(", ")}
+   - domains (choose ALL that genuinely apply, usually 1-3): ${DOMAIN_OPTIONS.join(", ")}
+   - tools (choose ALL AI tools this exact prompt would realistically work well with, usually 1-3 — do not include a tool just because it's loosely related): ${TOOL_OPTIONS.join(", ")}
+   - language (choose exactly one): ${LANGUAGE_OPTIONS.join(", ")}
+   - difficulty (choose exactly one): ${DIFFICULTY_OPTIONS.join(", ")}
+   - outputFormats (choose ALL that genuinely apply, usually 1-2): ${OUTPUT_FORMAT_OPTIONS.join(", ")}
+   - industry (choose exactly one, or leave empty if not industry-specific): ${INDUSTRY_OPTIONS.join(", ")}
 6. Set the final optimized body with {{placeholders}} inside.
 
 Raw Prompt Text to Analyze:
@@ -621,7 +659,7 @@ ${sourceText}
 """`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-1.5-flash", // BUG FIXED HERE
+          model: "gemini-1.5-flash",
           contents: promptToModel,
           config: {
             responseMimeType: "application/json",
@@ -630,14 +668,14 @@ ${sourceText}
               properties: {
                 title: { type: Type.STRING },
                 description: { type: Type.STRING },
-                intent: { type: Type.STRING },
-                domain: { type: Type.STRING },
-                tool: { type: Type.STRING },
+                intent: { type: Type.STRING, enum: [...INTENT_OPTIONS] },
+                domains: { type: Type.ARRAY, items: { type: Type.STRING, enum: [...DOMAIN_OPTIONS] } },
+                tools: { type: Type.ARRAY, items: { type: Type.STRING, enum: [...TOOL_OPTIONS] } },
                 task: { type: Type.STRING },
-                language: { type: Type.STRING },
-                difficulty: { type: Type.STRING },
-                outputFormat: { type: Type.STRING },
-                industry: { type: Type.STRING },
+                language: { type: Type.STRING, enum: [...LANGUAGE_OPTIONS] },
+                difficulty: { type: Type.STRING, enum: [...DIFFICULTY_OPTIONS] },
+                outputFormats: { type: Type.ARRAY, items: { type: Type.STRING, enum: [...OUTPUT_FORMAT_OPTIONS] } },
+                industry: { type: Type.STRING, enum: [...INDUSTRY_OPTIONS] },
                 tags: { type: Type.ARRAY, items: { type: Type.STRING } },
                 body: { type: Type.STRING },
                 fieldsSchema: {
@@ -647,7 +685,7 @@ ${sourceText}
                     properties: {
                       key: { type: Type.STRING },
                       label: { type: Type.STRING },
-                      type: { type: Type.STRING },
+                      type: { type: Type.STRING, enum: [...FIELD_TYPE_OPTIONS] },
                       placeholder: { type: Type.STRING },
                       required: { type: Type.BOOLEAN },
                       options: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -658,7 +696,7 @@ ${sourceText}
                   }
                 }
               },
-              required: ["title", "description", "intent", "domain", "tool", "task", "language", "difficulty", "outputFormat", "industry", "tags", "body", "fieldsSchema"]
+              required: ["title", "description", "intent", "domains", "tools", "task", "language", "difficulty", "outputFormats", "industry", "tags", "body", "fieldsSchema"]
             }
           }
         });

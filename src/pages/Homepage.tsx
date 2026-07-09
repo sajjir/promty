@@ -43,17 +43,22 @@ export default function Homepage() {
   // Filter prompts by selected category and search query
   const filteredPrompts = prompts.filter((p) => {
     const matchesCategory = selectedCategory
-      ? (p.domain === selectedCategory || p.tool === selectedCategory || p.intent === selectedCategory || (p as any).category === selectedCategory)
+      ? (
+          (p.domains || []).includes(selectedCategory) ||
+          (p.tools || []).includes(selectedCategory) ||
+          p.intent === selectedCategory ||
+          (p as any).category === selectedCategory
+        )
       : true;
     const matchesSearch = searchQuery
       ? p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (p.intent && p.intent.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (p.domain && p.domain.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (p.tool && p.tool.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (p.domains || []).some(d => d.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (p.tools || []).some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (p.task && p.task.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (p.outputFormat && p.outputFormat.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (p.outputFormats || []).some(o => o.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (p.industry && p.industry.toLowerCase().includes(searchQuery.toLowerCase()))
       : true;
     return matchesCategory && matchesSearch;
