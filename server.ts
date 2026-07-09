@@ -464,6 +464,167 @@ async function startServer() {
     res.status(201).json({ success: true, prompt: newPrompt });
   });
 
+  // API - Submit Prompt publicly (non-admin contribution)
+  app.post("/api/prompts/submit", (req, res) => {
+    const { 
+      title, 
+      description, 
+      body, 
+      category, 
+      tools, 
+      domains, 
+      language, 
+      difficulty, 
+      tags,
+      fieldsSchema
+    } = req.body;
+    
+    if (!title || !body) {
+      return res.status(400).json({ success: false, message: "عنوان و متن پرامپت الزامی هستند." });
+    }
+
+    const db = readDB();
+    const newPrompt: Prompt = {
+      id: "p_contrib_" + Date.now(),
+      title,
+      description: description || "",
+      body,
+      fieldsSchema: fieldsSchema || [],
+      category: category || (tools && tools[0]) || (domains && domains[0]) || "عمومی",
+      intent: "Create",
+      domains: domains || [],
+      tools: tools || [],
+      task: "",
+      language: language || "Persian",
+      difficulty: difficulty || "Beginner",
+      outputFormats: [],
+      industry: "",
+      tags: tags || [],
+      sampleImage: "",
+      isPremium: false,
+      isActive: false, // Must be approved by admin
+      usageCount: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    db.prompts.push(newPrompt);
+    writeDB(db);
+
+    res.status(201).json({ success: true, message: "پرامپت شما با موفقیت ثبت شد و پس از تایید مدیر منتشر خواهد شد.", prompt: newPrompt });
+  });
+
+  // API - Public endpoint to analyze raw prompt source (Submission Assistance)
+  app.post("/api/prompts/analyze-public", async (req, res) => {
+    const { body } = req.body;
+    if (!body) {
+      return res.status(400).json({ success: false, message: "متن پرامپت ارسال نشده است." });
+    }
+
+    const db = readDB();
+    const settings = db.settings;
+    const geminiKey = (settings?.geminiApiKey || "").trim();
+
+    try {
+      if (geminiKey.length > 0) {
+        // We have a Gemini API key! Let's use Gemini to parse it.
+        const { GoogleGenAI, Type } = await import("@google/genai");
+        const ai = new GoogleGenAI({
+          apiKey: geminiKey,
+          httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+        });
+
+        const promptToModel = `Analyze the following raw prompt text and convert it into a structured JSON for public contribution. 
+        Return fields in Persian (فارسی). 
+        Determine appropriate fields:
+        1. title: A short concise Persian title (3-5 words).
+        2. description: A helpful 1-sentence Persian description guiding the user.
+        3. tool: Primary AI tool (choose exactly one of: ChatGPT, Claude, Gemini, Grok, Midjourney, Flux, Stable Diffusion).
+        4. domain: Primary domain (choose exactly one of: Business, Marketing, Education, Health, Programming, Design, AI, Travel).
+        5. difficulty: (choose exactly one of: Beginner, Intermediate, Advanced, Expert).
+        6. tags: Array of 3-5 keywords.
+
+        Raw Prompt Text:
+        """
+        ${body}
+        """`;
+
+        const response = await ai.models.generateContent({
+          model: "gemini-1.5-flash",
+          contents: promptToModel,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                description: { type: Type.STRING },
+                tool: { type: Type.STRING, enum: ["ChatGPT", "Claude", "Gemini", "Grok", "Midjourney", "Flux", "Stable Diffusion"] },
+                domain: { type: Type.STRING, enum: ["Business", "Marketing", "Education", "Health", "Programming", "Design", "AI", "Travel"] },
+                difficulty: { type: Type.STRING, enum: ["Beginner", "Intermediate", "Advanced", "Expert"] },
+                tags: { type: Type.ARRAY, items: { type: Type.STRING } }
+              },
+              required: ["title", "description", "tool", "domain", "difficulty", "tags"]
+            }
+          }
+        });
+
+        const textResult = response.text || "{}";
+        const structured = JSON.parse(textResult.trim());
+        return res.json({ success: true, data: structured });
+      }
+    } catch (err) {
+      console.warn("Gemini public analysis failed, falling back to heuristics:", err);
+    }
+
+    // Heuristics fallback: extremely fast, zero-delay, zero-error
+    const text = body.toLowerCase();
+    let tool = "ChatGPT";
+    let domain = "Marketing";
+    let difficulty = "Beginner";
+    let tags = ["هوش_مصنوعی", "پرامپت"];
+    let title = "پرامپت هوشمند کاربردی";
+    let description = "پرامپت شخصی‌سازی شده برای تسریع در روند کاری روزمره.";
+
+    if (text.includes("midjourney") || text.includes("mj ") || text.includes("--ar") || text.includes("photograph")) {
+      tool = "Midjourney";
+      domain = "Design";
+      tags = ["طراحی", "تصویرسازی", "هنر", "midjourney"];
+      title = "خلق تصویر هنری مینی‌مال";
+      description = "تولید تصاویر خلاقانه هنری و عکاسی حرفه‌ای با تنظیمات پیشرفته.";
+    } else if (text.includes("flux") || text.includes("fole")) {
+      tool = "Flux";
+      domain = "Design";
+      tags = ["طراحی", "flux", "تصویرساز"];
+      title = "تصویرسازی با کیفیت بالا با Flux";
+      description = "تولید تصاویر با نورپردازی فوق‌العاده و وضوح بالا با هوش مصنوعی Flux.";
+    } else if (text.includes("code") || text.includes("react") || text.includes("typescript") || text.includes("python") || text.includes("function")) {
+      tool = "ChatGPT";
+      domain = "Programming";
+      difficulty = "Intermediate";
+      tags = ["برنامه‌نویسی", "توسعه_وب", "کدنویسی"];
+      title = "کدنویسی هوشمند و حل مسئله";
+      description = "بهینه‌سازی کدها و ایجاد توابع تمیز به صورت گام‌به‌گام.";
+    } else if (text.includes("seo") || text.includes("marketing") || text.includes("تبلیغ") || text.includes("مشتری")) {
+      tool = "Claude";
+      domain = "Marketing";
+      tags = ["بازاریابی", "سئو", "دیجیتال_مارکتینگ"];
+      title = "استراتژی بازاریابی و تولید سرنخ";
+      description = "کمپین‌نویسی و سناریوپردازی تبلیغاتی منطبق با ترندهای روز.";
+    }
+
+    // Try to extract some title from first line
+    const lines = body.split("\n").map(l => l.trim()).filter(Boolean);
+    if (lines.length > 0 && lines[0].length < 50 && lines[0].length > 5) {
+      title = lines[0].replace(/[#*`[\]]/g, "").trim();
+    }
+
+    res.json({
+      success: true,
+      data: { title, description, tool, domain, difficulty, tags }
+    });
+  });
+
   // API - Update Prompt (admin only)
   app.put("/api/prompts/:id", adminAuth, (req, res) => {
     const { id } = req.params;

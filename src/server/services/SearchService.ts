@@ -59,60 +59,118 @@ export class SearchService {
       };
     }
 
+    const SYNONYM_MAP: Record<string, string[]> = {
+      "midjourney": ["میدجرنی", "میدجرینی", "تصویرساز", "عکس", "نقاشی", "midjourney", "mj"],
+      "chatgpt": ["چت جی پی تی", "چت‌جی‌پی‌تی", "جی پی تی", "gpt", "chatgpt"],
+      "claude": ["کلود", "کلاود", "claude"],
+      "gemini": ["جمینای", "جمینی", "gemini"],
+      "flux": ["فلاکس", "فلوکس", "flux"],
+      "suno": ["سونو", "موزیک", "آهنگ", "suno"],
+      "elevenlabs": ["الون لبز", "الون‌لبز", "صدا", "گویندگی", "elevenlabs"]
+    };
+
     const matchedToolsSet = new Set<string>();
     const matchedDomainsSet = new Set<string>();
     const matchedTagsSet = new Set<string>();
     const matchedTasksSet = new Set<string>();
     const suggestionsSet = new Set<string>();
 
-    const matches = prompts.filter((p) => {
+    // Split query into keywords
+    const keywords = normalizedQuery.split(/\s+/).filter(k => k.length > 1);
+
+    // If query is very short, just use it as single keyword
+    if (keywords.length === 0 && normalizedQuery.length > 0) {
+      keywords.push(normalizedQuery);
+    }
+
+    const scoredPrompts = prompts.map((p) => {
       const normalizedTitle = this.normalizeText(p.title);
       const normalizedDesc = this.normalizeText(p.description);
       const normalizedTask = this.normalizeText(p.task || "");
       
-      // Checking title/desc match
-      const isTitleMatch = normalizedTitle.includes(normalizedQuery);
-      const isDescMatch = normalizedDesc.includes(normalizedQuery);
-      const isTaskMatch = normalizedTask.includes(normalizedQuery);
+      let score = 0;
+      let matchedAnyKeyword = false;
 
-      if (isTitleMatch) suggestionsSet.add(p.title);
-
-      // Checking tag match
-      let isTagMatch = false;
-      p.tags.forEach((tag) => {
-        const normalizedTag = this.normalizeText(tag);
-        if (normalizedTag.includes(normalizedQuery) || normalizedQuery.includes(normalizedTag)) {
-          isTagMatch = true;
-          matchedTagsSet.add(tag);
-        }
-      });
-
-      // Checking tool match
-      let isToolMatch = false;
-      (p.tools || []).forEach((tool) => {
-        const normalizedTool = this.normalizeText(tool);
-        if (normalizedTool.includes(normalizedQuery) || normalizedQuery.includes(normalizedTool)) {
-          isToolMatch = true;
-          matchedToolsSet.add(tool);
-        }
-      });
-
-      // Checking domain match
-      let isDomainMatch = false;
-      (p.domains || []).forEach((domain) => {
-        const normalizedDomain = this.normalizeText(domain);
-        if (normalizedDomain.includes(normalizedQuery) || normalizedQuery.includes(normalizedDomain)) {
-          isDomainMatch = true;
-          matchedDomainsSet.add(domain);
-        }
-      });
-
-      if (p.task && isTaskMatch) {
-        matchedTasksSet.add(p.task);
+      // 1. Check exact phrase match (high priority bonus)
+      if (normalizedTitle.includes(normalizedQuery)) {
+        score += 30;
+        matchedAnyKeyword = true;
+        suggestionsSet.add(p.title);
+      }
+      if (normalizedDesc.includes(normalizedQuery)) {
+        score += 15;
+        matchedAnyKeyword = true;
       }
 
-      return isTitleMatch || isDescMatch || isTaskMatch || isTagMatch || isToolMatch || isDomainMatch;
+      // 2. Keyword-based matching
+      keywords.forEach((keyword) => {
+        let keywordMatched = false;
+
+        // Check title match
+        if (normalizedTitle.includes(keyword)) {
+          score += 10;
+          keywordMatched = true;
+        }
+
+        // Check description match
+        if (normalizedDesc.includes(keyword)) {
+          score += 3;
+          keywordMatched = true;
+        }
+
+        // Check task match
+        if (normalizedTask.includes(keyword)) {
+          score += 5;
+          keywordMatched = true;
+          if (p.task) matchedTasksSet.add(p.task);
+        }
+
+        // Check tag match
+        p.tags.forEach((tag) => {
+          const normalizedTag = this.normalizeText(tag);
+          if (normalizedTag.includes(keyword) || keyword.includes(normalizedTag)) {
+            score += 5;
+            keywordMatched = true;
+            matchedTagsSet.add(tag);
+          }
+        });
+
+        // Check tool matches (including synonym mapping)
+        (p.tools || []).forEach((tool) => {
+          const normalizedTool = this.normalizeText(tool);
+          const synonyms = SYNONYM_MAP[normalizedTool.toLowerCase()] || [];
+          const isToolSynonymMatch = synonyms.some(syn => syn.includes(keyword) || keyword.includes(syn));
+
+          if (normalizedTool.includes(keyword) || keyword.includes(normalizedTool) || isToolSynonymMatch) {
+            score += 8;
+            keywordMatched = true;
+            matchedToolsSet.add(tool);
+          }
+        });
+
+        // Check domain matches
+        (p.domains || []).forEach((domain) => {
+          const normalizedDomain = this.normalizeText(domain);
+          if (normalizedDomain.includes(keyword) || keyword.includes(normalizedDomain)) {
+            score += 6;
+            keywordMatched = true;
+            matchedDomainsSet.add(domain);
+          }
+        });
+
+        if (keywordMatched) {
+          matchedAnyKeyword = true;
+        }
+      });
+
+      return { prompt: p, score, matched: matchedAnyKeyword };
     });
+
+    // Filter prompts that have a positive match score and sort by score descending
+    const filteredAndSorted = scoredPrompts
+      .filter((sp) => sp.matched && sp.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((sp) => sp.prompt);
 
     // Populate dynamic autocomplete suggestions
     if (suggestionsSet.size < 5) {
@@ -125,7 +183,7 @@ export class SearchService {
     }
 
     return {
-      prompts: matches,
+      prompts: filteredAndSorted,
       matchedTools: Array.from(matchedToolsSet),
       matchedDomains: Array.from(matchedDomainsSet),
       matchedTags: Array.from(matchedTagsSet),

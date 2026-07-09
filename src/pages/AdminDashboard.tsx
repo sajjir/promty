@@ -563,7 +563,16 @@ export default function AdminDashboard() {
                     <tbody className="divide-y divide-slate-100">
                       {prompts.map((p) => (
                         <tr key={p.id} className="hover:bg-slate-50 transition duration-150">
-                          <td className="px-6 py-4 font-bold text-slate-800 max-w-xs truncate">{p.title}</td>
+                          <td className="px-6 py-4 font-bold text-slate-800 max-w-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate max-w-[200px]">{p.title}</span>
+                              {p.id.startsWith("p_contrib_") && !p.isActive && (
+                                <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-200 animate-pulse shrink-0">
+                                  مشارکت در انتظار تایید 📬
+                                </span>
+                              )}
+                            </div>
+                          </td>
                           <td className="px-6 py-4 text-xs font-semibold text-slate-500">
                             {(p.tools && p.tools.length > 0 ? p.tools.join("، ") : null) || (p.domains && p.domains.length > 0 ? p.domains.join("، ") : null) || (p as any).category || "عمومی"}
                           </td>

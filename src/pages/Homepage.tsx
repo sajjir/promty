@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Prompt } from "../types";
 import PromptCard from "../components/PromptCard";
 import { 
   Search, Megaphone, Globe, Video, Camera, Sparkles, 
   SlidersHorizontal, Loader2, X, Clock, Tag, Check, 
   Compass, Cpu, ChevronDown, ListFilter, RotateCcw, 
-  Sparkle, AlertCircle, HelpCircle, ArrowLeft
+  Sparkle, AlertCircle, HelpCircle, ArrowLeft, Plus, CheckCircle2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -78,6 +78,7 @@ const TRANSLATIONS: Record<string, string> = {
 };
 
 export default function Homepage() {
+  const navigate = useNavigate();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -95,6 +96,134 @@ export default function Homepage() {
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+
+  // Community Submission Modal states
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [subTitle, setSubTitle] = useState("");
+  const [subDesc, setSubDesc] = useState("");
+  const [subBody, setSubBody] = useState("");
+  const [subTool, setSubTool] = useState("ChatGPT");
+  const [subDomain, setSubDomain] = useState("Marketing");
+  const [subLang, setSubLang] = useState("Persian");
+  const [subDifficulty, setSubDifficulty] = useState("Beginner");
+  const [subTags, setSubTags] = useState("");
+
+  const [isAnalyzingPublic, setIsAnalyzingPublic] = useState(false);
+  const [analyzePublicError, setAnalyzePublicError] = useState("");
+
+  // Keyboard navigation inside Suggestions Overlay
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const navigablePrompts = searchResults ? searchResults.prompts.slice(0, 5) : [];
+    if (!showSuggestions) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (navigablePrompts.length > 0) {
+        setActiveSuggestionIndex((prev) => 
+          prev < navigablePrompts.length - 1 ? prev + 1 : 0
+        );
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (navigablePrompts.length > 0) {
+        setActiveSuggestionIndex((prev) => 
+          prev > 0 ? prev - 1 : navigablePrompts.length - 1
+        );
+      }
+    } else if (e.key === "Enter") {
+      if (activeSuggestionIndex >= 0 && activeSuggestionIndex < navigablePrompts.length) {
+        e.preventDefault();
+        const selectedPrompt = navigablePrompts[activeSuggestionIndex];
+        navigate(`/prompts/${selectedPrompt.id}`);
+        setShowSuggestions(false);
+      }
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+    }
+  };
+
+  useEffect(() => {
+    setActiveSuggestionIndex(-1);
+  }, [searchQuery]);
+
+  // Autofill fields using intelligent backend metadata recommendation
+  const handleAutoAnalyzePublic = async () => {
+    if (!subBody.trim()) {
+      setAnalyzePublicError("لطفاً ابتدا متن پرامپت را وارد کنید.");
+      return;
+    }
+    setAnalyzePublicError("");
+    try {
+      setIsAnalyzingPublic(true);
+      const res = await fetch("/api/prompts/analyze-public", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ body: subBody })
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        const d = data.data;
+        if (d.title) setSubTitle(d.title);
+        if (d.description) setSubDesc(d.description);
+        if (d.tool) setSubTool(d.tool);
+        if (d.domain) setSubDomain(d.domain);
+        if (d.difficulty) setSubDifficulty(d.difficulty);
+        if (d.tags && Array.isArray(d.tags)) {
+          setSubTags(d.tags.join(", "));
+        }
+      } else {
+        setAnalyzePublicError("امکان تحلیل هوشمند وجود نداشت. لطفاً فیلدها را دستی پر کنید.");
+      }
+    } catch (err: any) {
+      setAnalyzePublicError("خطا در ارتباط با سرور تحلیل هوشمند.");
+    } finally {
+      setIsAnalyzingPublic(false);
+    }
+  };
+
+  const handleContributionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subTitle.trim() || !subBody.trim()) return;
+
+    try {
+      setSubmitting(true);
+      const res = await fetch("/api/prompts/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          title: subTitle,
+          description: subDesc,
+          body: subBody,
+          tools: [subTool],
+          domains: [subDomain],
+          language: subLang,
+          difficulty: subDifficulty,
+          tags: subTags.split(",").map(t => t.trim()).filter(Boolean),
+          category: subTool
+        })
+      });
+
+      if (res.ok) {
+        setSubmitSuccess(true);
+        // Clear form
+        setSubTitle("");
+        setSubDesc("");
+        setSubBody("");
+        setSubTags("");
+      }
+    } catch (err) {
+      console.error("Failed to submit prompt contribution:", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Advanced Filters State
   const [showFilters, setShowFilters] = useState(false);
@@ -240,6 +369,7 @@ export default function Homepage() {
                 value={searchQuery}
                 onFocus={() => setShowSuggestions(true)}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
                 className="w-full text-sm md:text-base py-4.5 pr-12 pl-12 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border-2 border-slate-100 focus:border-[#6C47FF] rounded-2xl outline-none transition-all text-right shadow-sm focus:shadow-md font-medium"
               />
               <Search className="w-5 h-5 text-[#6C47FF] absolute right-4 top-1/2 -translate-y-1/2" />
@@ -305,11 +435,11 @@ export default function Homepage() {
                     {searchQuery.trim() && searchResults && searchResults.prompts.length > 0 ? (
                       <div>
                         <div className="text-[10px] text-slate-400 font-bold px-3 py-1 bg-slate-50 rounded mb-1">پرامپت‌های تطبیق‌یافته ({searchResults.prompts.length})</div>
-                        {searchResults.prompts.slice(0, 5).map((p) => (
+                        {searchResults.prompts.slice(0, 5).map((p, idx) => (
                           <Link
                             key={p.id}
                             to={`/prompts/${p.id}`}
-                            className="flex items-center justify-between px-3 py-2 hover:bg-slate-50 rounded-xl transition group text-right"
+                            className={`flex items-center justify-between px-3 py-2 rounded-xl transition group text-right ${idx === activeSuggestionIndex ? "bg-indigo-50/80 border-r-4 border-[#6C47FF]" : "hover:bg-slate-50"}`}
                           >
                             <div className="flex items-center gap-2 overflow-hidden">
                               <Compass className="w-4 h-4 text-slate-400 group-hover:text-[#6C47FF] shrink-0" />
@@ -558,10 +688,20 @@ export default function Homepage() {
       {/* Prompts Layout Grid */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-            <Compass className="w-5 h-5 text-[#6C47FF]" />
-            <span>آرشیو جامع پرامپت‌ها</span>
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+              <Compass className="w-5 h-5 text-[#6C47FF]" />
+              <span>آرشیو جامع پرامپت‌ها</span>
+            </h2>
+            <button
+              id="open-contrib-modal-btn"
+              onClick={() => setShowSubmitModal(true)}
+              className="flex items-center gap-1 bg-[#6C47FF]/10 hover:bg-[#6C47FF]/20 text-[#6C47FF] font-extrabold text-[11px] py-1.5 px-3 rounded-xl transition cursor-pointer shrink-0 animate-pulse"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>اشتراک پرامپت شما 💡</span>
+            </button>
+          </div>
 
           <div className="flex items-center gap-3">
             <span className="text-slate-400 text-xs hidden sm:inline">
@@ -623,6 +763,191 @@ export default function Homepage() {
           </div>
         )}
       </div>
+
+      {/* Community Contribution Modal */}
+      <AnimatePresence>
+        {showSubmitModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs text-right overflow-y-auto" style={{ direction: "rtl" }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl shadow-xl border border-slate-100 max-w-2xl w-full p-6 md:p-8 space-y-6 relative my-8"
+            >
+              <button
+                onClick={() => { setShowSubmitModal(false); setSubmitSuccess(false); }}
+                className="absolute left-4 top-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#6C47FF]/10 text-[#6C47FF] rounded-full text-[10px] font-black">
+                  <Sparkles className="w-3 h-3" />
+                  <span>مشارکت در پایگاه دانش</span>
+                </div>
+                <h3 className="text-lg md:text-xl font-black text-slate-800">ارسال و اشتراک‌گذاری پرامپت شما 💡</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  پرامپت خلاقانه خود را ثبت کنید. پرامپت شما پس از تایید توسط تیم ادمین در آرشیو عمومی منتشر خواهد شد.
+                </p>
+              </div>
+
+              {submitSuccess ? (
+                <div className="p-8 text-center space-y-4 bg-emerald-50 rounded-2xl border border-emerald-100 animate-fade-in">
+                  <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
+                  <h4 className="text-base font-black text-slate-800">ارسال موفقیت‌آمیز پرامپت!</h4>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                    با تشکر از همکاری ارزشمند شما! پرامپت شما به صف بررسی ادمین‌های Promty.ir منتقل شد. پس از بازبینی و طبقه‌بندی هوشمند، در صفحه اول پلتفرم نمایش داده خواهد شد.
+                  </p>
+                  <button
+                    onClick={() => { setShowSubmitModal(false); setSubmitSuccess(false); }}
+                    className="px-5 py-2 bg-[#6C47FF] hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow transition"
+                  >
+                    متوجه شدم
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleContributionSubmit} className="space-y-4 text-right">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    {/* Title */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-600">عنوان پرامپت <span className="text-rose-500">*</span></label>
+                      <input
+                        type="text"
+                        placeholder="مثال: تولید لوگوی مینیمال"
+                        value={subTitle}
+                        onChange={(e) => setSubTitle(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition font-medium"
+                        required
+                      />
+                    </div>
+
+                    {/* Tool */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-600">ابزار هوش مصنوعی اصلی</label>
+                      <select
+                        value={subTool}
+                        onChange={(e) => setSubTool(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition cursor-pointer font-bold"
+                      >
+                        {TOOL_OPTIONS.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Domain */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-600">حوزه کاربرد موضوعی</label>
+                      <select
+                        value={subDomain}
+                        onChange={(e) => setSubDomain(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition cursor-pointer font-bold"
+                      >
+                        {DOMAIN_OPTIONS.map(opt => (
+                          <option key={opt} value={opt}>{TRANSLATIONS[opt] || opt}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Language */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-600">زبان اصلی پرامپت</label>
+                      <select
+                        value={subLang}
+                        onChange={(e) => setSubLang(e.target.value)}
+                        className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition cursor-pointer font-bold"
+                      >
+                        {LANGUAGE_OPTIONS.map(opt => (
+                          <option key={opt} value={opt}>{TRANSLATIONS[opt] || opt}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-600">توضیح کوتاه پرامپت (راهنمایی برای کاربر)</label>
+                    <input
+                      type="text"
+                      placeholder="توضیح کوتاهی درباره خروجی این پرامپت و مدل مناسب بنویسید..."
+                      value={subDesc}
+                      onChange={(e) => setSubDesc(e.target.value)}
+                      className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition font-medium"
+                    />
+                  </div>
+
+                  {/* Body Textarea */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-600">متن کامل و خام پرامپت <span className="text-rose-500">*</span></label>
+                      <button
+                        type="button"
+                        onClick={handleAutoAnalyzePublic}
+                        disabled={isAnalyzingPublic}
+                        className="text-[11px] font-black text-[#6C47FF] hover:text-indigo-700 transition flex items-center gap-1 cursor-pointer bg-slate-50 hover:bg-[#6C47FF]/10 px-2.5 py-1 rounded-lg border border-slate-200"
+                      >
+                        {isAnalyzingPublic ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6C47FF]" />
+                            <span>در حال استخراج معنایی...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 text-[#6C47FF]" />
+                            <span>آنالیز هوشمند و پر کردن خودکار فرم ✨</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    {analyzePublicError && <p className="text-[10px] text-rose-500 font-bold">{analyzePublicError}</p>}
+                    <textarea
+                      rows={5}
+                      placeholder="متن کامل انگلیسی یا فارسی پرامپت خود را همراه با متغیرها به صورت [variable] بنویسید..."
+                      value={subBody}
+                      onChange={(e) => setSubBody(e.target.value)}
+                      className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition font-mono leading-relaxed"
+                      style={{ direction: "ltr" }}
+                      required
+                    />
+                  </div>
+
+                  {/* Tags */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-600">برچسب‌ها (جدا شده با ویرگول فارسی یا انگلیسی)</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: لوگو, مینیمال, برندینگ, midjourney"
+                      value={subTags}
+                      onChange={(e) => setSubTags(e.target.value)}
+                      className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowSubmitModal(false)}
+                      className="px-5 py-3 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition cursor-pointer"
+                    >
+                      انصراف
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="px-6 py-3 text-xs bg-[#6C47FF] hover:bg-indigo-600 disabled:bg-slate-300 text-white font-bold rounded-xl shadow-md shadow-[#6C47FF]/10 transition cursor-pointer flex items-center gap-1"
+                    >
+                      {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>ارسال جهت بازبینی ادمین 🚀</span>}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
