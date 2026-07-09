@@ -323,6 +323,31 @@ function writeDB(data: DB) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
 }
 
+async function seedDatabaseIfEmpty(prisma: PrismaClient) {
+  try {
+    const count = await prisma.taxonomy.count();
+    if (count === 0) {
+      console.log("[DB] Taxonomy table is empty. Auto-seeding initial data...");
+      const { defaultTaxonomies } = await import("./src/lib/defaultTaxonomies.ts");
+      for (const item of defaultTaxonomies) {
+        await prisma.taxonomy.create({
+          data: {
+            type: item.type,
+            slug: item.slug,
+            titleEn: item.titleEn,
+            titleFa: item.titleFa,
+            status: "active",
+            popularity: 0.5
+          }
+        });
+      }
+      console.log("[DB] Auto-seeding completed successfully.");
+    }
+  } catch (error) {
+    console.error("[DB] Auto-seeding failed:", error);
+  }
+}
+
 // Check admin credentials
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@promty.ir";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
@@ -336,6 +361,8 @@ async function startServer() {
   const promptRepo = new PrismaPromptRepository(prisma);
   const taxonomyRepo = new PrismaTaxonomyRepository(prisma);
   const relationshipRepo = new PrismaRelationshipRepository(prisma);
+
+  await seedDatabaseIfEmpty(prisma);
 
   app.use(express.json());
 

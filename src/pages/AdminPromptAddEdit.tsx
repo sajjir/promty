@@ -14,12 +14,12 @@ export default function AdminPromptAddEdit() {
   // Dynamic Taxonomy State
   const [taxonomiesList, setTaxonomiesList] = useState<any[]>([]);
 
-  const getOptions = (type: string, fallback: string[]) => {
+  const getOptions = (type: string, fallback?: string[]) => {
     const filtered = taxonomiesList.filter(t => t.type?.toLowerCase() === type?.toLowerCase());
     if (filtered.length > 0) {
       return filtered.map(t => ({ value: t.slug, label: t.titleFa }));
     }
-    return fallback.map(f => ({ value: f, label: f }));
+    return [{ value: "", label: "در حال بارگذاری..." }];
   };
 
   // Local form states
