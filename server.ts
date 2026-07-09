@@ -4,8 +4,10 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { TOOL_OPTIONS, DOMAIN_OPTIONS, OUTPUT_FORMAT_OPTIONS, INTENT_OPTIONS, LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS, INDUSTRY_OPTIONS, FIELD_TYPE_OPTIONS } from "./src/lib/taxonomy";
-import { JsonTaxonomyRepository } from "./src/server/repositories/json/JsonTaxonomyRepository";
-import { JsonRelationshipRepository } from "./src/server/repositories/json/JsonRelationshipRepository";
+import { PrismaClient } from "@prisma/client";
+import { PrismaPromptRepository } from "./src/server/repositories/prisma/PrismaPromptRepository.ts";
+import { PrismaTaxonomyRepository } from "./src/server/repositories/prisma/PrismaTaxonomyRepository.ts";
+import { PrismaRelationshipRepository } from "./src/server/repositories/prisma/PrismaRelationshipRepository.ts";
 import { SearchService } from "./src/server/services/SearchService";
 
 interface FieldSchema {
@@ -322,6 +324,11 @@ async function startServer() {
   const app = express();
   const PORT = 3005;
 
+  const prisma = new PrismaClient();
+  const promptRepo = new PrismaPromptRepository(prisma);
+  const taxonomyRepo = new PrismaTaxonomyRepository(prisma);
+  const relationshipRepo = new PrismaRelationshipRepository(prisma);
+
   app.use(express.json());
 
   // API - Auth Login
@@ -354,164 +361,106 @@ async function startServer() {
   });
 
   // API - Get Prompt list (all active, or with category filter)
-  app.get("/api/prompts", (req, res) => {
-    const { category } = req.query;
-    const db = readDB();
-    
-    let list = db.prompts;
-    
-    // Non-admin users should only see active prompts by default
-    const authHeader = req.headers.authorization;
-    const isAdmin = authHeader === `Bearer ${AUTH_TOKEN_SECRET}`;
+  app.get("/api/prompts", async (req, res) => {
+    try {
+      const { category, page: pageQuery, limit: limitQuery } = req.query;
+      
+      const page = pageQuery ? parseInt(pageQuery as string, 10) : 1;
+      const limit = limitQuery ? parseInt(limitQuery as string, 10) : 20;
 
-    if (!isAdmin) {
-      list = list.filter(p => p.isActive);
+      // Non-admin users should only see active prompts by default
+      const authHeader = req.headers.authorization;
+      const isAdmin = authHeader === `Bearer ${AUTH_TOKEN_SECRET}`;
+
+      const filters: any = {
+        page,
+        limit,
+      };
+      if (!isAdmin) {
+        filters.isActive = true;
+      }
+      if (category && typeof category === "string") {
+        filters.category = category;
+      }
+
+      const { prompts, totalCount } = await promptRepo.getAll(filters);
+
+      res.json({
+        success: true,
+        data: prompts,
+        pagination: {
+          total: totalCount,
+          page,
+          limit,
+          totalPages: Math.ceil(totalCount / limit),
+        }
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
     }
-
-    if (category) {
-      list = list.filter(p => p.category === category);
-    }
-
-    res.json({ prompts: list });
   });
 
   // API - Get Stats (Admin dashboard)
-  app.get("/api/stats", adminAuth, (req, res) => {
-    const db = readDB();
-    const totalPrompts = db.prompts.length;
-    const totalUsages = db.prompts.reduce((sum, p) => sum + p.usageCount, 0);
-    const sorted = [...db.prompts].sort((a, b) => b.usageCount - a.usageCount);
-    const mostPopular = sorted.length > 0 ? sorted[0].title : "هیچ پرامپتی ثبت نشده";
-
-    res.json({
-      totalPrompts,
-      totalUsages,
-      mostPopular
-    });
+  app.get("/api/stats", adminAuth, async (req, res) => {
+    try {
+      const stats = await promptRepo.getStats();
+      res.json(stats);
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
   });
 
   // API - Get one Prompt by ID (increments usageCount)
-  app.get("/api/prompts/:id", (req, res) => {
-    const { id } = req.params;
-    const db = readDB();
-    const promptIndex = db.prompts.findIndex(p => p.id === id);
+  app.get("/api/prompts/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const prompt = await promptRepo.getById(id);
 
-    if (promptIndex === -1) {
-      return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
+      if (!prompt) {
+        return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
+      }
+
+      // Increment count
+      await promptRepo.incrementUsageCount(id);
+      prompt.usageCount += 1;
+
+      res.json({ prompt });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
     }
-
-    // Increment count
-    db.prompts[promptIndex].usageCount += 1;
-    writeDB(db);
-
-    res.json({ prompt: db.prompts[promptIndex] });
   });
 
   // API - Create Prompt (admin only)
-  app.post("/api/prompts", adminAuth, (req, res) => {
-    const { 
-      title, 
-      description, 
-      body, 
-      fieldsSchema, 
-      category, 
-      intent, 
-      domains, 
-      tools, 
-      task, 
-      language, 
-      difficulty, 
-      outputFormats, 
-      industry, 
-      tags, 
-      isPremium, 
-      sampleImage, 
-      isActive 
-    } = req.body;
-    
-    if (!title || !body) {
-      return res.status(400).json({ success: false, message: "فیلدهای اجباری ارسال نشده‌اند." });
+  app.post("/api/prompts", adminAuth, async (req, res) => {
+    try {
+      const promptData = req.body;
+      if (!promptData.title || !promptData.body) {
+        return res.status(400).json({ success: false, message: "فیلدهای اجباری ارسال نشده‌اند." });
+      }
+
+      const created = await promptRepo.create(promptData);
+      res.status(201).json({ success: true, prompt: created });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
     }
-
-    const db = readDB();
-    const newPrompt: Prompt = {
-      id: "p_" + Date.now(),
-      title,
-      description: description || "",
-      body,
-      fieldsSchema: fieldsSchema || [],
-      category: category || (tools && tools[0]) || (domains && domains[0]) || "عمومی",
-      intent: intent || "",
-      domains: domains || [],
-      tools: tools || [],
-      task: task || "",
-      language: language || "Persian",
-      difficulty: difficulty || "Beginner",
-      outputFormats: outputFormats || [],
-      industry: industry || "",
-      tags: tags || [],
-      sampleImage: sampleImage || "",
-      isPremium: !!isPremium,
-      isActive: isActive !== undefined ? !!isActive : true,
-      usageCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    db.prompts.push(newPrompt);
-    writeDB(db);
-
-    res.status(201).json({ success: true, prompt: newPrompt });
   });
 
   // API - Submit Prompt publicly (non-admin contribution)
-  app.post("/api/prompts/submit", (req, res) => {
-    const { 
-      title, 
-      description, 
-      body, 
-      category, 
-      tools, 
-      domains, 
-      language, 
-      difficulty, 
-      tags,
-      fieldsSchema
-    } = req.body;
-    
-    if (!title || !body) {
-      return res.status(400).json({ success: false, message: "عنوان و متن پرامپت الزامی هستند." });
+  app.post("/api/prompts/submit", async (req, res) => {
+    try {
+      const promptData = req.body;
+      if (!promptData.title || !promptData.body) {
+        return res.status(400).json({ success: false, message: "عنوان و متن پرامپت الزامی هستند." });
+      }
+
+      // Must be approved by admin, so isActive is false
+      promptData.isActive = false;
+
+      const created = await promptRepo.create(promptData);
+      res.status(201).json({ success: true, message: "پرامپت شما با موفقیت ثبت شد و پس از تایید مدیر منتشر خواهد شد.", prompt: created });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
     }
-
-    const db = readDB();
-    const newPrompt: Prompt = {
-      id: "p_contrib_" + Date.now(),
-      title,
-      description: description || "",
-      body,
-      fieldsSchema: fieldsSchema || [],
-      category: category || (tools && tools[0]) || (domains && domains[0]) || "عمومی",
-      intent: "Create",
-      domains: domains || [],
-      tools: tools || [],
-      task: "",
-      language: language || "Persian",
-      difficulty: difficulty || "Beginner",
-      outputFormats: [],
-      industry: "",
-      tags: tags || [],
-      sampleImage: "",
-      isPremium: false,
-      isActive: false, // Must be approved by admin
-      usageCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    db.prompts.push(newPrompt);
-    writeDB(db);
-
-    res.status(201).json({ success: true, message: "پرامپت شما با موفقیت ثبت شد و پس از تایید مدیر منتشر خواهد شد.", prompt: newPrompt });
   });
 
   // API - Public endpoint to analyze raw prompt source (Submission Assistance)
@@ -626,75 +575,35 @@ async function startServer() {
   });
 
   // API - Update Prompt (admin only)
-  app.put("/api/prompts/:id", adminAuth, (req, res) => {
-    const { id } = req.params;
-    const { 
-      title, 
-      description, 
-      body, 
-      fieldsSchema, 
-      category, 
-      intent, 
-      domains, 
-      tools, 
-      task, 
-      language, 
-      difficulty, 
-      outputFormats, 
-      industry, 
-      tags, 
-      isPremium, 
-      sampleImage, 
-      isActive 
-    } = req.body;
+  app.put("/api/prompts/:id", adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
 
-    const db = readDB();
-    const index = db.prompts.findIndex(p => p.id === id);
+      const prompt = await promptRepo.getById(id);
+      if (!prompt) {
+        return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
+      }
 
-    if (index === -1) {
-      return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
+      const updated = await promptRepo.update(id, updates);
+      res.json({ success: true, prompt: updated });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
     }
-
-    db.prompts[index] = {
-      ...db.prompts[index],
-      title: title !== undefined ? title : db.prompts[index].title,
-      description: description !== undefined ? description : db.prompts[index].description,
-      body: body !== undefined ? body : db.prompts[index].body,
-      fieldsSchema: fieldsSchema !== undefined ? fieldsSchema : db.prompts[index].fieldsSchema,
-      category: category !== undefined ? category : (db.prompts[index].category || (tools && tools[0]) || (domains && domains[0]) || "عمومی"),
-      intent: intent !== undefined ? intent : db.prompts[index].intent,
-      domains: domains !== undefined ? domains : db.prompts[index].domains,
-      tools: tools !== undefined ? tools : db.prompts[index].tools,
-      task: task !== undefined ? task : db.prompts[index].task,
-      language: language !== undefined ? language : db.prompts[index].language,
-      difficulty: difficulty !== undefined ? difficulty : db.prompts[index].difficulty,
-      outputFormats: outputFormats !== undefined ? outputFormats : db.prompts[index].outputFormats,
-      industry: industry !== undefined ? industry : db.prompts[index].industry,
-      tags: tags !== undefined ? tags : db.prompts[index].tags,
-      sampleImage: sampleImage !== undefined ? sampleImage : db.prompts[index].sampleImage,
-      isPremium: isPremium !== undefined ? !!isPremium : db.prompts[index].isPremium,
-      isActive: isActive !== undefined ? !!isActive : db.prompts[index].isActive,
-      updatedAt: new Date().toISOString()
-    };
-
-    writeDB(db);
-    res.json({ success: true, prompt: db.prompts[index] });
   });
 
   // API - Delete Prompt (admin only)
-  app.delete("/api/prompts/:id", adminAuth, (req, res) => {
-    const { id } = req.params;
-    const db = readDB();
-    const filtered = db.prompts.filter(p => p.id !== id);
-
-    if (filtered.length === db.prompts.length) {
-      return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
+  app.delete("/api/prompts/:id", adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await promptRepo.delete(id);
+      if (!deleted) {
+        return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
+      }
+      res.json({ success: true, message: "پرامپت با موفقیت حذف شد." });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
     }
-
-    db.prompts = filtered;
-    writeDB(db);
-
-    res.json({ success: true, message: "پرامپت با موفقیت حذف شد." });
   });
 
   // API - Get Settings (admin only)
@@ -897,11 +806,7 @@ ${sourceText}
 
     // Increment usage count if tracked
     if (promptId) {
-      const index = db.prompts.findIndex(p => p.id === promptId);
-      if (index !== -1) {
-        db.prompts[index].usageCount += 1;
-        writeDB(db);
-      }
+      await promptRepo.incrementUsageCount(promptId);
     }
 
     // High fidelity template-based or local refinement fallback
@@ -975,29 +880,31 @@ ${sourceText}
   });
 
   // API - Render Prompt (substitutes values dynamically)
-  app.post("/api/render-prompt", (req, res) => {
-    const { promptId, values } = req.body;
-    if (!promptId || !values) {
-      return res.status(400).json({ success: false, message: "اطلاعات ناکافی" });
+  app.post("/api/render-prompt", async (req, res) => {
+    try {
+      const { promptId, values } = req.body;
+      if (!promptId || !values) {
+        return res.status(400).json({ success: false, message: "اطلاعات ناکافی" });
+      }
+
+      const prompt = await promptRepo.getById(promptId);
+
+      if (!prompt) {
+        return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
+      }
+
+      // Substitute values using regex
+      const rendered = prompt.body.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+        return values[key] !== undefined && values[key] !== "" ? values[key] : match;
+      });
+
+      res.json({ rendered });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
     }
-
-    const db = readDB();
-    const prompt = db.prompts.find(p => p.id === promptId);
-
-    if (!prompt) {
-      return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
-    }
-
-    // Substitute values using regex
-    const rendered = prompt.body.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-      return values[key] !== undefined && values[key] !== "" ? values[key] : match;
-    });
-
-    res.json({ rendered });
   });
 
-  // Create taxonomy repository instance
-  const taxonomyRepo = new JsonTaxonomyRepository();
+  // Taxonomy repository is instantiated at the beginning of startServer
 
   // API - Get Taxonomy Terms
   app.get("/api/taxonomies", async (req, res) => {
@@ -1065,8 +972,7 @@ ${sourceText}
     }
   });
 
-  // Create relationship repository instance
-  const relationshipRepo = new JsonRelationshipRepository();
+  // Relationship repository is instantiated at the beginning of startServer
 
   // API - Get All Relationships (Admin only)
   app.get("/api/relationships", adminAuth, async (req, res) => {
@@ -1137,28 +1043,37 @@ ${sourceText}
   });
 
   // API - Universal Natural Language Search
-  app.get("/api/search", (req, res) => {
-    const { q } = req.query;
-    const queryStr = typeof q === "string" ? q : "";
-    
-    const db = readDB();
-    // Non-admin users only search active prompts
-    const authHeader = req.headers.authorization;
-    const isAdmin = authHeader === `Bearer ${AUTH_TOKEN_SECRET}`;
-    const activePrompts = isAdmin ? db.prompts : db.prompts.filter(p => p.isActive);
+  app.get("/api/search", async (req, res) => {
+    try {
+      const { q } = req.query;
+      const queryStr = typeof q === "string" ? q : "";
+      
+      // Non-admin users only search active prompts
+      const authHeader = req.headers.authorization;
+      const isAdmin = authHeader === `Bearer ${AUTH_TOKEN_SECRET}`;
 
-    const searchResult = SearchService.search(activePrompts, queryStr);
-    
-    if (queryStr) {
-      SearchService.recordSearch(queryStr);
+      const filters: any = {};
+      if (!isAdmin) {
+        filters.isActive = true;
+      }
+
+      const { prompts } = await promptRepo.getAll(filters);
+
+      const searchResult = SearchService.search(prompts, queryStr);
+      
+      if (queryStr) {
+        SearchService.recordSearch(queryStr);
+      }
+
+      res.json({
+        success: true,
+        query: queryStr,
+        ...searchResult,
+        history: SearchService.getSearchHistory()
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
     }
-
-    res.json({
-      success: true,
-      query: queryStr,
-      ...searchResult,
-      history: SearchService.getSearchHistory()
-    });
   });
 
   // API - Search history and trends

@@ -25,7 +25,7 @@ export class JsonPromptRepository implements IPromptRepository {
     return prompt || null;
   }
 
-  public async getAll(filters?: { category?: string; isActive?: boolean }): Promise<Prompt[]> {
+  public async getAll(filters?: { category?: string; isActive?: boolean; page?: number; limit?: number }): Promise<{ prompts: Prompt[]; totalCount: number }> {
     const db = this.readDB();
     let list: Prompt[] = db.prompts || [];
 
@@ -37,7 +37,17 @@ export class JsonPromptRepository implements IPromptRepository {
         list = list.filter((p) => p.category === filters.category);
       }
     }
-    return list;
+
+    const totalCount = list.length;
+
+    if (filters && filters.page && filters.limit) {
+      const page = filters.page;
+      const limit = filters.limit;
+      const skip = (page - 1) * limit;
+      list = list.slice(skip, skip + limit);
+    }
+
+    return { prompts: list, totalCount };
   }
 
   public async create(promptData: Omit<Prompt, "id" | "createdAt" | "updatedAt" | "usageCount">): Promise<Prompt> {

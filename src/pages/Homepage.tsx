@@ -234,17 +234,61 @@ export default function Homepage() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("");
   const [sortBy, setSortBy] = useState<"usage" | "latest" | "title">("usage");
 
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [totalPromptsCount, setTotalPromptsCount] = useState(0);
+
   const suggestionRef = useRef<HTMLDivElement>(null);
+
+  const loadPrompts = async (pageNum: number, append: boolean = false) => {
+    try {
+      if (pageNum === 1) {
+        setLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const limit = 20;
+      const res = await fetch(`/api/prompts?page=${pageNum}&limit=${limit}`);
+      const response = await res.json();
+      
+      const newPrompts = response.data || [];
+      const total = response.pagination?.total || 0;
+
+      if (append) {
+        setPrompts((prev) => [...prev, ...newPrompts]);
+      } else {
+        setPrompts(newPrompts);
+      }
+
+      setTotalPromptsCount(total);
+      setPage(pageNum);
+
+      const currentLoadedCount = append ? prompts.length + newPrompts.length : newPrompts.length;
+      if (currentLoadedCount >= total) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+    } catch (err) {
+      console.error("Error loading paginated prompts:", err);
+    } finally {
+      setLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (isLoadingMore || !hasMore) return;
+    loadPrompts(page + 1, true);
+  };
 
   // Initial Data Fetch
   useEffect(() => {
     async function init() {
       try {
-        setLoading(true);
-        // Fetch prompts
-        const res = await fetch("/api/prompts");
-        const data = await res.json();
-        setPrompts(data.prompts || []);
+        await loadPrompts(1, false);
 
         // Fetch history and trends
         const histRes = await fetch("/api/search/history");
@@ -253,8 +297,6 @@ export default function Homepage() {
         setTrendingSearches(histData.trending || []);
       } catch (e) {
         console.error("Error fetching homepage initial data:", e);
-      } finally {
-        setLoading(false);
       }
     }
     init();
@@ -730,23 +772,44 @@ export default function Homepage() {
             <p className="text-xs font-semibold">در حال بارگذاری ایمن پرامپت‌های مهندسی‌شده...</p>
           </div>
         ) : filteredPrompts.length > 0 ? (
-          <motion.div 
-            layout
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {filteredPrompts.map((prompt) => (
-              <motion.div
-                key={prompt.id}
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-              >
-                <PromptCard prompt={prompt} />
-              </motion.div>
-            ))}
-          </motion.div>
+          <div className="space-y-8">
+            <motion.div 
+              layout
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {filteredPrompts.map((prompt) => (
+                <motion.div
+                  key={prompt.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <PromptCard prompt={prompt} />
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Load More Button */}
+            {hasMore && !searchQuery.trim() && (
+              <div className="flex justify-center pt-4">
+                <button
+                  id="load-more-btn"
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  className="px-8 py-3.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#6C47FF] border-2 border-slate-100 hover:border-[#6C47FF]/30 active:border-[#6C47FF] rounded-2xl shadow-sm hover:shadow-md font-bold text-xs transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
+                >
+                  {isLoadingMore ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#6C47FF]" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-[#6C47FF] group-hover:translate-y-0.5 transition-transform" />
+                  )}
+                  <span>{isLoadingMore ? "در حال بارگذاری..." : "نمایش پرامپت‌های بیشتر"}</span>
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center text-slate-400 space-y-3 shadow-sm">
             <Sparkle className="w-10 h-10 text-slate-300 mx-auto animate-bounce" />
