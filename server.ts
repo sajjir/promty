@@ -710,7 +710,31 @@ async function startServer() {
       const industryList = industries.length > 0 ? industries : [...INDUSTRY_OPTIONS];
 
       if (analyzeUrl.length > 0) {
-        // Send raw text to n8n Webhook
+        // Fetch active taxonomies from the database for n8n Webhook context
+        const activeTaxonomies = await prisma.taxonomy.findMany({ where: { status: "active" } });
+
+        const tIntents = activeTaxonomies.filter(t => t.type?.toLowerCase() === "intent").map(t => t.slug);
+        const intentsStr = tIntents.length > 0 ? tIntents.join(", ") : INTENT_OPTIONS.join(", ");
+
+        const tDomains = activeTaxonomies.filter(t => t.type?.toLowerCase() === "domain").map(t => t.slug);
+        const domainsStr = tDomains.length > 0 ? tDomains.join(", ") : DOMAIN_OPTIONS.join(", ");
+
+        const tTools = activeTaxonomies.filter(t => t.type?.toLowerCase() === "tool").map(t => t.slug);
+        const toolsStr = tTools.length > 0 ? tTools.join(", ") : TOOL_OPTIONS.join(", ");
+
+        const tLanguages = activeTaxonomies.filter(t => t.type?.toLowerCase() === "language").map(t => t.slug);
+        const languagesStr = tLanguages.length > 0 ? tLanguages.join(", ") : LANGUAGE_OPTIONS.join(", ");
+
+        const tDifficulties = activeTaxonomies.filter(t => t.type?.toLowerCase() === "difficulty").map(t => t.slug);
+        const difficultiesStr = tDifficulties.length > 0 ? tDifficulties.join(", ") : DIFFICULTY_OPTIONS.join(", ");
+
+        const tOutputFormats = activeTaxonomies.filter(t => t.type?.toLowerCase() === "outputformat").map(t => t.slug);
+        const outputFormatsStr = tOutputFormats.length > 0 ? tOutputFormats.join(", ") : OUTPUT_FORMAT_OPTIONS.join(", ");
+
+        const tIndustries = activeTaxonomies.filter(t => t.type?.toLowerCase() === "industry").map(t => t.slug);
+        const industriesStr = tIndustries.length > 0 ? tIndustries.join(", ") : INDUSTRY_OPTIONS.join(", ");
+
+        // Send raw text and allowed taxonomies to n8n Webhook
         const response = await fetch(analyzeUrl, {
           method: "POST",
           headers: {
@@ -718,6 +742,15 @@ async function startServer() {
           },
           body: JSON.stringify({
             sourceText,
+            allowedTaxonomies: {
+              intents: intentsStr,
+              domains: domainsStr,
+              tools: toolsStr,
+              languages: languagesStr,
+              difficulties: difficultiesStr,
+              outputFormats: outputFormatsStr,
+              industries: industriesStr
+            },
             action: "analyze_source",
             timestamp: new Date().toISOString()
           })

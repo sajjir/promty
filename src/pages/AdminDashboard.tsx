@@ -103,14 +103,21 @@ export default function AdminDashboard() {
         return;
       }
       const statsData = await statsRes.json();
-      setStats(statsData);
 
       // Fetch ALL prompts (including inactive)
       const promptsRes = await fetch("/api/prompts", {
         headers: { Authorization: `Bearer ${token}` }
       });
       const promptsData = await promptsRes.json();
-      setPrompts(promptsData.prompts || []);
+      const promptsList = promptsData.data || promptsData.prompts || [];
+      setPrompts(promptsList);
+
+      if (promptsData.pagination && typeof promptsData.pagination.total === "number") {
+        statsData.totalPrompts = promptsData.pagination.total;
+      } else if (promptsList.length > 0) {
+        statsData.totalPrompts = promptsList.length;
+      }
+      setStats(statsData);
 
       // Fetch network settings
       const settingsRes = await fetch("/api/settings", {
