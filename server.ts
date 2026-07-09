@@ -4,6 +4,9 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { TOOL_OPTIONS, DOMAIN_OPTIONS, OUTPUT_FORMAT_OPTIONS, INTENT_OPTIONS, LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS, INDUSTRY_OPTIONS, FIELD_TYPE_OPTIONS } from "./src/lib/taxonomy";
+import { JsonTaxonomyRepository } from "./src/server/repositories/json/JsonTaxonomyRepository";
+import { JsonRelationshipRepository } from "./src/server/repositories/json/JsonRelationshipRepository";
+import { SearchService } from "./src/server/services/SearchService";
 
 interface FieldSchema {
   key: string;
@@ -54,6 +57,8 @@ interface DB {
   prompts: Prompt[];
   categories: { id: string; name: string; slug: string; icon: string }[];
   settings: DBSettings;
+  relationships?: any[];
+  taxonomies?: any[];
 }
 
 const DB_FILE = path.join(process.cwd(), "db.json");
@@ -828,6 +833,180 @@ ${sourceText}
     });
 
     res.json({ rendered });
+  });
+
+  // Create taxonomy repository instance
+  const taxonomyRepo = new JsonTaxonomyRepository();
+
+  // API - Get Taxonomy Terms
+  app.get("/api/taxonomies", async (req, res) => {
+    try {
+      const { type } = req.query;
+      const terms = await taxonomyRepo.getAll(type as any);
+      res.json({ success: true, terms });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Create Taxonomy Term (Admin only)
+  app.post("/api/taxonomies", adminAuth, async (req, res) => {
+    try {
+      const { type, slug, titleEn, titleFa, descriptionFa, descriptionEn, aliases, synonyms, popularity } = req.body;
+      if (!type || !slug || !titleEn || !titleFa) {
+        return res.status(400).json({ success: false, message: "اطلاعات فیلدهای اجباری فرستاده نشده است." });
+      }
+
+      const existing = await taxonomyRepo.getBySlug(slug, type);
+      if (existing) {
+        return res.status(400).json({ success: false, message: "این اسلاگ در این طبقه‌بندی قبلا ثبت شده است." });
+      }
+
+      const created = await taxonomyRepo.create({
+        type,
+        slug,
+        titleEn,
+        titleFa,
+        descriptionFa: descriptionFa || "",
+        descriptionEn: descriptionEn || "",
+        aliases: aliases || [],
+        synonyms: synonyms || [],
+        popularity: Number(popularity) || 0.5,
+        status: "active"
+      });
+
+      res.status(201).json({ success: true, term: created });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Update Taxonomy Term (Admin only)
+  app.put("/api/taxonomies/:id", adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const updated = await taxonomyRepo.update(id, updates);
+      res.json({ success: true, term: updated });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Delete Taxonomy Term (Admin only)
+  app.delete("/api/taxonomies/:id", adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await taxonomyRepo.delete(id);
+      res.json({ success: true, deleted });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // Create relationship repository instance
+  const relationshipRepo = new JsonRelationshipRepository();
+
+  // API - Get All Relationships (Admin only)
+  app.get("/api/relationships", adminAuth, async (req, res) => {
+    try {
+      const { entityId, entityType } = req.query;
+      let list;
+      if (entityId && entityType) {
+        list = await relationshipRepo.getRelationships(entityId as string, entityType as any);
+      } else {
+        // Read full DB list
+        const db = readDB();
+        list = db.relationships || [];
+      }
+      res.json({ success: true, relationships: list });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Create Relationship (Admin only)
+  app.post("/api/relationships", adminAuth, async (req, res) => {
+    try {
+      const { sourceId, sourceType, targetId, targetType, relationType, confidenceScore, priority, weight } = req.body;
+      if (!sourceId || !sourceType || !targetId || !targetType || !relationType) {
+        return res.status(400).json({ success: false, message: "فیلدهای اجباری ارسال نشده است." });
+      }
+
+      const created = await relationshipRepo.create({
+        sourceId,
+        sourceType,
+        targetId,
+        targetType,
+        relationType,
+        confidenceScore: confidenceScore !== undefined ? Number(confidenceScore) : 1.0,
+        priority: priority !== undefined ? Number(priority) : 0,
+        weight: weight !== undefined ? Number(weight) : 1.0,
+        recommendationScore: 0,
+        similarityScore: 0
+      });
+
+      res.status(201).json({ success: true, relationship: created });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Update Relationship Weights (Admin only)
+  app.put("/api/relationships/:id", adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const updated = await relationshipRepo.updateWeights(id, updates);
+      res.json({ success: true, relationship: updated });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Delete Relationship (Admin only)
+  app.delete("/api/relationships/:id", adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await relationshipRepo.delete(id);
+      res.json({ success: true, deleted });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Universal Natural Language Search
+  app.get("/api/search", (req, res) => {
+    const { q } = req.query;
+    const queryStr = typeof q === "string" ? q : "";
+    
+    const db = readDB();
+    // Non-admin users only search active prompts
+    const authHeader = req.headers.authorization;
+    const isAdmin = authHeader === `Bearer ${AUTH_TOKEN_SECRET}`;
+    const activePrompts = isAdmin ? db.prompts : db.prompts.filter(p => p.isActive);
+
+    const searchResult = SearchService.search(activePrompts, queryStr);
+    
+    if (queryStr) {
+      SearchService.recordSearch(queryStr);
+    }
+
+    res.json({
+      success: true,
+      query: queryStr,
+      ...searchResult,
+      history: SearchService.getSearchHistory()
+    });
+  });
+
+  // API - Search history and trends
+  app.get("/api/search/history", (req, res) => {
+    res.json({
+      success: true,
+      history: SearchService.getSearchHistory(),
+      trending: ["طراحی لوگو", "Midjourney", "کدنویسی React", "تولید تیزر", "ChatGPT"]
+    });
   });
 
   // Vite development integration or static files production build integration
