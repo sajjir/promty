@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { Category, FieldSchema } from "../types";
 import PromptWizard from "../components/PromptWizard";
 import { ArrowRight, AlertTriangle, Sparkles, Code, Check, Loader2, Wand2 } from "lucide-react";
-import { INTENT_OPTIONS, DOMAIN_OPTIONS, TOOL_OPTIONS, LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS, OUTPUT_FORMAT_OPTIONS, INDUSTRY_OPTIONS } from "../lib/taxonomy";
 
 export default function AdminPromptAddEdit() {
   const { id } = useParams<{ id: string }>(); // If there is an ID, we are in Edit mode, otherwise Add mode.
@@ -11,6 +10,17 @@ export default function AdminPromptAddEdit() {
   const navigate = useNavigate();
 
   const token = localStorage.getItem("promty_admin_token");
+
+  // Dynamic Taxonomy State
+  const [taxonomiesList, setTaxonomiesList] = useState<any[]>([]);
+
+  const getOptions = (type: string, fallback: string[]) => {
+    const filtered = taxonomiesList.filter(t => t.type?.toLowerCase() === type?.toLowerCase());
+    if (filtered.length > 0) {
+      return filtered.map(t => ({ value: t.slug, label: t.titleFa }));
+    }
+    return fallback.map(f => ({ value: f, label: f }));
+  };
 
   // Local form states
   const [title, setTitle] = useState("");
@@ -72,7 +82,7 @@ export default function AdminPromptAddEdit() {
     }
   }, [token, navigate]);
 
-  // Load categories and prompt if editing
+  // Load categories, taxonomies and prompt if editing
   useEffect(() => {
     async function loadData() {
       try {
@@ -83,6 +93,13 @@ export default function AdminPromptAddEdit() {
         if (catRes.ok) {
           const catData = await catRes.json();
           setCategories(catData.categories || []);
+        }
+
+        // Fetch taxonomies list
+        const taxRes = await fetch("/api/taxonomies");
+        if (taxRes.ok) {
+          const taxData = await taxRes.json();
+          setTaxonomiesList(taxData.terms || []);
         }
 
         if (isEditMode) {
@@ -423,8 +440,11 @@ export default function AdminPromptAddEdit() {
                 onChange={(e) => setIntent(e.target.value)}
                 className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
               >
-                {INTENT_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                {getOptions("intent", [
+                  "Create", "Write", "Code", "Design", "Market",
+                  "Analyze", "Learn", "Automate", "Research", "Productivity"
+                ]).map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </div>
@@ -452,8 +472,8 @@ export default function AdminPromptAddEdit() {
                 onChange={(e) => setLanguage(e.target.value)}
                 className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
               >
-                {LANGUAGE_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt === "Persian" ? "Persian (فارسی)" : "English (انگلیسی)"}</option>
+                {getOptions("language", ["Persian", "English"]).map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </div>
@@ -467,8 +487,8 @@ export default function AdminPromptAddEdit() {
                 onChange={(e) => setDifficulty(e.target.value)}
                 className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
               >
-                {DIFFICULTY_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                {getOptions("difficulty", ["Beginner", "Intermediate", "Advanced", "Expert"]).map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </div>
@@ -482,8 +502,12 @@ export default function AdminPromptAddEdit() {
                 onChange={(e) => setIndustry(e.target.value)}
                 className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition cursor-pointer"
               >
-                {INDUSTRY_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                {getOptions("industry", [
+                  "Ecommerce", "Startup", "Healthcare", "Education", "Restaurant",
+                  "Construction", "Law", "Bank", "Crypto", "Fashion", "Fitness",
+                  "Agriculture", "Tourism", "Insurance", "NGO"
+                ]).map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </div>
@@ -492,11 +516,16 @@ export default function AdminPromptAddEdit() {
             <div className="flex flex-col gap-1.5 col-span-2">
               <label className="text-xs font-bold text-slate-600">حوزه‌های مرتبط (Domain) * — چندانتخابی</label>
               <div className="flex flex-wrap gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl max-h-32 overflow-y-auto">
-                {DOMAIN_OPTIONS.map((opt) => {
-                  const isSelected = domains.includes(opt);
+                {getOptions("domain", [
+                  "Business", "Marketing", "Education", "Medical", "Health", "Legal",
+                  "Finance", "Programming", "Gaming", "Food", "Travel", "Architecture",
+                  "Photography", "Real Estate", "Sports", "AI", "Robotics", "Science",
+                  "Religion", "History"
+                ]).map((opt) => {
+                  const isSelected = domains.includes(opt.value);
                   return (
                     <label
-                      key={opt}
+                      key={opt.value}
                       className={`flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition ${
                         isSelected
                           ? "bg-[#6C47FF] text-white border-[#6C47FF]"
@@ -507,11 +536,11 @@ export default function AdminPromptAddEdit() {
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => {
-                          setDomains(isSelected ? domains.filter((d) => d !== opt) : [...domains, opt]);
+                          setDomains(isSelected ? domains.filter((d) => d !== opt.value) : [...domains, opt.value]);
                         }}
                         className="sr-only"
                       />
-                      <span>{opt}</span>
+                      <span>{opt.label}</span>
                     </label>
                   );
                 })}
@@ -522,11 +551,15 @@ export default function AdminPromptAddEdit() {
             <div className="flex flex-col gap-1.5 col-span-2">
               <label className="text-xs font-bold text-slate-600">ابزارهای هوش مصنوعی (Tool) * — چندانتخابی</label>
               <div className="flex flex-wrap gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl max-h-32 overflow-y-auto">
-                {TOOL_OPTIONS.map((opt) => {
-                  const isSelected = tools.includes(opt);
+                {getOptions("tool", [
+                  "ChatGPT", "Claude", "Gemini", "Grok", "Midjourney", "Flux",
+                  "Stable Diffusion", "Ideogram", "Veo", "Kling", "Runway",
+                  "ElevenLabs", "Suno", "n8n AI Agent"
+                ]).map((opt) => {
+                  const isSelected = tools.includes(opt.value);
                   return (
                     <label
-                      key={opt}
+                      key={opt.value}
                       className={`flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition ${
                         isSelected
                           ? "bg-[#6C47FF] text-white border-[#6C47FF]"
@@ -537,11 +570,11 @@ export default function AdminPromptAddEdit() {
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => {
-                          setTools(isSelected ? tools.filter((t) => t !== opt) : [...tools, opt]);
+                          setTools(isSelected ? tools.filter((t) => t !== opt.value) : [...tools, opt.value]);
                         }}
                         className="sr-only"
                       />
-                      <span>{opt}</span>
+                      <span>{opt.label}</span>
                     </label>
                   );
                 })}
@@ -552,11 +585,15 @@ export default function AdminPromptAddEdit() {
             <div className="flex flex-col gap-1.5 col-span-2">
               <label className="text-xs font-bold text-slate-600">فرمت‌های خروجی (Output Format) * — چندانتخابی</label>
               <div className="flex flex-wrap gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl max-h-32 overflow-y-auto">
-                {OUTPUT_FORMAT_OPTIONS.map((opt) => {
-                  const isSelected = outputFormats.includes(opt);
+                {getOptions("outputFormat", [
+                  "Text", "Markdown", "JSON", "CSV", "HTML", "CSS", "JavaScript",
+                  "Python", "React", "TypeScript", "SQL", "XML", "PDF", "Image",
+                  "Video", "Table", "Checklist", "Roadmap", "Presentation"
+                ]).map((opt) => {
+                  const isSelected = outputFormats.includes(opt.value);
                   return (
                     <label
-                      key={opt}
+                      key={opt.value}
                       className={`flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition ${
                         isSelected
                           ? "bg-[#6C47FF] text-white border-[#6C47FF]"
@@ -567,11 +604,11 @@ export default function AdminPromptAddEdit() {
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => {
-                          setOutputFormats(isSelected ? outputFormats.filter((o) => o !== opt) : [...outputFormats, opt]);
+                          setOutputFormats(isSelected ? outputFormats.filter((o) => o !== opt.value) : [...outputFormats, opt.value]);
                         }}
                         className="sr-only"
                       />
-                      <span>{opt}</span>
+                      <span>{opt.label}</span>
                     </label>
                   );
                 })}

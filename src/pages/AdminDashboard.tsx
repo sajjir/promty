@@ -61,6 +61,7 @@ export default function AdminDashboard() {
   const [taxActionLoading, setTaxActionLoading] = useState(false);
   const [taxSuccess, setTaxSuccess] = useState<string | null>(null);
   const [taxError, setTaxError] = useState<string | null>(null);
+  const [editingTaxId, setEditingTaxId] = useState<string | null>(null);
 
   // Relationships Graph Tab States
   const [relationships, setRelationships] = useState<Relationship[]>([]);
@@ -248,7 +249,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Create Taxonomy Term
+  // Create or Update Taxonomy Term
   const handleCreateTaxonomy = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -257,28 +258,34 @@ export default function AdminDashboard() {
       setTaxSuccess(null);
       setTaxError(null);
 
-      const res = await fetch("/api/taxonomies", {
-        method: "POST",
+      const payload = {
+        type: newTaxType,
+        slug: newTaxSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+        titleEn: newTaxTitleEn.trim(),
+        titleFa: newTaxTitleFa.trim(),
+        descriptionFa: newTaxDescFa.trim()
+      };
+
+      const url = editingTaxId ? `/api/taxonomies/${editingTaxId}` : "/api/taxonomies";
+      const method = editingTaxId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          type: newTaxType,
-          slug: newTaxSlug.trim().toLowerCase().replace(/[^a-z0-9]/g, "-"),
-          titleEn: newTaxTitleEn.trim(),
-          titleFa: newTaxTitleFa.trim(),
-          descriptionFa: newTaxDescFa.trim()
-        })
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setTaxSuccess(`تاکسونومی جدید "${newTaxTitleFa}" با موفقیت ذخیره شد.`);
+        setTaxSuccess(editingTaxId ? `تاکسونومی "${newTaxTitleFa}" با موفقیت ویرایش شد.` : `تاکسونومی جدید "${newTaxTitleFa}" با موفقیت ذخیره شد.`);
         setNewTaxSlug("");
         setNewTaxTitleEn("");
         setNewTaxTitleFa("");
         setNewTaxDescFa("");
+        setEditingTaxId(null);
         
         // Refresh taxonomy terms list
         const taxRes = await fetch("/api/taxonomies", {
@@ -289,13 +296,30 @@ export default function AdminDashboard() {
           setTaxonomies(taxData.terms || []);
         }
       } else {
-        setTaxError(data.message || "خطا در ساخت فیلد معنایی.");
+        setTaxError(data.message || "خطا در ساخت/ویرایش فیلد معنایی.");
       }
     } catch (err) {
       setTaxError("پاسخی از سرور دریافت نشد.");
     } finally {
       setTaxActionLoading(false);
     }
+  };
+
+  const handleEditTaxonomyStart = (term: TaxonomyTerm) => {
+    setEditingTaxId(term.id);
+    setNewTaxType(term.type);
+    setNewTaxSlug(term.slug);
+    setNewTaxTitleEn(term.titleEn);
+    setNewTaxTitleFa(term.titleFa);
+    setNewTaxDescFa(term.descriptionFa || "");
+  };
+
+  const handleCancelEditTaxonomy = () => {
+    setEditingTaxId(null);
+    setNewTaxSlug("");
+    setNewTaxTitleEn("");
+    setNewTaxTitleFa("");
+    setNewTaxDescFa("");
   };
 
   // Delete Taxonomy Term
@@ -648,7 +672,7 @@ export default function AdminDashboard() {
                 <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 space-y-4">
                   <h4 className="text-xs font-extrabold text-slate-700 flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-100 inline-block">
                     <Plus className="w-3.5 h-3.5 text-[#6C47FF]" />
-                    <span>ایجاد فیلد معنایی (تاکسونومی) جدید</span>
+                    <span>{editingTaxId ? "ویرایش فیلد معنایی (تاکسونومی)" : "ایجاد فیلد معنایی (تاکسونومی) جدید"}</span>
                   </h4>
 
                   <form onSubmit={handleCreateTaxonomy} className="space-y-4 text-right">
@@ -663,7 +687,7 @@ export default function AdminDashboard() {
                         <option value="domain">Domain (حوزه کاری)</option>
                         <option value="tool">Tool (ابزار هوش مصنوعی)</option>
                         <option value="language">Language (زبان)</option>
-                        <option value="difficulty">Difficulty (سختی)</option>
+                        <option value="difficulty">Difficulty (سطوح سختی)</option>
                         <option value="outputFormat">Output Format (قالب خروجی)</option>
                         <option value="industry">Industry (صنعت تخصصی)</option>
                         <option value="fieldType">Field Type (نوع اینپوت)</option>
@@ -717,13 +741,25 @@ export default function AdminDashboard() {
                       />
                     </div>
 
-                    <button
-                      type="submit"
-                      disabled={taxActionLoading}
-                      className="w-full py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition"
-                    >
-                      {taxActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>ذخیره فیلد معنایی 📂</span>}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={taxActionLoading}
+                        className="flex-1 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition cursor-pointer"
+                      >
+                        {taxActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>{editingTaxId ? "اعمال تغییرات ✍️" : "ذخیره فیلد معنایی 📂"}</span>}
+                      </button>
+                      
+                      {editingTaxId && (
+                        <button
+                          type="button"
+                          onClick={handleCancelEditTaxonomy}
+                          className="py-2.5 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                        >
+                          انصراف
+                        </button>
+                      )}
+                    </div>
 
                     {taxSuccess && (
                       <div className="p-3 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-xl border border-emerald-100 flex items-center gap-1.5">
@@ -767,7 +803,7 @@ export default function AdminDashboard() {
                           <th scope="col" className="px-6 py-3">عنوان فارسی</th>
                           <th scope="col" className="px-6 py-3">عنوان انگلیسی</th>
                           <th scope="col" className="px-6 py-3">اسلاگ سیستم</th>
-                          <th scope="col" className="px-6 py-3 text-left">عملیات حذف</th>
+                          <th scope="col" className="px-6 py-3 text-left">عملیات</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-xs">
@@ -777,12 +813,20 @@ export default function AdminDashboard() {
                             <td className="px-6 py-3 font-medium text-slate-600">{t.titleEn}</td>
                             <td className="px-6 py-3 font-mono text-slate-400">{t.slug}</td>
                             <td className="px-6 py-3 text-left">
-                              <button
-                                onClick={() => handleDeleteTaxonomy(t.id)}
-                                className="p-1 px-2 border border-rose-100 text-rose-500 hover:bg-rose-50 rounded-lg font-bold transition cursor-pointer"
-                              >
-                                حذف
-                              </button>
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleEditTaxonomyStart(t)}
+                                  className="p-1 px-2.5 border border-blue-100 text-blue-600 hover:bg-blue-50 rounded-lg font-bold transition cursor-pointer"
+                                >
+                                  ویرایش
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTaxonomy(t.id)}
+                                  className="p-1 px-2.5 border border-rose-100 text-rose-500 hover:bg-rose-50 rounded-lg font-bold transition cursor-pointer"
+                                >
+                                  حذف
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}

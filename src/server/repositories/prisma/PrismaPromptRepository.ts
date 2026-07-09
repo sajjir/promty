@@ -23,6 +23,14 @@ export class PrismaPromptRepository implements IPromptRepository {
       isPremium: dbPrompt.isPremium,
       isActive: dbPrompt.isActive,
       usageCount: dbPrompt.usageCount,
+      intent: dbPrompt.intent || undefined,
+      domains: dbPrompt.domains,
+      tools: dbPrompt.tools,
+      task: dbPrompt.task || undefined,
+      language: dbPrompt.language || undefined,
+      difficulty: dbPrompt.difficulty || undefined,
+      outputFormats: dbPrompt.outputFormats,
+      industry: dbPrompt.industry || undefined,
       createdAt: dbPrompt.createdAt.toISOString(),
       updatedAt: dbPrompt.updatedAt.toISOString(),
     };
@@ -95,6 +103,14 @@ export class PrismaPromptRepository implements IPromptRepository {
           isPremium: promptData.isPremium !== undefined ? promptData.isPremium : false,
           isActive: promptData.isActive !== undefined ? promptData.isActive : true,
           usageCount: 0,
+          intent: promptData.intent || null,
+          domains: promptData.domains || [],
+          tools: promptData.tools || [],
+          task: promptData.task || null,
+          language: promptData.language || null,
+          difficulty: promptData.difficulty || null,
+          outputFormats: promptData.outputFormats || [],
+          industry: promptData.industry || null,
         },
       });
       return this.mapPrismaPrompt(dbPrompt);
@@ -117,6 +133,14 @@ export class PrismaPromptRepository implements IPromptRepository {
       if (updates.isPremium !== undefined) data.isPremium = updates.isPremium;
       if (updates.isActive !== undefined) data.isActive = updates.isActive;
       if (updates.usageCount !== undefined) data.usageCount = updates.usageCount;
+      if (updates.intent !== undefined) data.intent = updates.intent || null;
+      if (updates.domains !== undefined) data.domains = updates.domains;
+      if (updates.tools !== undefined) data.tools = updates.tools;
+      if (updates.task !== undefined) data.task = updates.task || null;
+      if (updates.language !== undefined) data.language = updates.language || null;
+      if (updates.difficulty !== undefined) data.difficulty = updates.difficulty || null;
+      if (updates.outputFormats !== undefined) data.outputFormats = updates.outputFormats;
+      if (updates.industry !== undefined) data.industry = updates.industry || null;
 
       const dbPrompt = await this.prisma.prompt.update({
         where: { id },

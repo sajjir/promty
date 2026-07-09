@@ -10,19 +10,46 @@ datasource db {
 }
 
 model Prompt {
-  id           String   @id @default(cuid())
-  title        String
-  description  String
-  body         String   @db.Text
-  fieldsSchema Json
-  category     String
-  tags         String[]
-  sampleImage  String?
-  isPremium    Boolean  @default(false)
-  isActive     Boolean  @default(true)
-  usageCount   Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  body          String   @db.Text
+  fieldsSchema  Json
+  category      String
+  tags          String[]
+  sampleImage   String?
+  isPremium     Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  usageCount    Int      @default(0)
+  
+  // AI Metadata Layers (Dynamic Validation)
+  intent        String?
+  domains       String[]
+  tools         String[]
+  task          String?
+  language      String?
+  difficulty    String?
+  outputFormats String[]
+  industry      String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Taxonomy {
+  id            String   @id @default(cuid())
+  type          String   // INTENT, DOMAIN, TOOL, LANGUAGE, DIFFICULTY, OUTPUT_FORMAT, INDUSTRY
+  slug          String   @unique
+  titleEn       String
+  titleFa       String
+  descriptionFa String?
+  descriptionEn String?
+  aliases       String[]
+  synonyms      String[]
+  popularity    Float    @default(0.5)
+  status        String   @default("active")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Category {

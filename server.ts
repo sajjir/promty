@@ -3,12 +3,20 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { TOOL_OPTIONS, DOMAIN_OPTIONS, OUTPUT_FORMAT_OPTIONS, INTENT_OPTIONS, LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS, INDUSTRY_OPTIONS, FIELD_TYPE_OPTIONS } from "./src/lib/taxonomy";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPromptRepository } from "./src/server/repositories/prisma/PrismaPromptRepository.ts";
 import { PrismaTaxonomyRepository } from "./src/server/repositories/prisma/PrismaTaxonomyRepository.ts";
 import { PrismaRelationshipRepository } from "./src/server/repositories/prisma/PrismaRelationshipRepository.ts";
 import { SearchService } from "./src/server/services/SearchService";
+
+const FIELD_TYPE_OPTIONS = ["text", "textarea", "color", "select", "radio", "switch", "slider", "multiselect", "url"];
+const INTENT_OPTIONS = ["Create", "Write", "Code", "Design", "Market", "Analyze", "Learn", "Automate", "Research", "Productivity"];
+const DOMAIN_OPTIONS = ["Business", "Marketing", "Education", "Medical", "Health", "Legal", "Finance", "Programming", "Gaming", "Food", "Travel", "Architecture", "Photography", "Real Estate", "Sports", "AI", "Robotics", "Science", "Religion", "History"];
+const TOOL_OPTIONS = ["ChatGPT", "Claude", "Gemini", "Grok", "Midjourney", "Flux", "Stable Diffusion", "Ideogram", "Veo", "Kling", "Runway", "ElevenLabs", "Suno", "n8n AI Agent"];
+const LANGUAGE_OPTIONS = ["Persian", "English"];
+const DIFFICULTY_OPTIONS = ["Beginner", "Intermediate", "Advanced", "Expert"];
+const OUTPUT_FORMAT_OPTIONS = ["Text", "Markdown", "JSON", "CSV", "HTML", "CSS", "JavaScript", "Python", "React", "TypeScript", "SQL", "XML", "PDF", "Image", "Video", "Table", "Checklist", "Roadmap", "Presentation"];
+const INDUSTRY_OPTIONS = ["Ecommerce", "Startup", "Healthcare", "Education", "Restaurant", "Construction", "Law", "Bank", "Crypto", "Fashion", "Fitness", "Agriculture", "Tourism", "Insurance", "NGO"];
 
 interface FieldSchema {
   key: string;
@@ -650,6 +658,30 @@ async function startServer() {
     const geminiKey = (settings?.geminiApiKey || "").trim();
 
     try {
+      // Dynamic Taxonomies fetching
+      const terms = await taxonomyRepo.getAll();
+      
+      const intents = terms.filter((t: any) => t.type?.toLowerCase() === "intent").map((t: any) => t.slug);
+      const intentList = intents.length > 0 ? intents : [...INTENT_OPTIONS];
+      
+      const domains = terms.filter((t: any) => t.type?.toLowerCase() === "domain").map((t: any) => t.slug);
+      const domainList = domains.length > 0 ? domains : [...DOMAIN_OPTIONS];
+      
+      const tools = terms.filter((t: any) => t.type?.toLowerCase() === "tool").map((t: any) => t.slug);
+      const toolList = tools.length > 0 ? tools : [...TOOL_OPTIONS];
+      
+      const languages = terms.filter((t: any) => t.type?.toLowerCase() === "language").map((t: any) => t.slug);
+      const languageList = languages.length > 0 ? languages : [...LANGUAGE_OPTIONS];
+      
+      const difficulties = terms.filter((t: any) => t.type?.toLowerCase() === "difficulty").map((t: any) => t.slug);
+      const difficultyList = difficulties.length > 0 ? difficulties : [...DIFFICULTY_OPTIONS];
+      
+      const outputFormats = terms.filter((t: any) => t.type?.toLowerCase() === "outputformat").map((t: any) => t.slug);
+      const outputFormatList = outputFormats.length > 0 ? outputFormats : [...OUTPUT_FORMAT_OPTIONS];
+      
+      const industries = terms.filter((t: any) => t.type?.toLowerCase() === "industry").map((t: any) => t.slug);
+      const industryList = industries.length > 0 ? industries : [...INDUSTRY_OPTIONS];
+
       if (analyzeUrl.length > 0) {
         // Send raw text to n8n Webhook
         const response = await fetch(analyzeUrl, {
@@ -719,13 +751,13 @@ async function startServer() {
 3. For every {{placeholder_key}} generated, create a corresponding FieldSchema object to determine how the user will interact with it in the UI.
 4. UI Field Types allowed: ${FIELD_TYPE_OPTIONS.join(", ")}. If select/radio/multiselect is chosen, you must supply options in Persian. If slider is chosen, specify min and max.
 5. Categorize the prompt using ONLY the following metadata options (do not invent new values):
-   - intent (choose exactly one): ${INTENT_OPTIONS.join(", ")}
-   - domains (choose ALL that genuinely apply, usually 1-3): ${DOMAIN_OPTIONS.join(", ")}
-   - tools (choose ALL AI tools this exact prompt would realistically work well with, usually 1-3 — do not include a tool just because it's loosely related): ${TOOL_OPTIONS.join(", ")}
-   - language (choose exactly one): ${LANGUAGE_OPTIONS.join(", ")}
-   - difficulty (choose exactly one): ${DIFFICULTY_OPTIONS.join(", ")}
-   - outputFormats (choose ALL that genuinely apply, usually 1-2): ${OUTPUT_FORMAT_OPTIONS.join(", ")}
-   - industry (choose exactly one, or leave empty if not industry-specific): ${INDUSTRY_OPTIONS.join(", ")}
+   - برای فیلد Intent فقط از این لیست استفاده کن: [${intentList.join(", ")}]
+   - برای فیلد Domains فقط از این لیست استفاده کن: [${domainList.join(", ")}]
+   - برای فیلد Tools فقط از این لیست استفاده کن: [${toolList.join(", ")}]
+   - برای فیلد Language فقط از این لیست استفاده کن: [${languageList.join(", ")}]
+   - برای فیلد Difficulty فقط از این لیست استفاده کن: [${difficultyList.join(", ")}]
+   - برای فیلد Output Formats فقط از این لیست استفاده کن: [${outputFormatList.join(", ")}]
+   - برای فیلد Industry فقط از این لیست استفاده کن: [${industryList.join(", ")}]
 6. Set the final optimized body with {{placeholders}} inside.
 
 Raw Prompt Text to Analyze:
@@ -743,14 +775,14 @@ ${sourceText}
               properties: {
                 title: { type: Type.STRING },
                 description: { type: Type.STRING },
-                intent: { type: Type.STRING, enum: [...INTENT_OPTIONS] },
-                domains: { type: Type.ARRAY, items: { type: Type.STRING, enum: [...DOMAIN_OPTIONS] } },
-                tools: { type: Type.ARRAY, items: { type: Type.STRING, enum: [...TOOL_OPTIONS] } },
+                intent: { type: Type.STRING, enum: intentList },
+                domains: { type: Type.ARRAY, items: { type: Type.STRING, enum: domainList } },
+                tools: { type: Type.ARRAY, items: { type: Type.STRING, enum: toolList } },
                 task: { type: Type.STRING },
-                language: { type: Type.STRING, enum: [...LANGUAGE_OPTIONS] },
-                difficulty: { type: Type.STRING, enum: [...DIFFICULTY_OPTIONS] },
-                outputFormats: { type: Type.ARRAY, items: { type: Type.STRING, enum: [...OUTPUT_FORMAT_OPTIONS] } },
-                industry: { type: Type.STRING, enum: [...INDUSTRY_OPTIONS] },
+                language: { type: Type.STRING, enum: languageList },
+                difficulty: { type: Type.STRING, enum: difficultyList },
+                outputFormats: { type: Type.ARRAY, items: { type: Type.STRING, enum: outputFormatList } },
+                industry: { type: Type.STRING, enum: industryList },
                 tags: { type: Type.ARRAY, items: { type: Type.STRING } },
                 body: { type: Type.STRING },
                 fieldsSchema: {
