@@ -9,73 +9,6 @@ import {
   Sparkle, AlertCircle, HelpCircle, ArrowLeft, Plus, CheckCircle2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  INTENT_OPTIONS,
-  DOMAIN_OPTIONS,
-  TOOL_OPTIONS,
-  LANGUAGE_OPTIONS,
-  DIFFICULTY_OPTIONS,
-  OUTPUT_FORMAT_OPTIONS
-} from "../lib/taxonomy";
-
-// Persian Translations Dict
-const TRANSLATIONS: Record<string, string> = {
-  // Intents
-  "Create": "ایجاد محتوا", 
-  "Write": "نگارش و ادبیات", 
-  "Code": "کدنویسی و توسعه", 
-  "Design": "طراحی و هنر", 
-  "Market": "بازاریابی و مارکتینگ",
-  "Analyze": "تحلیل و آنالیز", 
-  "Learn": "آموزش و یادگیری", 
-  "Automate": "اتوماسیون و ابزار", 
-  "Research": "پژوهش و تحقیق", 
-  "Productivity": "بهره‌وری فردی",
-  // Domains
-  "Business": "کسب‌وکار", 
-  "Marketing": "دیجیتال مارکتینگ", 
-  "Education": "آموزش و تحصیل", 
-  "Medical": "پزشکی", 
-  "Health": "تندرستی و سلامت", 
-  "Legal": "امور حقوقی",
-  "Finance": "مالی و سرمایه‌گذاری", 
-  "Programming": "برنامه‌نویسی", 
-  "Gaming": "بازی و سرگرمی", 
-  "Food": "آشپزی و غذا",
-  "Travel": "گردشگری و سفر", 
-  "Architecture": "معماری و دکوراسیون", 
-  "Photography": "عکاسی و تصویربرداری", 
-  "Real Estate": "املاک و مسکن", 
-  "Sports": "ورزش و تندرستی",
-  "AI": "فناوری و هوش مصنوعی", 
-  "Robotics": "رباتیک", 
-  "Science": "علوم پایه و تجربی", 
-  "Religion": "فلسفه و ادیان", 
-  "History": "تاریخ و باستان‌شناسی",
-  // Tools
-  "ChatGPT": "ChatGPT", 
-  "Claude": "Claude", 
-  "Gemini": "Gemini", 
-  "Grok": "Grok", 
-  "Midjourney": "Midjourney",
-  "Flux": "Flux", 
-  "Stable Diffusion": "Stable Diffusion", 
-  "Ideogram": "Ideogram", 
-  "Veo": "Veo",
-  "Kling": "Kling", 
-  "Runway": "Runway", 
-  "ElevenLabs": "ElevenLabs", 
-  "Suno": "Suno", 
-  "n8n AI Agent": "اتوماسیون n8n",
-  // Difficulty
-  "Beginner": "مبتدی", 
-  "Intermediate": "متوسط", 
-  "Advanced": "پیشرفته", 
-  "Expert": "حرفه‌ای",
-  // Languages
-  "Persian": "فارسی", 
-  "English": "انگلیسی"
-};
 
 export default function Homepage() {
   const navigate = useNavigate();
@@ -83,6 +16,11 @@ export default function Homepage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   
+  // Dynamic DB Taxonomies & Facet Counts state
+  const [dbTaxonomies, setDbTaxonomies] = useState<any[]>([]);
+  const [facets, setFacets] = useState<any>(null);
+  const [filterHistory, setFilterHistory] = useState<{ type: string; value: string; label: string }[]>([]);
+
   // Search state response from server
   const [searchResults, setSearchResults] = useState<{
     prompts: Prompt[];
@@ -105,10 +43,10 @@ export default function Homepage() {
   const [subTitle, setSubTitle] = useState("");
   const [subDesc, setSubDesc] = useState("");
   const [subBody, setSubBody] = useState("");
-  const [subTool, setSubTool] = useState("ChatGPT");
-  const [subDomain, setSubDomain] = useState("Marketing");
-  const [subLang, setSubLang] = useState("Persian");
-  const [subDifficulty, setSubDifficulty] = useState("Beginner");
+  const [subTool, setSubTool] = useState("chatgpt");
+  const [subDomain, setSubDomain] = useState("marketing");
+  const [subLang, setSubLang] = useState("persian");
+  const [subDifficulty, setSubDifficulty] = useState("beginner");
   const [subTags, setSubTags] = useState("");
 
   const [isAnalyzingPublic, setIsAnalyzingPublic] = useState(false);
@@ -149,6 +87,22 @@ export default function Homepage() {
     setActiveSuggestionIndex(-1);
   }, [searchQuery]);
 
+  // Translate helper using dynamic taxonomies
+  const getTranslation = (slug: string, type: string) => {
+    if (!slug) return "";
+    const term = dbTaxonomies.find(
+      (t) => t.slug?.toLowerCase() === slug.toLowerCase() && t.type?.toLowerCase() === type.toLowerCase()
+    );
+    return term ? term.titleFa : slug;
+  };
+
+  // Derived taxonomy lists for filters
+  const tools = dbTaxonomies.filter((t) => t.type?.toLowerCase() === "tool" && t.status === "active");
+  const intents = dbTaxonomies.filter((t) => t.type?.toLowerCase() === "intent" && t.status === "active");
+  const domains = dbTaxonomies.filter((t) => t.type?.toLowerCase() === "domain" && t.status === "active");
+  const difficulties = dbTaxonomies.filter((t) => t.type?.toLowerCase() === "difficulty" && t.status === "active");
+  const languages = dbTaxonomies.filter((t) => t.type?.toLowerCase() === "language" && t.status === "active");
+
   // Autofill fields using intelligent backend metadata recommendation
   const handleAutoAnalyzePublic = async () => {
     if (!subBody.trim()) {
@@ -170,9 +124,9 @@ export default function Homepage() {
         const d = data.data;
         if (d.title) setSubTitle(d.title);
         if (d.description) setSubDesc(d.description);
-        if (d.tool) setSubTool(d.tool);
-        if (d.domain) setSubDomain(d.domain);
-        if (d.difficulty) setSubDifficulty(d.difficulty);
+        if (d.tool) setSubTool(d.tool.toLowerCase());
+        if (d.domain) setSubDomain(d.domain.toLowerCase());
+        if (d.difficulty) setSubDifficulty(d.difficulty.toLowerCase());
         if (d.tags && Array.isArray(d.tags)) {
           setSubTags(d.tags.join(", "));
         }
@@ -206,7 +160,7 @@ export default function Homepage() {
           language: subLang,
           difficulty: subDifficulty,
           tags: subTags.split(",").map(t => t.trim()).filter(Boolean),
-          category: subTool
+          category: getTranslation(subTool, "tool") || subTool
         })
       });
 
@@ -256,6 +210,10 @@ export default function Homepage() {
       const newPrompts = response.data || [];
       const total = response.pagination?.total || 0;
 
+      if (response.facets) {
+        setFacets(response.facets);
+      }
+
       if (append) {
         setPrompts((prev) => [...prev, ...newPrompts]);
       } else {
@@ -284,11 +242,54 @@ export default function Homepage() {
     loadPrompts(page + 1, true);
   };
 
+  const handleFilterToggle = (type: string, value: string, label: string) => {
+    if (type === "intent") {
+      setSelectedIntent(value);
+    } else if (type === "tool") {
+      setSelectedTool(value);
+    } else if (type === "domain") {
+      setSelectedDomain(value);
+    } else if (type === "difficulty") {
+      setSelectedDifficulty(value);
+    } else if (type === "language") {
+      setSelectedLanguage(value);
+    }
+
+    if (value) {
+      setFilterHistory((prev) => {
+        const cleaned = prev.filter((item) => item.type !== type);
+        return [...cleaned, { type, value, label }];
+      });
+    } else {
+      setFilterHistory((prev) => prev.filter((item) => item.type !== type));
+    }
+  };
+
+  const handleRemoveLastFilter = () => {
+    if (filterHistory.length === 0) return;
+    const last = filterHistory[filterHistory.length - 1];
+    
+    if (last.type === "intent") setSelectedIntent("");
+    else if (last.type === "tool") setSelectedTool("");
+    else if (last.type === "domain") setSelectedDomain("");
+    else if (last.type === "difficulty") setSelectedDifficulty("");
+    else if (last.type === "language") setSelectedLanguage("");
+
+    setFilterHistory((prev) => prev.slice(0, -1));
+  };
+
   // Initial Data Fetch
   useEffect(() => {
     async function init() {
       try {
         await loadPrompts(1, false);
+
+        // Fetch dynamic taxonomies from DB
+        const taxRes = await fetch("/api/taxonomies");
+        const taxData = await taxRes.json();
+        if (taxData.success) {
+          setDbTaxonomies(taxData.terms || []);
+        }
 
         // Fetch history and trends
         const histRes = await fetch("/api/search/history");
@@ -377,6 +378,7 @@ export default function Homepage() {
     setSelectedDifficulty("");
     setSelectedLanguage("");
     setSortBy("usage");
+    setFilterHistory([]);
   };
 
   return (
@@ -444,19 +446,19 @@ export default function Homepage() {
                       
                       {searchResults.matchedTools.map(t => (
                         <span key={t} onClick={() => { setSelectedTool(t); setShowSuggestions(false); }} className="bg-white px-2 py-0.5 rounded border border-indigo-200 hover:bg-indigo-100 cursor-pointer text-slate-700 font-medium">
-                          🛠️ ابزار: {TRANSLATIONS[t] || t}
+                          🛠️ ابزار: {getTranslation(t, "tool")}
                         </span>
                       ))}
 
                       {searchResults.matchedIntents.map(i => (
                         <span key={i} onClick={() => { setSelectedIntent(i); setShowSuggestions(false); }} className="bg-white px-2 py-0.5 rounded border border-indigo-200 hover:bg-indigo-100 cursor-pointer text-slate-700 font-medium">
-                          🎯 هدف: {TRANSLATIONS[i] || i}
+                          🎯 هدف: {getTranslation(i, "intent")}
                         </span>
                       ))}
 
                       {searchResults.matchedDomains.map(d => (
                         <span key={d} onClick={() => { setSelectedDomain(d); setShowSuggestions(false); }} className="bg-white px-2 py-0.5 rounded border border-indigo-200 hover:bg-indigo-100 cursor-pointer text-slate-700 font-medium">
-                          🌐 حوزه: {TRANSLATIONS[d] || d}
+                          🌐 حوزه: {getTranslation(d, "domain")}
                         </span>
                       ))}
 
@@ -584,7 +586,7 @@ export default function Homepage() {
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           <span className="text-xs font-bold text-slate-400 shrink-0 ml-1">ابزارهای محبوب:</span>
           <button
-            onClick={() => setSelectedTool("")}
+            onClick={() => handleFilterToggle("tool", "", "همه ابزارها")}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 ${
               selectedTool === "" 
                 ? "bg-[#6C47FF]/10 text-[#6C47FF]" 
@@ -593,20 +595,24 @@ export default function Homepage() {
           >
             همه ابزارها
           </button>
-          {TOOL_OPTIONS.slice(0, 7).map((tool) => {
-            const isSelected = selectedTool === tool;
+          {tools.map((opt) => {
+            const count = facets?.tools?.[opt.slug.toLowerCase()] || 0;
+            const isSelected = selectedTool === opt.slug;
             return (
               <button
-                key={tool}
-                onClick={() => setSelectedTool(isSelected ? "" : tool)}
+                key={opt.slug}
+                onClick={() => handleFilterToggle("tool", isSelected ? "" : opt.slug, opt.titleFa)}
+                disabled={count === 0 && !isSelected}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 flex items-center gap-1 ${
                   isSelected 
                     ? "bg-[#6C47FF] text-white shadow-sm" 
-                    : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-100"
+                    : count === 0
+                      ? "bg-slate-50 text-slate-300 opacity-50 cursor-not-allowed border border-slate-100"
+                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-100"
                 }`}
               >
                 {isSelected && <Check className="w-3 h-3" />}
-                <span>{tool}</span>
+                <span>{opt.titleFa} ({count})</span>
               </button>
             );
           })}
@@ -629,13 +635,28 @@ export default function Homepage() {
                   <label className="text-xs font-bold text-slate-500 block">🎯 هدف پرامپت (Intent)</label>
                   <select
                     value={selectedIntent}
-                    onChange={(e) => setSelectedIntent(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const opt = intents.find(t => t.slug === val);
+                      handleFilterToggle("intent", val, opt ? opt.titleFa : val);
+                    }}
                     className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-right font-medium"
                   >
                     <option value="">همه اهداف</option>
-                    {INTENT_OPTIONS.map(opt => (
-                      <option key={opt} value={opt}>{TRANSLATIONS[opt] || opt}</option>
-                    ))}
+                    {intents.map(opt => {
+                      const count = facets?.intents?.[opt.slug.toLowerCase()] || 0;
+                      const isSelected = selectedIntent === opt.slug;
+                      return (
+                        <option 
+                          key={opt.slug} 
+                          value={opt.slug} 
+                          disabled={count === 0 && !isSelected}
+                          className={count === 0 && !isSelected ? "text-slate-300" : ""}
+                        >
+                          {opt.titleFa} ({count})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -644,13 +665,28 @@ export default function Homepage() {
                   <label className="text-xs font-bold text-slate-500 block">🌐 حوزه موضوعی (Domain)</label>
                   <select
                     value={selectedDomain}
-                    onChange={(e) => setSelectedDomain(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const opt = domains.find(t => t.slug === val);
+                      handleFilterToggle("domain", val, opt ? opt.titleFa : val);
+                    }}
                     className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-right font-medium"
                   >
                     <option value="">همه حوزه‌ها</option>
-                    {DOMAIN_OPTIONS.map(opt => (
-                      <option key={opt} value={opt}>{TRANSLATIONS[opt] || opt}</option>
-                    ))}
+                    {domains.map(opt => {
+                      const count = facets?.domains?.[opt.slug.toLowerCase()] || 0;
+                      const isSelected = selectedDomain === opt.slug;
+                      return (
+                        <option 
+                          key={opt.slug} 
+                          value={opt.slug} 
+                          disabled={count === 0 && !isSelected}
+                          className={count === 0 && !isSelected ? "text-slate-300" : ""}
+                        >
+                          {opt.titleFa} ({count})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -659,13 +695,28 @@ export default function Homepage() {
                   <label className="text-xs font-bold text-slate-500 block">⚡ سطح سختی پرامپت</label>
                   <select
                     value={selectedDifficulty}
-                    onChange={(e) => setSelectedDifficulty(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const opt = difficulties.find(t => t.slug === val);
+                      handleFilterToggle("difficulty", val, opt ? opt.titleFa : val);
+                    }}
                     className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-right font-medium"
                   >
                     <option value="">همه سطوح</option>
-                    {DIFFICULTY_OPTIONS.map(opt => (
-                      <option key={opt} value={opt}>{TRANSLATIONS[opt] || opt}</option>
-                    ))}
+                    {difficulties.map(opt => {
+                      const count = facets?.difficulties?.[opt.slug.toLowerCase()] || 0;
+                      const isSelected = selectedDifficulty === opt.slug;
+                      return (
+                        <option 
+                          key={opt.slug} 
+                          value={opt.slug} 
+                          disabled={count === 0 && !isSelected}
+                          className={count === 0 && !isSelected ? "text-slate-300" : ""}
+                        >
+                          {opt.titleFa} ({count})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -674,13 +725,28 @@ export default function Homepage() {
                   <label className="text-xs font-bold text-slate-500 block">💬 زبان پرامپت</label>
                   <select
                     value={selectedLanguage}
-                    onChange={(e) => setSelectedLanguage(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const opt = languages.find(t => t.slug === val);
+                      handleFilterToggle("language", val, opt ? opt.titleFa : val);
+                    }}
                     className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-right font-medium"
                   >
                     <option value="">همه زبان‌ها</option>
-                    {LANGUAGE_OPTIONS.map(opt => (
-                      <option key={opt} value={opt}>{TRANSLATIONS[opt] || opt}</option>
-                    ))}
+                    {languages.map(opt => {
+                      const count = facets?.languages?.[opt.slug.toLowerCase()] || 0;
+                      const isSelected = selectedLanguage === opt.slug;
+                      return (
+                        <option 
+                          key={opt.slug} 
+                          value={opt.slug} 
+                          disabled={count === 0 && !isSelected}
+                          className={count === 0 && !isSelected ? "text-slate-300" : ""}
+                        >
+                          {opt.titleFa} ({count})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -695,32 +761,32 @@ export default function Homepage() {
             <span className="text-[10px] text-slate-400 font-bold ml-1.5">فیلترهای اعمال‌شده:</span>
             {selectedIntent && (
               <span className="flex items-center gap-1 bg-white text-xs text-slate-700 px-2 py-1 rounded-lg border border-slate-200">
-                <span>🎯 هدف: {TRANSLATIONS[selectedIntent] || selectedIntent}</span>
-                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => setSelectedIntent("")} />
+                <span>🎯 هدف: {getTranslation(selectedIntent, "intent")}</span>
+                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => handleFilterToggle("intent", "", "")} />
               </span>
             )}
             {selectedTool && (
               <span className="flex items-center gap-1 bg-white text-xs text-slate-700 px-2 py-1 rounded-lg border border-slate-200">
-                <span>🛠️ ابزار: {selectedTool}</span>
-                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => setSelectedTool("")} />
+                <span>🛠️ ابزار: {getTranslation(selectedTool, "tool")}</span>
+                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => handleFilterToggle("tool", "", "")} />
               </span>
             )}
             {selectedDomain && (
               <span className="flex items-center gap-1 bg-white text-xs text-slate-700 px-2 py-1 rounded-lg border border-slate-200">
-                <span>🌐 حوزه: {TRANSLATIONS[selectedDomain] || selectedDomain}</span>
-                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => setSelectedDomain("")} />
+                <span>🌐 حوزه: {getTranslation(selectedDomain, "domain")}</span>
+                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => handleFilterToggle("domain", "", "")} />
               </span>
             )}
             {selectedDifficulty && (
               <span className="flex items-center gap-1 bg-white text-xs text-slate-700 px-2 py-1 rounded-lg border border-slate-200">
-                <span>⚡ سطح: {TRANSLATIONS[selectedDifficulty] || selectedDifficulty}</span>
-                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => setSelectedDifficulty("")} />
+                <span>⚡ سطح: {getTranslation(selectedDifficulty, "difficulty")}</span>
+                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => handleFilterToggle("difficulty", "", "")} />
               </span>
             )}
             {selectedLanguage && (
               <span className="flex items-center gap-1 bg-white text-xs text-slate-700 px-2 py-1 rounded-lg border border-slate-200">
-                <span>💬 زبان: {TRANSLATIONS[selectedLanguage] || selectedLanguage}</span>
-                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => setSelectedLanguage("")} />
+                <span>💬 زبان: {getTranslation(selectedLanguage, "language")}</span>
+                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => handleFilterToggle("language", "", "")} />
               </span>
             )}
           </div>
@@ -769,7 +835,7 @@ export default function Homepage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400 bg-white border border-slate-100 rounded-3xl">
             <Loader2 className="w-8 h-8 animate-spin text-[#6C47FF]" />
-            <p className="text-xs font-semibold">در حال بارگذاری ایمن پرامپت‌های مهندسی‌شده...</p>
+            <p className="text-xs font-semibold">موتور در حال واکاوی است...</p>
           </div>
         ) : filteredPrompts.length > 0 ? (
           <div className="space-y-8">
@@ -817,12 +883,30 @@ export default function Homepage() {
             <p className="text-xs text-slate-400 max-w-sm mx-auto">
               فیلترهای اعمال‌شده بسیار محدود کننده هستند، یا پرامپتی متناسب با عبارت جستجوی شما یافت نشد. برای نتایج بهتر فیلترها را حذف کنید.
             </p>
-            <button
-              onClick={handleClearFilters}
-              className="px-4 py-2 bg-[#6C47FF] hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow transition"
-            >
-              پاک‌سازی کامل فیلترها
-            </button>
+            {filterHistory.length > 0 ? (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={handleRemoveLastFilter}
+                  className="px-6 py-2.5 bg-[#6C47FF] hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>حذف فیلتر [{filterHistory[filterHistory.length - 1].label}]</span>
+                </button>
+                <button
+                  onClick={handleClearFilters}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  پاک‌سازی کامل فیلترها
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleClearFilters}
+                className="px-4 py-2 bg-[#6C47FF] hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow transition cursor-pointer"
+              >
+                پاک‌سازی کامل فیلترها
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -894,8 +978,8 @@ export default function Homepage() {
                         onChange={(e) => setSubTool(e.target.value)}
                         className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition cursor-pointer font-bold"
                       >
-                        {TOOL_OPTIONS.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
+                        {tools.map(opt => (
+                          <option key={opt.slug} value={opt.slug}>{opt.titleFa}</option>
                         ))}
                       </select>
                     </div>
@@ -908,8 +992,8 @@ export default function Homepage() {
                         onChange={(e) => setSubDomain(e.target.value)}
                         className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition cursor-pointer font-bold"
                       >
-                        {DOMAIN_OPTIONS.map(opt => (
-                          <option key={opt} value={opt}>{TRANSLATIONS[opt] || opt}</option>
+                        {domains.map(opt => (
+                          <option key={opt.slug} value={opt.slug}>{opt.titleFa}</option>
                         ))}
                       </select>
                     </div>
@@ -922,8 +1006,8 @@ export default function Homepage() {
                         onChange={(e) => setSubLang(e.target.value)}
                         className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition cursor-pointer font-bold"
                       >
-                        {LANGUAGE_OPTIONS.map(opt => (
-                          <option key={opt} value={opt}>{TRANSLATIONS[opt] || opt}</option>
+                        {languages.map(opt => (
+                          <option key={opt.slug} value={opt.slug}>{opt.titleFa}</option>
                         ))}
                       </select>
                     </div>

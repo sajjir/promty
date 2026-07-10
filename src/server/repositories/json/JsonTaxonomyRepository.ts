@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { ITaxonomyRepository } from "../ITaxonomyRepository";
 import { TaxonomyTerm, TaxonomyType } from "../../domain/Taxonomy";
-import * as staticTaxonomy from "../../../lib/taxonomy";
+import { defaultTaxonomies } from "../../../lib/defaultTaxonomies";
 
 const DB_FILE = path.join(process.cwd(), "db.json");
 
@@ -29,38 +29,21 @@ export class JsonTaxonomyRepository implements ITaxonomyRepository {
   }
 
   private generateInitialSeededTaxonomies(): TaxonomyTerm[] {
-    const list: TaxonomyTerm[] = [];
     const timestamp = new Date().toISOString();
-
-    const addTerms = (options: readonly string[], type: TaxonomyType) => {
-      options.forEach((opt) => {
-        list.push({
-          id: `${type}_${opt.toLowerCase().replace(/[^a-z0-9]/g, "_")}`,
-          type,
-          slug: opt.toLowerCase().replace(/[^a-z0-9]/g, "-"),
-          titleEn: opt,
-          titleFa: this.translateToFa(opt),
-          aliases: [],
-          synonyms: [],
-          popularity: 0.5,
-          usageCount: 0,
-          status: "active",
-          createdAt: timestamp,
-          updatedAt: timestamp
-        });
-      });
-    };
-
-    addTerms(staticTaxonomy.INTENT_OPTIONS, "intent");
-    addTerms(staticTaxonomy.DOMAIN_OPTIONS, "domain");
-    addTerms(staticTaxonomy.TOOL_OPTIONS, "tool");
-    addTerms(staticTaxonomy.LANGUAGE_OPTIONS, "language");
-    addTerms(staticTaxonomy.DIFFICULTY_OPTIONS, "difficulty");
-    addTerms(staticTaxonomy.OUTPUT_FORMAT_OPTIONS, "outputFormat");
-    addTerms(staticTaxonomy.INDUSTRY_OPTIONS, "industry");
-    addTerms(staticTaxonomy.FIELD_TYPE_OPTIONS, "fieldType");
-
-    return list;
+    return defaultTaxonomies.map((item) => ({
+      id: `${item.type}_${item.slug.replace(/[^a-z0-9]/g, "_")}`,
+      type: item.type as TaxonomyType,
+      slug: item.slug,
+      titleEn: item.titleEn,
+      titleFa: item.titleFa,
+      aliases: [],
+      synonyms: [],
+      popularity: 0.5,
+      usageCount: 0,
+      status: "active",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    }));
   }
 
   private translateToFa(val: string): string {

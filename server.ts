@@ -420,6 +420,51 @@ async function startServer() {
 
       const { prompts, totalCount } = await promptRepo.getAll(filters);
 
+      // Compute facets correctly across all matching records (without pagination limit)
+      const allMatchingFilters = { ...filters };
+      delete allMatchingFilters.page;
+      delete allMatchingFilters.limit;
+      const { prompts: allMatchingPrompts } = await promptRepo.getAll(allMatchingFilters);
+
+      const facets = {
+        tools: {} as Record<string, number>,
+        intents: {} as Record<string, number>,
+        domains: {} as Record<string, number>,
+        difficulties: {} as Record<string, number>,
+        languages: {} as Record<string, number>
+      };
+
+      for (const p of allMatchingPrompts) {
+        if (p.tools && Array.isArray(p.tools)) {
+          for (const t of p.tools) {
+            if (t) {
+              const key = t.toLowerCase();
+              facets.tools[key] = (facets.tools[key] || 0) + 1;
+            }
+          }
+        }
+        if (p.intent) {
+          const key = p.intent.toLowerCase();
+          facets.intents[key] = (facets.intents[key] || 0) + 1;
+        }
+        if (p.domains && Array.isArray(p.domains)) {
+          for (const d of p.domains) {
+            if (d) {
+              const key = d.toLowerCase();
+              facets.domains[key] = (facets.domains[key] || 0) + 1;
+            }
+          }
+        }
+        if (p.difficulty) {
+          const key = p.difficulty.toLowerCase();
+          facets.difficulties[key] = (facets.difficulties[key] || 0) + 1;
+        }
+        if (p.language) {
+          const key = p.language.toLowerCase();
+          facets.languages[key] = (facets.languages[key] || 0) + 1;
+        }
+      }
+
       res.json({
         success: true,
         data: prompts,
@@ -428,7 +473,8 @@ async function startServer() {
           page,
           limit,
           totalPages: Math.ceil(totalCount / limit),
-        }
+        },
+        facets
       });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err.message });
@@ -788,6 +834,10 @@ async function startServer() {
           }
         }
 
+        if (structuredJSON && structuredJSON.body) {
+          structuredJSON.body = structuredJSON.body.replace(/\[\[(.*?)\]\]/g, "{{$1}}");
+        }
+
         return res.json({
           success: true,
           data: structuredJSON
@@ -870,6 +920,10 @@ ${sourceText}
 
         const textResult = response.text || "{}";
         const structuredJSON = JSON.parse(textResult.trim());
+
+        if (structuredJSON && structuredJSON.body) {
+          structuredJSON.body = structuredJSON.body.replace(/\[\[(.*?)\]\]/g, "{{$1}}");
+        }
 
         return res.json({ success: true, data: structuredJSON });
 
