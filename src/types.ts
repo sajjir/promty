@@ -40,6 +40,10 @@ export interface Prompt {
     title: string;
   };
 
+  // Smart Media Engine
+  coverImage?: string;
+  mediaGallery?: string[];
+
   createdAt: string;
   updatedAt: string;
 }

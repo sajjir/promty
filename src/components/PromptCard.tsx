@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Prompt } from "../types";
 import { Megaphone, Globe, Video, Camera, Sparkles, ArrowLeft } from "lucide-react";
+import { getToolIcon, getDomainGradient } from "../lib/toolIcons";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -66,6 +67,43 @@ export default function PromptCard({ prompt }: PromptCardProps) {
   const extraToolsCount = (prompt.tools?.length || 0) > 1 ? prompt.tools!.length - 1 : 0;
   const IconComponent = categoryIcons[categoryLabel] || Sparkles;
 
+  // Three-level cover rendering waterfall
+  let coverElement = null;
+
+  if (prompt.coverImage) {
+    coverElement = (
+      <img
+        src={prompt.coverImage}
+        alt={prompt.title}
+        referrerPolicy="no-referrer"
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+      />
+    );
+  } else if (Array.isArray(prompt.mediaGallery) && prompt.mediaGallery.length > 0) {
+    const firstGalleryUrl = prompt.mediaGallery[0];
+    const thumbnailUrl = firstGalleryUrl.replace("gallery-", "thumbnail-");
+    coverElement = (
+      <img
+        src={thumbnailUrl}
+        alt={prompt.title}
+        referrerPolicy="no-referrer"
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+      />
+    );
+  } else {
+    // Dynamic Fallback
+    const firstDomain = prompt.domains && prompt.domains.length > 0 ? prompt.domains[0] : undefined;
+    const gradientClasses = getDomainGradient(firstDomain);
+    const firstTool = prompt.tools && prompt.tools.length > 0 ? prompt.tools[0] : undefined;
+    const ToolIcon = getToolIcon(firstTool);
+
+    coverElement = (
+      <div className={`w-full h-48 bg-gradient-to-tr ${gradientClasses} flex items-center justify-center transition-all duration-500 group-hover:scale-105`}>
+        <ToolIcon className="w-16 h-16 text-white opacity-50" />
+      </div>
+    );
+  }
+
   return (
     <div
       id={`prompt-card-${prompt.id}`}
@@ -73,18 +111,7 @@ export default function PromptCard({ prompt }: PromptCardProps) {
     >
       {/* Sample Image */}
       <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
-        {prompt.sampleImage ? (
-          <img
-            src={prompt.sampleImage}
-            alt={prompt.title}
-            referrerPolicy="no-referrer"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-tr from-indigo-50 to-purple-50 text-[#6C47FF]/20">
-            <Sparkles className="w-12 h-12" />
-          </div>
-        )}
+        {coverElement}
 
         {/* Premium / Free Badge */}
         <span

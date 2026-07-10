@@ -22,6 +22,16 @@ model Prompt {
   isActive      Boolean  @default(true)
   usageCount    Int      @default(0)
   
+  // Forking/Anshab relations
+  parentId      String?
+  sourceText    String?  @db.Text
+  parent        Prompt?  @relation("PromptToPrompt", fields: [parentId], references: [id])
+  children      Prompt[] @relation("PromptToPrompt")
+
+  // Smart Media Engine
+  coverImage    String?
+  mediaGallery  Json?
+  
   // AI Metadata Layers (Dynamic Validation)
   intent        String?
   domains       String[]

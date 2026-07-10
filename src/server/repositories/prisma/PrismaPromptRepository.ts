@@ -2,6 +2,8 @@
 import { PrismaClient, Prompt as PrismaPrompt } from "@prisma/client";
 import { IPromptRepository } from "../IPromptRepository";
 import { Prompt, FieldSchema } from "../../../types";
+import fs from "fs/promises";
+import path from "path";
 
 export class PrismaPromptRepository implements IPromptRepository {
   private prisma: PrismaClient;
@@ -38,7 +40,9 @@ export class PrismaPromptRepository implements IPromptRepository {
       parent: dbPrompt.parent ? {
         id: dbPrompt.parent.id,
         title: dbPrompt.parent.title
-      } : undefined
+      } : undefined,
+      coverImage: dbPrompt.coverImage || undefined,
+      mediaGallery: dbPrompt.mediaGallery ? (dbPrompt.mediaGallery as unknown as string[]) : undefined
     };
   }
 
@@ -120,6 +124,8 @@ export class PrismaPromptRepository implements IPromptRepository {
           industry: promptData.industry || null,
           parentId: promptData.parentId || null,
           sourceText: promptData.sourceText || null,
+          coverImage: promptData.coverImage || null,
+          mediaGallery: promptData.mediaGallery ? (promptData.mediaGallery as any) : null,
         },
       });
       return this.mapPrismaPrompt(dbPrompt);
@@ -152,6 +158,8 @@ export class PrismaPromptRepository implements IPromptRepository {
       if (updates.industry !== undefined) data.industry = updates.industry || null;
       if (updates.parentId !== undefined) data.parentId = updates.parentId || null;
       if (updates.sourceText !== undefined) data.sourceText = updates.sourceText || null;
+      if (updates.coverImage !== undefined) data.coverImage = updates.coverImage || null;
+      if (updates.mediaGallery !== undefined) data.mediaGallery = updates.mediaGallery ? (updates.mediaGallery as any) : null;
 
       const dbPrompt = await this.prisma.prompt.update({
         where: { id },
@@ -166,6 +174,16 @@ export class PrismaPromptRepository implements IPromptRepository {
 
   public async delete(id: string): Promise<boolean> {
     try {
+      // 1. Delete physical files from disk recursively
+      const dirPath = path.join(process.cwd(), "dl", "prompts", id);
+      try {
+        await fs.rm(dirPath, { recursive: true, force: true });
+        console.log(`Successfully deleted physical media directory for prompt ${id}: ${dirPath}`);
+      } catch (err) {
+        console.error(`Error deleting physical directory ${dirPath}:`, err);
+      }
+
+      // 2. Delete database record
       await this.prisma.prompt.delete({
         where: { id },
       });

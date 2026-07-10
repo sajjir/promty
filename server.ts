@@ -2,6 +2,8 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import multer from "multer";
+import sharp from "sharp";
 import { createServer as createViteServer } from "vite";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPromptRepository } from "./src/server/repositories/prisma/PrismaPromptRepository.ts";
@@ -576,6 +578,93 @@ async function startServer() {
   }
 
   app.use(express.json());
+
+  // Serve processed media uploads with 1-month Cache-Control
+  app.use("/dl", express.static(path.join(process.cwd(), "dl"), { maxAge: "30d" }));
+
+  const upload = multer({ storage: multer.memoryStorage() });
+
+  // API - Process and upload media cover/gallery
+  app.post("/api/upload/:promptId", upload.single("file"), async (req, res) => {
+    try {
+      const { promptId } = req.params;
+      const uploadType = (req.body.type || req.query.type || "cover") as string;
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: "فایلی ارسال نشده است." });
+      }
+
+      const targetDir = path.join(process.cwd(), "dl", "prompts", promptId);
+      
+      // Ensure directory exists recursively
+      await fs.promises.mkdir(targetDir, { recursive: true });
+
+      const fileBuffer = req.file.buffer;
+
+      if (uploadType === "cover") {
+        const fileName = "cover.webp";
+        const filePath = path.join(targetDir, fileName);
+
+        // Convert file buffer to webp using sharp and write to disk
+        await sharp(fileBuffer)
+          .webp({ quality: 85 })
+          .toFile(filePath);
+
+        const fileUrl = `/dl/prompts/${promptId}/${fileName}`;
+        
+        // Update database coverImage for this prompt
+        await promptRepo.update(promptId, { coverImage: fileUrl });
+
+        return res.json({
+          success: true,
+          coverImage: fileUrl,
+          message: "تصویر کاور با موفقیت آپلود و پردازش شد."
+        });
+      } else if (uploadType === "gallery") {
+        const timestamp = Date.now();
+        const galleryName = `gallery-${timestamp}.webp`;
+        const thumbnailName = `thumbnail-${timestamp}.webp`;
+
+        const galleryPath = path.join(targetDir, galleryName);
+        const thumbnailPath = path.join(targetDir, thumbnailName);
+
+        // Process main gallery image (compressed webp)
+        await sharp(fileBuffer)
+          .webp({ quality: 80 })
+          .toFile(galleryPath);
+
+        // Process thumbnail (600x400 webp)
+        await sharp(fileBuffer)
+          .resize(600, 400, { fit: "cover" })
+          .webp({ quality: 75 })
+          .toFile(thumbnailPath);
+
+        const galleryUrl = `/dl/prompts/${promptId}/${galleryName}`;
+        const thumbnailUrl = `/dl/prompts/${promptId}/${thumbnailName}`;
+
+        // Get existing prompt to append to mediaGallery
+        const existingPrompt = await promptRepo.getById(promptId);
+        const currentGallery = existingPrompt?.mediaGallery || [];
+        const updatedGallery = [...currentGallery, galleryUrl];
+
+        // Update database mediaGallery
+        await promptRepo.update(promptId, { mediaGallery: updatedGallery });
+
+        return res.json({
+          success: true,
+          galleryImage: galleryUrl,
+          thumbnail: thumbnailUrl,
+          mediaGallery: updatedGallery,
+          message: "تصویر گالری و تایل بندانگشتی با موفقیت آپلود و پردازش شدند."
+        });
+      } else {
+        return res.status(400).json({ success: false, message: "تایپ آپلود نامعتبر است." });
+      }
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      return res.status(500).json({ success: false, message: "خطا در آپلود یا پردازش تصویر.", error: error.message });
+    }
+  });
 
   // API - Auth Login
   app.post("/api/auth/login", (req, res) => {
