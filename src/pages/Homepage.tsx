@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Prompt } from "../types";
 import PromptCard from "../components/PromptCard";
 import { 
@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "motion/react";
 
 export default function Homepage() {
   const navigate = useNavigate();
+  const { toolSlug, domainSlug } = useParams<{ toolSlug?: string; domainSlug?: string }>();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -303,6 +304,43 @@ export default function Homepage() {
     init();
   }, []);
 
+  // Sync route parameters with active filter states
+  useEffect(() => {
+    if (dbTaxonomies.length > 0) {
+      if (toolSlug) {
+        const found = dbTaxonomies.find(
+          t => t.slug?.toLowerCase() === toolSlug.toLowerCase() && t.type?.toLowerCase() === "tool"
+        );
+        if (found) {
+          setSelectedTool(found.slug);
+          setFilterHistory(prev => {
+            const cleaned = prev.filter(item => item.type !== "tool");
+            return [...cleaned, { type: "tool", value: found.slug, label: found.titleFa }];
+          });
+        }
+      } else {
+        setSelectedTool("");
+        setFilterHistory(prev => prev.filter(item => item.type !== "tool"));
+      }
+
+      if (domainSlug) {
+        const found = dbTaxonomies.find(
+          t => t.slug?.toLowerCase() === domainSlug.toLowerCase() && t.type?.toLowerCase() === "domain"
+        );
+        if (found) {
+          setSelectedDomain(found.slug);
+          setFilterHistory(prev => {
+            const cleaned = prev.filter(item => item.type !== "domain");
+            return [...cleaned, { type: "domain", value: found.slug, label: found.titleFa }];
+          });
+        }
+      } else {
+        setSelectedDomain("");
+        setFilterHistory(prev => prev.filter(item => item.type !== "domain"));
+      }
+    }
+  }, [toolSlug, domainSlug, dbTaxonomies]);
+
   // Sync Search Query with Server endpoint
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -349,11 +387,11 @@ export default function Homepage() {
     : prompts;
 
   const filteredPrompts = displayPrompts.filter((p) => {
-    if (selectedIntent && p.intent !== selectedIntent) return false;
-    if (selectedTool && !(p.tools || []).includes(selectedTool)) return false;
-    if (selectedDomain && !(p.domains || []).includes(selectedDomain)) return false;
-    if (selectedDifficulty && p.difficulty !== selectedDifficulty) return false;
-    if (selectedLanguage && p.language !== selectedLanguage) return false;
+    if (selectedIntent && p.intent?.toLowerCase() !== selectedIntent.toLowerCase()) return false;
+    if (selectedTool && !(p.tools || []).some(t => t.toLowerCase() === selectedTool.toLowerCase())) return false;
+    if (selectedDomain && !(p.domains || []).some(d => d.toLowerCase() === selectedDomain.toLowerCase())) return false;
+    if (selectedDifficulty && p.difficulty?.toLowerCase() !== selectedDifficulty.toLowerCase()) return false;
+    if (selectedLanguage && p.language?.toLowerCase() !== selectedLanguage.toLowerCase()) return false;
     return true;
   }).sort((a, b) => {
     if (sortBy === "usage") {

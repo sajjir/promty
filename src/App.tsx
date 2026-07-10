@@ -52,6 +52,8 @@ export default function App() {
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-8">
           <Routes>
             <Route path="/" element={<Homepage />} />
+            <Route path="/tool/:toolSlug" element={<Homepage />} />
+            <Route path="/domain/:domainSlug" element={<Homepage />} />
             <Route path="/prompts/:id" element={<PromptDetail />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />

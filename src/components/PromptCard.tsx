@@ -15,8 +15,54 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
   "عکاسی": Camera,
 };
 
+const TRANSLATIONS: Record<string, string> = {
+  "create": "ایجاد محتوا", 
+  "write": "نگارش و ادبیات", 
+  "code": "کدنویسی", 
+  "design": "طراحی و هنر", 
+  "market": "بازاریابی",
+  "analyze": "تحلیل و آنالیز", 
+  "learn": "آموزش", 
+  "automate": "اتوماسیون", 
+  "research": "پژوهش", 
+  "productivity": "بهره‌وری فردی",
+  "business": "کسب‌وکار", 
+  "marketing": "مارکتینگ", 
+  "education": "آموزش", 
+  "medical": "پزشکی", 
+  "health": "سلامت", 
+  "legal": "حقوقی",
+  "finance": "مالی", 
+  "programming": "برنامه‌نویسی", 
+  "gaming": "بازی", 
+  "photography": "عکاسی", 
+  "ai": "هوش مصنوعی",
+  "beginner": "مبتدی", 
+  "intermediate": "متوسط", 
+  "advanced": "پیشرفته", 
+  "expert": "حرفه‌ای",
+  "persian": "فارسی", 
+  "english": "انگلیسی",
+  "chatgpt": "ChatGPT",
+  "claude": "Claude",
+  "gemini": "Gemini",
+  "grok": "Grok",
+  "midjourney": "Midjourney",
+  "flux": "Flux",
+  "stable diffusion": "Stable Diffusion",
+  "stable-diffusion": "Stable Diffusion",
+  "ideogram": "Ideogram",
+  "veo": "Veo",
+  "kling": "Kling",
+  "runway": "Runway",
+  "elevenlabs": "ElevenLabs",
+  "suno": "Suno",
+  "n8n ai agent": "اتوماسیون n8n"
+};
+
 export default function PromptCard({ prompt }: PromptCardProps) {
-  const categoryLabel = (prompt.tools && prompt.tools[0]) || (prompt.domains && prompt.domains[0]) || prompt.intent || (prompt as any).category || "عمومی";
+  const rawLabel = (prompt.tools && prompt.tools[0]) || (prompt.domains && prompt.domains[0]) || prompt.intent || (prompt as any).category || "عمومی";
+  const categoryLabel = TRANSLATIONS[rawLabel.toLowerCase()] || rawLabel;
   const extraToolsCount = (prompt.tools?.length || 0) > 1 ? prompt.tools!.length - 1 : 0;
   const IconComponent = categoryIcons[categoryLabel] || Sparkles;
 
@@ -65,7 +111,7 @@ export default function PromptCard({ prompt }: PromptCardProps) {
           </div>
           {prompt.difficulty && (
             <span className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-50 rounded">
-              {prompt.difficulty}
+              {TRANSLATIONS[prompt.difficulty.toLowerCase()] || prompt.difficulty}
             </span>
           )}
         </div>

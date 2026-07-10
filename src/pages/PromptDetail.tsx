@@ -19,6 +19,33 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 const TRANSLATIONS: Record<string, string> = {
+  "create": "ایجاد محتوا", 
+  "write": "نگارش و ادبیات", 
+  "code": "کدنویسی", 
+  "design": "طراحی و هنر", 
+  "market": "بازاریابی",
+  "analyze": "تحلیل و آنالیز", 
+  "learn": "آموزش", 
+  "automate": "اتوماسیون", 
+  "research": "پژوهش", 
+  "productivity": "بهره‌وری فردی",
+  "business": "کسب‌وکار", 
+  "marketing": "مارکتینگ", 
+  "education": "آموزش", 
+  "medical": "پزشکی", 
+  "health": "سلامت", 
+  "legal": "حقوقی",
+  "finance": "مالی", 
+  "programming": "برنامه‌نویسی", 
+  "gaming": "بازی", 
+  "photography": "عکاسی", 
+  "ai": "هوش مصنوعی",
+  "beginner": "مبتدی", 
+  "intermediate": "متوسط", 
+  "advanced": "پیشرفته", 
+  "expert": "حرفه‌ای",
+  "persian": "فارسی", 
+  "english": "انگلیسی",
   "Create": "ایجاد محتوا", 
   "Write": "نگارش و ادبیات", 
   "Code": "کدنویسی", 
@@ -55,6 +82,25 @@ export default function PromptDetail() {
   const [renderedBody, setRenderedBody] = useState("");
   const [showWizard, setShowWizard] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Accordion states
+  const [showSeoAccordion, setShowSeoAccordion] = useState(false);
+  const [showOutputAccordion, setShowOutputAccordion] = useState(false);
+
+  // Track copy count in database
+  const handleTrackCopy = async () => {
+    try {
+      const res = await fetch(`/api/prompts/${id}/track-copy`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.usageCount !== undefined) {
+          setPrompt(prev => prev ? { ...prev, usageCount: data.usageCount } : null);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to track copy count:", err);
+    }
+  };
 
   // Versioning state
   const [selectedVersion, setSelectedVersion] = useState<"v1" | "v2" | "v3">("v1");
@@ -261,7 +307,13 @@ export default function PromptDetail() {
   const IconComponent = categoryIcons[prompt.category || ""] || Sparkles;
 
   // Render a mock preview of textual output (for ChatGPT, Claude, etc)
-  const isImagePrompt = prompt.tools?.some(t => ["Midjourney", "Flux", "Stable Diffusion", "Ideogram"].includes(t)) || prompt.category === "عکاسی";
+  const isImagePrompt = prompt.tools?.some(t => ["midjourney", "flux", "stable diffusion", "stable-diffusion", "ideogram", "mj"].includes(t.toLowerCase())) || prompt.category === "عکاسی" || prompt.category === "ویدیو";
+
+  const isCoding = 
+    prompt.tools?.some(t => ["chatgpt", "claude", "gemini", "grok"].includes(t.toLowerCase())) || 
+    prompt.domains?.some(d => ["programming", "code", "development"].includes(d.toLowerCase())) ||
+    prompt.intent?.toLowerCase() === "code" ||
+    prompt.tags?.some(tag => ["کد", "برنامه‌نویسی", "react", "programming", "code"].includes(tag.toLowerCase()));
 
   return (
     <div className="space-y-8 pb-16 animate-fade-in text-right" dir="rtl">
@@ -354,7 +406,7 @@ export default function PromptDetail() {
                   <span className="text-[10px] text-slate-400 font-bold block">🌐 حوزه کاری (Domain):</span>
                   <div className="flex flex-wrap gap-1">
                     {prompt.domains.map(d => (
-                      <span key={d} className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">{TRANSLATIONS[d] || d}</span>
+                      <span key={d} className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">{TRANSLATIONS[d] || TRANSLATIONS[d.toLowerCase()] || d}</span>
                     ))}
                   </div>
                 </div>
@@ -364,7 +416,7 @@ export default function PromptDetail() {
                 <div className="space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold block">🎯 قصد و هدف پرامپت:</span>
                   <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100/30 inline-block">
-                    {TRANSLATIONS[prompt.intent] || prompt.intent}
+                    {TRANSLATIONS[prompt.intent] || TRANSLATIONS[prompt.intent.toLowerCase()] || prompt.intent}
                   </span>
                 </div>
               )}
@@ -373,7 +425,7 @@ export default function PromptDetail() {
                 <div className="space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold block">💬 زبان پرامپت:</span>
                   <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold inline-block">
-                    {TRANSLATIONS[prompt.language] || prompt.language}
+                    {TRANSLATIONS[prompt.language] || TRANSLATIONS[prompt.language.toLowerCase()] || prompt.language}
                   </span>
                 </div>
               )}
@@ -382,12 +434,12 @@ export default function PromptDetail() {
                 <div className="space-y-1 col-span-2">
                   <span className="text-[10px] text-slate-400 font-bold block">⚡ سطح تخصص مورد نیاز:</span>
                   <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold inline-block border ${
-                    prompt.difficulty === "Beginner" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
-                    prompt.difficulty === "Intermediate" ? "bg-blue-50 text-blue-700 border-blue-100" :
-                    prompt.difficulty === "Advanced" ? "bg-amber-50 text-amber-700 border-amber-100" :
+                    prompt.difficulty.toLowerCase() === "beginner" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                    prompt.difficulty.toLowerCase() === "intermediate" ? "bg-blue-50 text-blue-700 border-blue-100" :
+                    prompt.difficulty.toLowerCase() === "advanced" ? "bg-amber-50 text-amber-700 border-amber-100" :
                     "bg-rose-50 text-rose-700 border-rose-100"
                   }`}>
-                    {TRANSLATIONS[prompt.difficulty] || prompt.difficulty}
+                    {TRANSLATIONS[prompt.difficulty] || TRANSLATIONS[prompt.difficulty.toLowerCase()] || prompt.difficulty}
                   </span>
                 </div>
               )}
@@ -407,38 +459,48 @@ export default function PromptDetail() {
             )}
           </div>
 
-          {/* SEO Performance Visual Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-4 text-left font-mono" style={{ direction: "ltr" }}>
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-800 text-right" style={{ direction: "rtl" }}>
+          {/* SEO Performance Visual Card Accordion */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-lg transition-all duration-300">
+            <button
+              onClick={() => setShowSeoAccordion(!showSeoAccordion)}
+              className="w-full flex items-center justify-between p-5 text-right font-sans focus:outline-none cursor-pointer"
+            >
               <div className="flex items-center gap-1.5">
                 <Search className="w-4 h-4 text-[#6C47FF]" />
                 <h4 className="text-xs font-black text-slate-300">نمایه‌سازی موتورهای جستجو (SEO Preview)</h4>
               </div>
-              <span className="text-[9px] text-emerald-400 font-black px-2 py-0.5 bg-emerald-500/10 rounded">فعال و بهینه</span>
-            </div>
-
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-500 font-bold block">Google SERP Title (بهینه شده):</span>
-                <p className="text-xs text-sky-400 font-bold hover:underline cursor-pointer leading-tight">
-                  {prompt.title} | قالب شخصی‌سازی پرامپت آماده هوش مصنوعی Promty.ir
-                </p>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] text-emerald-400 font-black px-2 py-0.5 bg-emerald-500/10 rounded">فعال و بهینه</span>
+                <span className="text-slate-400 text-xs">{showSeoAccordion ? "▲" : "▼"}</span>
               </div>
+            </button>
 
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-500 font-bold block">SEO Meta Description:</span>
-                <p className="text-[11px] text-slate-400 leading-normal">
-                  دانلود، ویرایش و کپی سریع پرامپت مهندسی‌شده "{prompt.title}" مخصوص {prompt.tools?.join("، ") || "هوش مصنوعی"}. {prompt.description || "بهترین نتایج خروجی در کوتاهترین زمان."}
-                </p>
-              </div>
+            {showSeoAccordion && (
+              <div className="p-5 pt-0 border-t border-slate-800 space-y-4 text-left font-mono" style={{ direction: "ltr" }}>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>Google SERP Title (بهینه شده):</span>
+                    <p className="text-xs text-sky-400 font-bold hover:underline cursor-pointer leading-tight">
+                      {prompt.title} | قالب آماده هوش مصنوعی Promty.ir
+                    </p>
+                  </div>
 
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-500 font-bold block">URL Slug:</span>
-                <p className="text-[10px] text-[#6C47FF] hover:underline cursor-pointer">
-                  https://promty.ir/prompts/{prompt.id}
-                </p>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>SEO Meta Description:</span>
+                    <p className="text-[11px] text-slate-400 leading-normal text-right" style={{ direction: "rtl" }}>
+                      دانلود، ویرایش و کپی سریع پرامپت مهندسی‌شده "{prompt.title}" مخصوص {prompt.tools?.join("، ") || "هوش مصنوعی"}. {prompt.description || "بهترین نتایج خروجی در کوتاهترین زمان."}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>URL Slug:</span>
+                    <p className="text-[10px] text-[#6C47FF] hover:underline cursor-pointer">
+                      https://promty.ir/prompts/{prompt.id}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
         </div>
@@ -470,26 +532,30 @@ export default function PromptDetail() {
                 >
                   نسخه اصلی (V1)
                 </button>
-                <button
-                  onClick={() => handleVersionChange("v2")}
-                  className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-black transition ${
-                    selectedVersion === "v2"
-                      ? "bg-white text-[#6C47FF] shadow-sm border border-slate-100"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  نسخه سینمایی (V2)
-                </button>
-                <button
-                  onClick={() => handleVersionChange("v3")}
-                  className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-black transition ${
-                    selectedVersion === "v3"
-                      ? "bg-white text-[#6C47FF] shadow-sm border border-slate-100"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  قالب توسعه (V3)
-                </button>
+                {isImagePrompt && (
+                  <button
+                    onClick={() => handleVersionChange("v2")}
+                    className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-black transition ${
+                      selectedVersion === "v2"
+                        ? "bg-white text-[#6C47FF] shadow-sm border border-slate-100"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    نسخه سینمایی (V2)
+                  </button>
+                )}
+                {isCoding && (
+                  <button
+                    onClick={() => handleVersionChange("v3")}
+                    className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-black transition ${
+                      selectedVersion === "v3"
+                        ? "bg-white text-[#6C47FF] shadow-sm border border-slate-100"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    قالب توسعه (V3)
+                  </button>
+                )}
               </div>
             </div>
 
@@ -498,7 +564,7 @@ export default function PromptDetail() {
               <div className="flex items-center justify-between">
                 <label htmlFor="prompt-box-area" className="text-xs font-black text-slate-400">متن پرامپت نهایی:</label>
                 <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md">
-                  {prompt.usageCount - 1} کپی و بررسی موفقیت‌آمیز
+                  {prompt.usageCount} کپی و بررسی موفقیت‌آمیز
                 </span>
               </div>
               <textarea
@@ -514,7 +580,7 @@ export default function PromptDetail() {
 
             {/* Buttons Row */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <CopyButton text={renderedBody} className="flex-1 text-sm py-4" />
+              <CopyButton text={renderedBody} onCopy={handleTrackCopy} className="flex-1 text-sm py-4" />
               
               {prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
                 <button
@@ -673,59 +739,69 @@ export default function PromptDetail() {
             </div>
           )}
 
-          {/* Sample Output Mocking container (Interactive Text Preview) */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-            <div className="flex items-center gap-1.5 pb-2.5 border-b border-slate-50">
-              <MessageSquare className="w-4.5 h-4.5 text-[#6C47FF]" />
-              <h4 className="text-xs font-black text-slate-800">پیش‌نمایش خروجی نمونه (Sample Output Mock)</h4>
-            </div>
-
-            {isImagePrompt ? (
-              <div className="space-y-2.5">
-                <p className="text-xs text-slate-500 leading-relaxed">تصویر زیر نمونه‌ای از خروجی رندر شده توسط ابزارهای تصویرساز به کمک این پرامپت است:</p>
-                <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-xs max-w-md mx-auto">
-                  {prompt.sampleImage ? (
-                    <img
-                      src={prompt.sampleImage}
-                      alt="Sample render"
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold text-xs bg-slate-100">نمونه تصویری یافت نشد</div>
-                  )}
-                </div>
+          {/* Sample Output Mocking container Accordion */}
+          <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm transition-all duration-300">
+            <button
+              onClick={() => setShowOutputAccordion(!showOutputAccordion)}
+              className="w-full flex items-center justify-between p-6 text-right font-sans focus:outline-none cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5">
+                <MessageSquare className="w-4.5 h-4.5 text-[#6C47FF]" />
+                <h4 className="text-xs font-black text-slate-800">پیش‌نمایش خروجی نمونه (Sample Output Mock)</h4>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-xs text-slate-500 leading-relaxed">شبیه‌سازی گفت‌وگو و نمونه پاسخ دریافتی از مدل‌های متنی (مانند ChatGPT / Claude):</p>
-                
-                <div className="bg-slate-50 rounded-2xl p-4.5 border border-slate-100 space-y-4">
-                  {/* User message */}
-                  <div className="flex items-start gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs shrink-0">شما</div>
-                    <div className="bg-slate-100 text-slate-700 text-xs p-3 rounded-2xl rounded-tr-none leading-relaxed shadow-xs flex-1">
-                      {prompt.description || "درخواست تولید محتوا..."}
-                    </div>
-                  </div>
+              <span className="text-slate-400 text-xs">{showOutputAccordion ? "▲" : "▼"}</span>
+            </button>
 
-                  {/* AI message */}
-                  <div className="flex items-start gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-[#6C47FF] text-white flex items-center justify-center font-bold text-xs shrink-0">AI</div>
-                    <div className="bg-slate-900 text-slate-100 text-xs p-4 rounded-2xl rounded-tl-none leading-relaxed shadow-md flex-1 space-y-2 font-sans">
-                      <p className="font-bold text-indigo-300 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>پاسخ شبیه‌سازی شده مدل هوشمند:</span>
-                      </p>
-                      <p className="text-slate-300 whitespace-pre-wrap leading-relaxed">
-                        به عنوان یک مدل پردازش متن هوشمند، پاسخ این پرامپت دارای ساختار زیر است:{"\n"}
-                        ۱. بهینه‌سازی ادبی متناسب با کلمات کلیدی مشخص شده{"\n"}
-                        ۲. دسته‌بندی و فرمت خروجی به صورت بخش‌بندی منظم یا جدول{"\n"}
-                        ۳. رعایت لحن و فریم‌ورک‌های مهندسی پرامپت جهت کپی مستقیم در پروژه‌های نهایی شما.
-                      </p>
+            {showOutputAccordion && (
+              <div className="p-6 pt-0 border-t border-slate-50 space-y-4">
+                {isImagePrompt ? (
+                  <div className="space-y-2.5">
+                    <p className="text-xs text-slate-500 leading-relaxed">تصویر زیر نمونه‌ای از خروجی رندر شده توسط ابزارهای تصویرساز به کمک این پرامپت است:</p>
+                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-xs max-w-md mx-auto">
+                      {prompt.sampleImage ? (
+                        <img
+                          src={prompt.sampleImage}
+                          alt="Sample render"
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold text-xs bg-slate-100">نمونه تصویری یافت نشد</div>
+                      )}
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-xs text-slate-500 leading-relaxed">شبیه‌سازی گفت‌وگو و نمونه پاسخ دریافتی از مدل‌های متنی (مانند ChatGPT / Claude):</p>
+                    
+                    <div className="bg-slate-50 rounded-2xl p-4.5 border border-slate-100 space-y-4">
+                      {/* User message */}
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs shrink-0">شما</div>
+                        <div className="bg-slate-100 text-slate-700 text-xs p-3 rounded-2xl rounded-tr-none leading-relaxed shadow-xs flex-1">
+                          {prompt.description || "درخواست تولید محتوا..."}
+                        </div>
+                      </div>
+
+                      {/* AI message */}
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-[#6C47FF] text-white flex items-center justify-center font-bold text-xs shrink-0">AI</div>
+                        <div className="bg-slate-900 text-slate-100 text-xs p-4 rounded-2xl rounded-tl-none leading-relaxed shadow-md flex-1 space-y-2 font-sans">
+                          <p className="font-bold text-indigo-300 flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>پاسخ شبیه‌سازی شده مدل هوشمند:</span>
+                          </p>
+                          <p className="text-slate-300 whitespace-pre-wrap leading-relaxed">
+                            به عنوان یک مدل پردازش متن هوشمند، پاسخ این پرامپت دارای ساختار زیر است:{"\n"}
+                            ۱. بهینه‌سازی ادبی متناسب با کلمات کلیدی مشخص شده{"\n"}
+                            ۲. دسته‌بندی و فرمت خروجی به صورت بخش‌بندی منظم یا جدول{"\n"}
+                            ۳. رعایت لحن و فریم‌ورک‌های مهندسی پرامپت جهت کپی مستقیم در پروژه‌های نهایی شما.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

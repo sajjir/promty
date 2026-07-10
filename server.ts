@@ -353,6 +353,200 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@promty.ir";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 const AUTH_TOKEN_SECRET = "promty_super_secret_session_token_123";
 
+async function getPageMetadata(urlPath: string, prisma: PrismaClient) {
+  let title = "پرامپتی | مرجع و شخصی‌سازی پرامپت‌های آماده هوش مصنوعی";
+  let description = "دانلود، بهینه‌سازی و کپی سریع پرامپت‌های مهندسی‌شده برای ابزارهای تصویرسازی و متنی مانند ChatGPT، Claude و Midjourney.";
+  let imageUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800";
+  let jsonLd = "";
+
+  const toolMatch = urlPath.match(/^\/tool\/([^/]+)/i);
+  const domainMatch = urlPath.match(/^\/domain\/([^/]+)/i);
+  const promptMatch = urlPath.match(/^\/prompts\/([^/]+)/i);
+
+  const baseUrl = "https://promty.ir";
+  const pageUrl = `${baseUrl}${urlPath}`;
+
+  const TRANSLATIONS_LOCAL: Record<string, string> = {
+    "chatgpt": "ChatGPT",
+    "claude": "Claude",
+    "gemini": "Gemini",
+    "grok": "Grok",
+    "midjourney": "Midjourney",
+    "flux": "Flux",
+    "stable-diffusion": "Stable Diffusion",
+    "ideogram": "Ideogram",
+    "veo": "Veo",
+    "kling": "Kling",
+    "runway": "Runway",
+    "marketing": "بازاریابی (Marketing)",
+    "programming": "برنامه‌نویسی (Programming)",
+    "photography": "عکاسی (Photography)",
+    "design": "طراحی و هنر (Design)",
+    "business": "کسب‌وکار (Business)",
+    "education": "آموزش (Education)"
+  };
+
+  if (toolMatch) {
+    const slug = toolMatch[1].toLowerCase();
+    const displayName = TRANSLATIONS_LOCAL[slug] || slug;
+    title = `پرامپت‌های تخصصی ${displayName} | قالب آماده شخصی‌سازی - Promty`;
+    description = `آرشیو جامع پرامپت‌های مهندسی‌شده و کاملاً متغیر برای ابزار هوش مصنوعی ${displayName}. دسترسی و کپی فوری در Promty.ir.`;
+    
+    // BreadcrumbList JSON-LD
+    const breadcrumbs = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "خانه",
+          "item": baseUrl
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": `ابزار ${displayName}`,
+          "item": pageUrl
+        }
+      ]
+    };
+    jsonLd = `<script type="application/ld+json">${JSON.stringify(breadcrumbs)}</script>`;
+
+  } else if (domainMatch) {
+    const slug = domainMatch[1].toLowerCase();
+    const displayName = TRANSLATIONS_LOCAL[slug] || slug;
+    title = `پرامپت‌های حوزه ${displayName} | مهندسی پرامپت آماده - Promty`;
+    description = `مجموعه بهترین نمونه‌های پرامپت بهینه‌سازی شده در حوزه ${displayName} برای دریافت باکیفیت‌ترین خروجی‌ها در هوش مصنوعی.`;
+    
+    // BreadcrumbList JSON-LD
+    const breadcrumbs = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "خانه",
+          "item": baseUrl
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": `حوزه ${displayName}`,
+          "item": pageUrl
+        }
+      ]
+    };
+    jsonLd = `<script type="application/ld+json">${JSON.stringify(breadcrumbs)}</script>`;
+
+  } else if (promptMatch) {
+    const id = promptMatch[1];
+    try {
+      const prompt = await prisma.prompt.findUnique({ where: { id } });
+      if (prompt) {
+        title = `${prompt.title} | قالب پرامپت آماده و شخصی‌سازی - Promty`;
+        description = prompt.description || `دانلود، ویرایش و کپی سریع پرامپت مهندسی‌شده "${prompt.title}" مخصوص ${prompt.category || "هوش مصنوعی"} در وبسایت پرامپتی.`;
+        if (prompt.sampleImage) {
+          imageUrl = prompt.sampleImage;
+        }
+
+        // Schema Engine Injection
+        // BreadcrumbList, SoftwareApplication/HowTo, and aggregateRating connected to database usageCount
+        const ratingValue = 4.8;
+        const reviewCount = Math.max(5, Math.floor((prompt.usageCount || 0) / 10) + 1);
+        
+        const mainEntitySchema: any = {
+          "@context": "https://schema.org",
+          "@type": "HowTo",
+          "name": prompt.title,
+          "description": prompt.description || description,
+          "image": imageUrl,
+          "step": [
+            {
+              "@type": "HowToStep",
+              "name": "شخصی‌سازی متغیرها",
+              "text": "فیلدهای متغیر موجود در پرامپت را با مقادیر دلخواه پر کنید."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "کپی و استفاده",
+              "text": "دکمه کپی پرامپت را فشار دهید و در چت باکس هوش مصنوعی کپی کنید."
+            }
+          ],
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": ratingValue.toString(),
+            "bestRating": "5",
+            "worstRating": "1",
+            "ratingCount": reviewCount.toString()
+          }
+        };
+
+        const breadcrumbs = {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "خانه",
+              "item": baseUrl
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": prompt.category || "پرامپت‌ها",
+              "item": `${baseUrl}/prompts/${prompt.id}`
+            }
+          ]
+        };
+
+        jsonLd = `
+          <script type="application/ld+json">${JSON.stringify(breadcrumbs)}</script>
+          <script type="application/ld+json">${JSON.stringify(mainEntitySchema)}</script>
+        `;
+      }
+    } catch (e) {
+      console.error("Failed to query prompt for SEO:", e);
+    }
+  } else {
+    // General breadcrumbs for Homepage
+    const breadcrumbs = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "خانه",
+          "item": baseUrl
+        }
+      ]
+    };
+    jsonLd = `<script type="application/ld+json">${JSON.stringify(breadcrumbs)}</script>`;
+  }
+
+  // Generate complete HTML meta chunk
+  const metaHtml = `
+    <!-- Custom Meta Tags injected dynamically -->
+    <title>${title}</title>
+    <meta name="description" content="${description}" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="${pageUrl}" />
+    <meta property="og:image" content="${imageUrl}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${title}" />
+    <meta name="twitter:description" content="${description}" />
+    <meta name="twitter:image" content="${imageUrl}" />
+    ${jsonLd}
+  `;
+
+  return metaHtml;
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3005;
@@ -363,6 +557,23 @@ async function startServer() {
   const relationshipRepo = new PrismaRelationshipRepository(prisma);
 
   await seedDatabaseIfEmpty(prisma);
+
+  // Clean and sanitize any potential negative/fake usage count values
+  try {
+    await prisma.prompt.updateMany({
+      where: {
+        usageCount: {
+          lt: 0
+        }
+      },
+      data: {
+        usageCount: 0
+      }
+    });
+    console.log("Database usage count values sanitized successfully.");
+  } catch (e) {
+    console.error("Failed to sanitize usage count values:", e);
+  }
 
   app.use(express.json());
 
@@ -491,7 +702,7 @@ async function startServer() {
     }
   });
 
-  // API - Get one Prompt by ID (increments usageCount)
+  // API - Get one Prompt by ID
   app.get("/api/prompts/:id", async (req, res) => {
     try {
       const { id } = req.params;
@@ -501,11 +712,23 @@ async function startServer() {
         return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
       }
 
-      // Increment count
-      await promptRepo.incrementUsageCount(id);
-      prompt.usageCount += 1;
-
       res.json({ prompt });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Track copy count for a prompt
+  app.post("/api/prompts/:id/track-copy", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const prompt = await promptRepo.getById(id);
+      if (!prompt) {
+        return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
+      }
+      await promptRepo.incrementUsageCount(id);
+      const updatedPrompt = await promptRepo.getById(id);
+      res.json({ success: true, usageCount: updatedPrompt ? updatedPrompt.usageCount : prompt.usageCount + 1 });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err.message });
     }
@@ -1229,6 +1452,40 @@ ${sourceText}
       history: SearchService.getSearchHistory(),
       trending: ["طراحی لوگو", "Midjourney", "کدنویسی React", "تولید تیزر", "ChatGPT"]
     });
+  });
+
+  // Serve index.html with server-side injected SEO metadata
+  app.get("*", async (req, res, next) => {
+    // If it's an API route or static asset/file, let it pass through
+    if (req.path.startsWith("/api") || req.path.includes(".")) {
+      return next();
+    }
+
+    try {
+      const isProd = process.env.NODE_ENV === "production";
+      const indexPath = isProd 
+        ? path.join(process.cwd(), "dist", "index.html")
+        : path.join(process.cwd(), "index.html");
+
+      if (fs.existsSync(indexPath)) {
+        let html = fs.readFileSync(indexPath, "utf-8");
+        
+        // Fetch dynamic page SEO & Schema meta
+        const metaTags = await getPageMetadata(req.path, prisma);
+        
+        // Remove standard title tag first if exists to prevent duplication
+        html = html.replace(/<title>.*?<\/title>/gi, "");
+        
+        // Inject right before </head>
+        html = html.replace("</head>", `${metaTags}\n  </head>`);
+        
+        res.setHeader("Content-Type", "text/html");
+        return res.status(200).send(html);
+      }
+    } catch (err) {
+      console.error("SEO Metadata Injection failed:", err);
+    }
+    next();
   });
 
   // Vite development integration or static files production build integration

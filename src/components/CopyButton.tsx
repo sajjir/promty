@@ -5,15 +5,19 @@ interface CopyButtonProps {
   text: string;
   className?: string;
   label?: string;
+  onCopy?: () => void;
 }
 
-export default function CopyButton({ text, className = "", label }: CopyButtonProps) {
+export default function CopyButton({ text, className = "", label, onCopy }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
+      if (onCopy) {
+        onCopy();
+      }
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("خطا در کپی کردن متن:", err);
