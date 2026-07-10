@@ -55,6 +55,7 @@ export default function App() {
             <Route path="/tool/:toolSlug" element={<Homepage />} />
             <Route path="/domain/:domainSlug" element={<Homepage />} />
             <Route path="/prompts/:id" element={<PromptDetail />} />
+            <Route path="/prompt/:id" element={<PromptDetail />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/prompts/new" element={<AdminPromptAddEdit />} />

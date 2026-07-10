@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Category, FieldSchema } from "../types";
 import PromptWizard from "../components/PromptWizard";
 import { ArrowRight, AlertTriangle, Sparkles, Code, Check, Loader2, Wand2 } from "lucide-react";
@@ -8,6 +8,9 @@ export default function AdminPromptAddEdit() {
   const { id } = useParams<{ id: string }>(); // If there is an ID, we are in Edit mode, otherwise Add mode.
   const isEditMode = !!id;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const forkedFrom = searchParams.get("forkedFrom");
+  const [parentId, setParentId] = useState<string | null>(null);
 
   const token = localStorage.getItem("promty_admin_token");
 
@@ -125,8 +128,40 @@ export default function AdminPromptAddEdit() {
             setSampleImage(p.sampleImage || "");
             setIsPremium(p.isPremium);
             setIsActive(p.isActive);
+            setSourceText(p.sourceText || "");
+            if (p.parentId) {
+              setParentId(p.parentId);
+            }
           } else {
             setError("خطا در دریافت اطلاعات پرامپت.");
+          }
+        } else if (forkedFrom) {
+          // Fetch parent prompt data to pre-fill form for Forking
+          const res = await fetch(`/api/prompts/${forkedFrom}`);
+          if (res.ok) {
+            const data = await res.json();
+            const p = data.prompt;
+            setTitle(""); // Keep title empty for user input
+            setDescription(p.description || "");
+            setCategory(p.category || (p.tools && p.tools[0]) || (p.domains && p.domains[0]) || "عمومی");
+            setIntent(p.intent || "Create");
+            setDomains(Array.isArray(p.domains) ? p.domains : (p.domain ? [p.domain] : ["Marketing"]));
+            setTools(Array.isArray(p.tools) ? p.tools : (p.tool ? [p.tool] : ["ChatGPT"]));
+            setTask(p.task || "");
+            setLanguage(p.language || "Persian");
+            setDifficulty(p.difficulty || "Beginner");
+            setOutputFormats(Array.isArray(p.outputFormats) ? p.outputFormats : (p.outputFormat ? [p.outputFormat] : ["Text"]));
+            setIndustry(p.industry || "Ecommerce");
+            setTagsInput(p.tags ? p.tags.join(", ") : "");
+            setBody(p.body);
+            setSchemaJson(JSON.stringify(p.fieldsSchema || [], null, 2));
+            setSampleImage(p.sampleImage || "");
+            setIsPremium(p.isPremium);
+            setIsActive(p.isActive);
+            setSourceText(p.sourceText || p.body || ""); // Pre-fill with parent's sourceText or body as fallback
+            setParentId(forkedFrom);
+          } else {
+            setError("خطا در دریافت اطلاعات پرامپت مادر برای انشعاب.");
           }
         } else {
           // Pre-populate JSON schema
@@ -141,7 +176,7 @@ export default function AdminPromptAddEdit() {
       }
     }
     loadData();
-  }, [id, isEditMode]);
+  }, [id, isEditMode, forkedFrom]);
 
   // Live validator for fieldsSchema JSON
   useEffect(() => {
@@ -261,6 +296,8 @@ export default function AdminPromptAddEdit() {
       sampleImage,
       isPremium,
       isActive,
+      sourceText,
+      parentId,
     };
 
     try {
@@ -429,6 +466,22 @@ export default function AdminPromptAddEdit() {
               className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition"
             />
           </div>
+
+          {/* Read-only Source Text (for forked/analyzed prompts) */}
+          {sourceText && (
+            <div className="flex flex-col gap-1.5 p-3.5 bg-amber-50/50 border border-amber-100 rounded-xl">
+              <label htmlFor="readonly-source-textarea" className="text-xs font-bold text-amber-800 block">📝 متن منبع خام پرامپت (Source Text - Read-only)</label>
+              <textarea
+                id="readonly-source-textarea"
+                rows={3}
+                readOnly
+                value={sourceText}
+                className="w-full text-xs p-3 bg-white border border-amber-200/50 rounded-xl outline-none text-slate-600 cursor-not-allowed select-all"
+                placeholder="منبع خام ثبت نشده است."
+              />
+              <span className="text-[10px] text-amber-600 leading-normal">این فیلد فقط‌خواندنی است و نشان‌دهنده متن خام منبع (Source) این پرامپت انشعاب‌یافته یا پردازش‌شده می‌باشد.</span>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             {/* Intent */}

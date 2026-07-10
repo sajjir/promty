@@ -10,7 +10,7 @@ export class PrismaPromptRepository implements IPromptRepository {
     this.prisma = prisma;
   }
 
-  private mapPrismaPrompt(dbPrompt: PrismaPrompt): Prompt {
+  private mapPrismaPrompt(dbPrompt: any): Prompt {
     return {
       id: dbPrompt.id,
       title: dbPrompt.title,
@@ -33,6 +33,12 @@ export class PrismaPromptRepository implements IPromptRepository {
       industry: dbPrompt.industry || undefined,
       createdAt: dbPrompt.createdAt.toISOString(),
       updatedAt: dbPrompt.updatedAt.toISOString(),
+      parentId: dbPrompt.parentId || undefined,
+      sourceText: dbPrompt.sourceText || undefined,
+      parent: dbPrompt.parent ? {
+        id: dbPrompt.parent.id,
+        title: dbPrompt.parent.title
+      } : undefined
     };
   }
 
@@ -40,6 +46,7 @@ export class PrismaPromptRepository implements IPromptRepository {
     try {
       const dbPrompt = await this.prisma.prompt.findUnique({
         where: { id },
+        include: { parent: true },
       });
       return dbPrompt ? this.mapPrismaPrompt(dbPrompt) : null;
     } catch (error) {
@@ -111,6 +118,8 @@ export class PrismaPromptRepository implements IPromptRepository {
           difficulty: promptData.difficulty || null,
           outputFormats: promptData.outputFormats || [],
           industry: promptData.industry || null,
+          parentId: promptData.parentId || null,
+          sourceText: promptData.sourceText || null,
         },
       });
       return this.mapPrismaPrompt(dbPrompt);
@@ -141,6 +150,8 @@ export class PrismaPromptRepository implements IPromptRepository {
       if (updates.difficulty !== undefined) data.difficulty = updates.difficulty || null;
       if (updates.outputFormats !== undefined) data.outputFormats = updates.outputFormats;
       if (updates.industry !== undefined) data.industry = updates.industry || null;
+      if (updates.parentId !== undefined) data.parentId = updates.parentId || null;
+      if (updates.sourceText !== undefined) data.sourceText = updates.sourceText || null;
 
       const dbPrompt = await this.prisma.prompt.update({
         where: { id },

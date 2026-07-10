@@ -31,6 +31,15 @@ export interface Prompt {
   isPremium: boolean;
   isActive: boolean;
   usageCount: number;
+  
+  // Forking/Anshab fields
+  parentId?: string;
+  sourceText?: string;
+  parent?: {
+    id: string;
+    title: string;
+  };
+
   createdAt: string;
   updatedAt: string;
 }

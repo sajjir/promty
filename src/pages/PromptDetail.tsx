@@ -75,6 +75,15 @@ const TRANSLATIONS: Record<string, string> = {
   "English": "انگلیسی"
 };
 
+const RUN_URLS: Record<string, string> = {
+  chatgpt: "https://chatgpt.com/?q=",
+  claude: "https://claude.ai/new?q=",
+  gemini: "https://gemini.google.com/",
+  midjourney: "https://www.midjourney.com/",
+  flux: "https://fal.ai/",
+  "stable diffusion": "https://dreamstudio.ai/"
+};
+
 export default function PromptDetail() {
   const { id } = useParams<{ id: string }>();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
@@ -82,6 +91,42 @@ export default function PromptDetail() {
   const [renderedBody, setRenderedBody] = useState("");
   const [showWizard, setShowWizard] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const isAdmin = !!localStorage.getItem("promty_admin_token");
+
+  const handleRunExternal = async (textToRun: string) => {
+    if (!textToRun) return;
+
+    // 1. Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(textToRun);
+      // Track copy count in database
+      handleTrackCopy();
+    } catch (err) {
+      console.error("Failed to copy to clipboard:", err);
+    }
+
+    // 2. Determine target tool and URL
+    const firstTool = prompt?.tools && prompt.tools.length > 0 ? prompt.tools[0] : "";
+    const toolLower = firstTool.toLowerCase();
+
+    let baseUrl = "https://chatgpt.com/?q="; // Default
+    if (firstTool) {
+      const matchedKey = Object.keys(RUN_URLS).find(k => toolLower.includes(k) || k.includes(toolLower));
+      if (matchedKey) {
+        baseUrl = RUN_URLS[matchedKey];
+      } else if (["midjourney", "flux", "stable diffusion", "stable-diffusion", "ideogram", "mj", "عکاسی", "تصویر سازی"].some(x => toolLower.includes(x))) {
+        baseUrl = "https://fal.ai/";
+      }
+    }
+
+    // 3. Construct URL and open in new tab
+    const finalUrl = baseUrl.includes("?q=")
+      ? `${baseUrl}${encodeURIComponent(textToRun)}`
+      : baseUrl;
+
+    window.open(finalUrl, "_blank");
+  };
 
   // Accordion states
   const [showSeoAccordion, setShowSeoAccordion] = useState(false);
@@ -328,14 +373,35 @@ export default function PromptDetail() {
           <span className="text-slate-700 truncate max-w-[150px]">{prompt.title}</span>
         </nav>
 
-        <Link
-          to="/"
-          className="flex items-center gap-1 text-xs font-bold text-[#6C47FF] hover:bg-[#6C47FF]/5 px-3 py-1.5 rounded-lg transition"
-        >
-          <span>بازگشت به آرشیو پرامپت‌ها</span>
-          <ChevronLeft className="w-4 h-4" />
-        </Link>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Link
+              to={`/admin/prompts/new?forkedFrom=${prompt.id}`}
+              className="flex items-center gap-1.5 text-xs font-black text-amber-600 bg-amber-50 border border-amber-200/50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition"
+            >
+              <span>🔄 ایجاد انشعاب (Fork)</span>
+            </Link>
+          )}
+
+          <Link
+            to="/"
+            className="flex items-center gap-1 text-xs font-bold text-[#6C47FF] hover:bg-[#6C47FF]/5 px-3 py-1.5 rounded-lg transition"
+          >
+            <span>بازگشت به آرشیو پرامپت‌ها</span>
+            <ChevronLeft className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
+
+      {prompt.parent && (
+        <div className="bg-amber-50/40 border border-amber-200/50 text-amber-800 px-4 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold shadow-xs">
+          <span>🔗 این پرامپت انشعابی از</span>
+          <Link to={`/prompts/${prompt.parent.id}`} className="underline hover:text-amber-900 transition font-black">
+            {prompt.parent.title}
+          </Link>
+          <span>است</span>
+        </div>
+      )}
 
       {/* Grid: Main Prompt Body Content & Customization Wizard */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -581,6 +647,13 @@ export default function PromptDetail() {
             {/* Buttons Row */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <CopyButton text={renderedBody} onCopy={handleTrackCopy} className="flex-1 text-sm py-4" />
+
+              <button
+                onClick={() => handleRunExternal(renderedBody)}
+                className="flex items-center justify-center gap-2 px-5 py-4 text-sm font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl cursor-pointer transition-all duration-300 shadow-md shadow-emerald-600/10 flex-1"
+              >
+                <span>▶️ اجرا در {prompt.tools && prompt.tools.length > 0 ? prompt.tools[0] : "ابزار هوش مصنوعی"}</span>
+              </button>
               
               {prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
                 <button

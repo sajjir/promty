@@ -117,8 +117,13 @@ export default function PromptCard({ prompt }: PromptCardProps) {
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-bold text-slate-800 line-clamp-1 group-hover:text-[#6C47FF] transition-colors mb-2">
-          {prompt.title}
+        <h3 className="text-lg font-bold text-slate-800 line-clamp-1 group-hover:text-[#6C47FF] transition-colors mb-2 flex items-center gap-1.5">
+          {prompt.parentId && (
+            <span className="text-xs bg-amber-50 text-amber-600 border border-amber-200/50 px-1.5 py-0.5 rounded-md font-black shrink-0" title="نسخه انشعاب یافته">
+              🔄 انشعاب
+            </span>
+          )}
+          <span>{prompt.title}</span>
         </h3>
 
         {/* Description */}
