@@ -8,7 +8,6 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model Prompt {
   id            String   @id @default(cuid())
   title         String
@@ -22,17 +21,17 @@ model Prompt {
   isActive      Boolean  @default(true)
   usageCount    Int      @default(0)
   
-  // Forking/Anshab relations
-  parentId      String?
-  sourceText    String?  @db.Text
-  parent        Prompt?  @relation("PromptToPrompt", fields: [parentId], references: [id])
-  children      Prompt[] @relation("PromptToPrompt")
+  // --- Forking System ---
+  parentId      String?   @map("parent_id")
+  sourceText    String?   @db.Text
+  parent        Prompt?   @relation("PromptToPrompt", fields: [parentId], references: [id])
+  children      Prompt[]  @relation("PromptToPrompt")
 
-  // Smart Media Engine
+  // --- Smart Media Engine ---
   coverImage    String?
   mediaGallery  Json?
   
-  // AI Metadata Layers (Dynamic Validation)
+  // --- AI Metadata Layers ---
   intent        String?
   domains       String[]
   tools         String[]
