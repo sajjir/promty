@@ -360,6 +360,10 @@ export default function PromptDetail() {
     prompt.intent?.toLowerCase() === "code" ||
     prompt.tags?.some(tag => ["کد", "برنامه‌نویسی", "react", "programming", "code"].includes(tag.toLowerCase()));
 
+  const mediaGalleryArray = Array.isArray(prompt.mediaGallery) 
+    ? (prompt.mediaGallery as unknown as string[]) 
+    : [];
+
   return (
     <div className="space-y-8 pb-16 animate-fade-in text-right" dir="rtl">
       
@@ -412,12 +416,19 @@ export default function PromptDetail() {
           {/* Main Visual/Image Card */}
           <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm p-5 space-y-4">
             <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-100">
-              {prompt.sampleImage ? (
+              {prompt.coverImage ? (
+                <img
+                  src={prompt.coverImage}
+                  alt={prompt.title}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover animate-fade-in"
+                />
+              ) : prompt.sampleImage ? (
                 <img
                   src={prompt.sampleImage}
                   alt={prompt.title}
                   referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover animate-fade-in"
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 gap-2">
@@ -682,6 +693,40 @@ export default function PromptDetail() {
               </div>
             )}
           </div>
+
+          {/* Smart Media Gallery Section */}
+          {mediaGalleryArray.length > 0 && (
+            <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+              <div className="flex items-center gap-2 pb-3 border-b border-slate-50">
+                <Camera className="w-4.5 h-4.5 text-[#6C47FF]" />
+                <h4 className="text-xs font-black text-slate-800">📸 گالری نمونه خروجی‌های این پرامپت</h4>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {mediaGalleryArray.map((url, index) => (
+                  <a
+                    key={index}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative aspect-video rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shadow-xs cursor-pointer block"
+                  >
+                    <img 
+                      src={url} 
+                      alt={`${prompt.title} - نمونه خروجی ${index + 1}`} 
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition duration-200 flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-white bg-black/60 px-2.5 py-1 rounded-md">
+                        مشاهده تصویر اصلی 🔍
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* AI Refinement Panel */}
           <div className="bg-gradient-to-r from-[#6C47FF]/10 to-indigo-50/20 border border-[#6C47FF]/20 rounded-2xl p-5 space-y-4 shadow-sm">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Category, FieldSchema } from "../types";
 import PromptWizard from "../components/PromptWizard";
-import { ArrowRight, AlertTriangle, Sparkles, Code, Check, Loader2, Wand2 } from "lucide-react";
+import { ArrowRight, AlertTriangle, Sparkles, Code, Check, Loader2, Wand2, Camera } from "lucide-react";
 
 export default function AdminPromptAddEdit() {
   const { id } = useParams<{ id: string }>(); // If there is an ID, we are in Edit mode, otherwise Add mode.
@@ -43,6 +43,13 @@ export default function AdminPromptAddEdit() {
   const [sampleImage, setSampleImage] = useState("");
   const [isPremium, setIsPremium] = useState(false);
   const [isActive, setIsActive] = useState(true);
+
+  // Smart Media Engine states
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [existingCover, setExistingCover] = useState<string>("");
+  const [existingGallery, setExistingGallery] = useState<string[]>([]);
 
   // Source AI Analysis states
   const [sourceText, setSourceText] = useState("");
@@ -126,6 +133,8 @@ export default function AdminPromptAddEdit() {
             setBody(p.body);
             setSchemaJson(JSON.stringify(p.fieldsSchema, null, 2));
             setSampleImage(p.sampleImage || "");
+            setExistingCover(p.coverImage || "");
+            setExistingGallery(Array.isArray(p.mediaGallery) ? p.mediaGallery : []);
             setIsPremium(p.isPremium);
             setIsActive(p.isActive);
             setSourceText(p.sourceText || "");
@@ -315,6 +324,49 @@ export default function AdminPromptAddEdit() {
 
       const data = await res.json();
       if (res.ok && data.success) {
+        const savedPromptId = data.prompt?.id || id;
+
+        // Stage 2: Upload Files if present
+        if (savedPromptId && (coverFile || galleryFiles.length > 0)) {
+          setIsUploading(true);
+          const formData = new FormData();
+          
+          if (coverFile) {
+            formData.append("cover", coverFile);
+          }
+          if (galleryFiles.length > 0) {
+            galleryFiles.forEach((file) => {
+              formData.append("gallery", file);
+            });
+          }
+
+          try {
+            const uploadRes = await fetch(`/api/upload/${savedPromptId}`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`
+              },
+              body: formData
+            });
+
+            const uploadData = await uploadRes.json();
+            if (!uploadRes.ok || !uploadData.success) {
+              setError(uploadData.message || "آپلود و پردازش تصاویر با خطا مواجه شد ولی اطلاعات متنی ذخیره گردید.");
+              setIsUploading(false);
+              setSaving(false);
+              return;
+            }
+          } catch (uploadErr) {
+            console.error("Upload error:", uploadErr);
+            setError("خطا در برقراری ارتباط جهت آپلود تصاویر. اطلاعات متنی با موفقیت ذخیره شد.");
+            setIsUploading(false);
+            setSaving(false);
+            return;
+          } finally {
+            setIsUploading(false);
+          }
+        }
+
         setSuccess(true);
         setTimeout(() => {
           navigate("/admin");
@@ -814,6 +866,84 @@ export default function AdminPromptAddEdit() {
             </div>
           )}
 
+          {/* Media Engine File Upload Area */}
+          <div className="bg-white p-6 border border-slate-100 rounded-2xl shadow-sm space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
+              <Camera className="w-4 h-4 text-[#6C47FF]" />
+              <h3 className="text-xs font-bold text-slate-800">۳. موتور پردازش تصویر و رسانه اختصاصی</h3>
+            </div>
+
+            {isEditMode && (existingCover || (existingGallery && existingGallery.length > 0)) && (
+              <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-3 text-right">
+                <span className="text-[11px] font-bold text-slate-600 block">🖼️ پیش‌نمایش رسانه‌های فعلی این پرامپت:</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {existingCover && (
+                    <div className="space-y-1">
+                      <div className="relative aspect-video rounded-lg overflow-hidden border border-slate-200 bg-white shadow-xs">
+                        <img src={existingCover} alt="کاور فعلی" className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-[9px] font-black text-amber-600 block text-center">کاور فعلی</span>
+                    </div>
+                  )}
+                  {existingGallery && existingGallery.length > 0 && existingGallery.map((url, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <div className="relative aspect-video rounded-lg overflow-hidden border border-slate-200 bg-white shadow-xs">
+                        <img src={url} alt={`گالری ${idx + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-500 block text-center">گالری فعلی {idx + 1}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] font-semibold text-amber-600 mt-2">
+                  ⚠️ آپلود تصاویر جدید، تصاویر فعلی را در دیتابیس جایگزین خواهد کرد.
+                </p>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-right">
+              {/* Cover Image Input */}
+              <div className="space-y-1.5 text-right">
+                <label className="text-xs font-bold text-slate-600 block">تصویر کاور اختصاصی (اختیاری)</label>
+                <div className="relative border border-dashed border-slate-200 hover:border-[#6C47FF]/50 bg-slate-50/50 hover:bg-[#6C47FF]/5 rounded-xl transition duration-200 p-4 flex flex-col items-center justify-center text-center cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setCoverFile(e.target.files[0]);
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    {coverFile ? `✓ انتخاب شده: ${coverFile.name}` : "کلیک کنید یا تصویر کاور را اینجا رها کنید"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Gallery Images Input */}
+              <div className="space-y-1.5 text-right">
+                <label className="text-xs font-bold text-slate-600 block">گالری نمونه خروجی‌ها (اختیاری)</label>
+                <div className="relative border border-dashed border-slate-200 hover:border-[#6C47FF]/50 bg-slate-50/50 hover:bg-[#6C47FF]/5 rounded-xl transition duration-200 p-4 flex flex-col items-center justify-center text-center cursor-pointer">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        setGalleryFiles(Array.from(e.target.files));
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    {galleryFiles.length > 0 ? `✓ ${galleryFiles.length} تصویر انتخاب شده` : "انتخاب گروهی تصاویر نمونه خروجی"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Submit Action Box */}
           <div className="bg-white p-4 border border-slate-100 rounded-2xl shadow-sm flex items-center justify-end gap-3 mt-auto">
             <Link
@@ -825,15 +955,17 @@ export default function AdminPromptAddEdit() {
 
             <button
               type="submit"
-              disabled={saving || !!schemaError}
+              disabled={saving || isUploading || !!schemaError}
               className={`px-6 py-3 bg-[#6C47FF] hover:bg-[#5935e6] text-white font-bold text-xs rounded-xl shadow-md transition duration-200 flex items-center gap-2 cursor-pointer ${
-                saving || schemaError ? "opacity-50 cursor-not-allowed" : ""
+                saving || isUploading || schemaError ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
-              {saving ? (
+              {saving || isUploading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>در حال ذخیره‌سازی...</span>
+                  <span>
+                    {isUploading ? "در حال پردازش و آپلود تصاویر..." : "در حال ذخیره‌سازی..."}
+                  </span>
                 </>
               ) : (
                 <>
