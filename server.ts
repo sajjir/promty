@@ -580,7 +580,7 @@ async function getPageMetadata(urlPath: string) {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = 3005;
 
   const hasDbUrl = !!process.env.DATABASE_URL;
 
