@@ -1,15 +1,37 @@
-// server.ts
+import "dotenv/config";
 import express from "express";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
 import sharp from "sharp";
+import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
+import { OAuth2Client } from "google-auth-library";
 import { createServer as createViteServer } from "vite";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPromptRepository } from "./src/server/repositories/prisma/PrismaPromptRepository.ts";
 import { PrismaTaxonomyRepository } from "./src/server/repositories/prisma/PrismaTaxonomyRepository.ts";
 import { PrismaRelationshipRepository } from "./src/server/repositories/prisma/PrismaRelationshipRepository.ts";
+import { IPromptRepository } from "./src/server/repositories/IPromptRepository.ts";
+import { ITaxonomyRepository } from "./src/server/repositories/ITaxonomyRepository.ts";
+import { IRelationshipRepository } from "./src/server/repositories/IRelationshipRepository.ts";
+import { JsonPromptRepository } from "./src/server/repositories/json/JsonPromptRepository.ts";
+import { JsonTaxonomyRepository } from "./src/server/repositories/json/JsonTaxonomyRepository.ts";
+import { JsonRelationshipRepository } from "./src/server/repositories/json/JsonRelationshipRepository.ts";
 import { SearchService } from "./src/server/services/SearchService";
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error("FATAL ERROR: JWT_SECRET environment variable is missing. Stopping server...");
+  process.exit(1);
+}
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+let prisma: PrismaClient | null = null;
+let promptRepo: IPromptRepository;
+let taxonomyRepo: ITaxonomyRepository;
+let relationshipRepo: IRelationshipRepository;
 
 const FIELD_TYPE_OPTIONS = ["text", "textarea", "color", "select", "radio", "switch", "slider", "multiselect", "url"];
 const INTENT_OPTIONS = ["Create", "Write", "Code", "Design", "Market", "Analyze", "Learn", "Automate", "Research", "Productivity"];
@@ -63,6 +85,7 @@ interface DBSettings {
   n8nRefineWebhook: string;  // وبهوک مخصوص ارتقا پرامپت
   geminiApiKey: string;      // کلید مستقیم جمینای (Fallback)
   openaiApiKey: string;      // کلید مستقیم اوپنای‌آی (برای آینده)
+  siteTitle?: string;        // عنوان سراسری سایت
 }
 
 interface DB {
@@ -90,7 +113,8 @@ function readDB(): DB {
           n8nAnalyzeWebhook: "",
           n8nRefineWebhook: "",
           geminiApiKey: "",
-          openaiApiKey: ""
+          openaiApiKey: "",
+          siteTitle: "Promty.ir"
         };
         databaseChanged = true;
       } else {
@@ -112,6 +136,10 @@ function readDB(): DB {
         }
         if (parsed.settings.openaiApiKey === undefined) {
           parsed.settings.openaiApiKey = "";
+          databaseChanged = true;
+        }
+        if (parsed.settings.siteTitle === undefined) {
+          parsed.settings.siteTitle = "Promty.ir";
           databaseChanged = true;
         }
       }
@@ -156,7 +184,8 @@ function readDB(): DB {
       n8nAnalyzeWebhook: "",
       n8nRefineWebhook: "",
       geminiApiKey: "",
-      openaiApiKey: ""
+      openaiApiKey: "",
+      siteTitle: "Promty.ir"
     },
     categories: [
       { id: "1", name: "تبلیغات", slug: "advertising", icon: "Megaphone" },
@@ -325,7 +354,8 @@ function writeDB(data: DB) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
 }
 
-async function seedDatabaseIfEmpty(prisma: PrismaClient) {
+async function seedDatabaseIfEmpty(prisma: PrismaClient | null) {
+  if (!prisma) return;
   try {
     const count = await prisma.taxonomy.count();
     if (count === 0) {
@@ -353,9 +383,8 @@ async function seedDatabaseIfEmpty(prisma: PrismaClient) {
 // Check admin credentials
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@promty.ir";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
-const AUTH_TOKEN_SECRET = "promty_super_secret_session_token_123";
 
-async function getPageMetadata(urlPath: string, prisma: PrismaClient) {
+async function getPageMetadata(urlPath: string) {
   let title = "پرامپتی | مرجع و شخصی‌سازی پرامپت‌های آماده هوش مصنوعی";
   let description = "دانلود، بهینه‌سازی و کپی سریع پرامپت‌های مهندسی‌شده برای ابزارهای تصویرسازی و متنی مانند ChatGPT، Claude و Midjourney.";
   let imageUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800";
@@ -445,7 +474,7 @@ async function getPageMetadata(urlPath: string, prisma: PrismaClient) {
   } else if (promptMatch) {
     const id = promptMatch[1];
     try {
-      const prompt = await prisma.prompt.findUnique({ where: { id } });
+      const prompt = await promptRepo.getById(id);
       if (prompt) {
         title = `${prompt.title} | قالب پرامپت آماده و شخصی‌سازی - Promty`;
         description = prompt.description || `دانلود، ویرایش و کپی سریع پرامپت مهندسی‌شده "${prompt.title}" مخصوص ${prompt.category || "هوش مصنوعی"} در وبسایت پرامپتی.`;
@@ -551,33 +580,53 @@ async function getPageMetadata(urlPath: string, prisma: PrismaClient) {
 
 async function startServer() {
   const app = express();
-  const PORT = 3005;
+  const PORT = 3000;
 
-  const prisma = new PrismaClient();
-  const promptRepo = new PrismaPromptRepository(prisma);
-  const taxonomyRepo = new PrismaTaxonomyRepository(prisma);
-  const relationshipRepo = new PrismaRelationshipRepository(prisma);
+  const hasDbUrl = !!process.env.DATABASE_URL;
+
+  if (hasDbUrl) {
+    try {
+      prisma = new PrismaClient();
+      promptRepo = new PrismaPromptRepository(prisma);
+      taxonomyRepo = new PrismaTaxonomyRepository(prisma);
+      relationshipRepo = new PrismaRelationshipRepository(prisma);
+      console.log("[DB] Using Prisma database backend.");
+    } catch (dbError) {
+      console.error("[DB] Failed to initialize Prisma, falling back to JSON storage:", dbError);
+      prisma = null;
+    }
+  }
+
+  if (!prisma) {
+    console.log("[DB] DATABASE_URL is not set or Prisma failed. Falling back to JSON storage.");
+    promptRepo = new JsonPromptRepository();
+    taxonomyRepo = new JsonTaxonomyRepository();
+    relationshipRepo = new JsonRelationshipRepository();
+  }
 
   await seedDatabaseIfEmpty(prisma);
 
   // Clean and sanitize any potential negative/fake usage count values
-  try {
-    await prisma.prompt.updateMany({
-      where: {
-        usageCount: {
-          lt: 0
+  if (prisma) {
+    try {
+      await prisma.prompt.updateMany({
+        where: {
+          usageCount: {
+            lt: 0
+          }
+        },
+        data: {
+          usageCount: 0
         }
-      },
-      data: {
-        usageCount: 0
-      }
-    });
-    console.log("Database usage count values sanitized successfully.");
-  } catch (e) {
-    console.error("Failed to sanitize usage count values:", e);
+      });
+      console.log("Database usage count values sanitized successfully.");
+    } catch (e) {
+      console.error("Failed to sanitize usage count values:", e);
+    }
   }
 
   app.use(express.json());
+  app.use(cookieParser());
 
   // Serve processed media uploads with 1-month Cache-Control
   app.use("/dl", express.static(path.join(process.cwd(), "dl"), { maxAge: "30d" }));
@@ -648,10 +697,8 @@ async function startServer() {
         }
       }
 
-      // 3. Update database using prisma.prompt.update
-      const existingPrompt = await prisma.prompt.findUnique({
-        where: { id: promptId }
-      });
+      // 3. Update database using promptRepo
+      const existingPrompt = await promptRepo.getById(promptId);
 
       if (!existingPrompt) {
         return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
@@ -671,10 +718,7 @@ async function startServer() {
         updateData.mediaGallery = updatedGallery as any;
       }
 
-      const updatedPrompt = await prisma.prompt.update({
-        where: { id: promptId },
-        data: updateData
-      });
+      const updatedPrompt = await promptRepo.update(promptId, updateData);
 
       return res.json({
         success: true,
@@ -692,22 +736,203 @@ async function startServer() {
   app.post("/api/auth/login", (req, res) => {
     const { email, password } = req.body;
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      const token = jwt.sign(
+        { id: "admin_static", email: ADMIN_EMAIL, role: "admin" },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      res.cookie("promty_session", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
       return res.json({
         success: true,
-        token: AUTH_TOKEN_SECRET,
+        token, // Backwards compatibility for old clients if any
         user: { email: ADMIN_EMAIL, role: "admin" }
       });
     }
     return res.status(401).json({ success: false, message: "ایمیل یا رمز عبور اشتباه است." });
   });
 
+  // API - Auth Logout
+  app.post("/api/auth/logout", (req, res) => {
+    res.clearCookie("promty_session", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none"
+    });
+    return res.json({ success: true, message: "خروج موفقیت‌آمیز" });
+  });
+
+  // API - Google OAuth 2.0 Login
+  app.post("/api/auth/google", async (req, res) => {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ success: false, message: "توکن گوگل ارسال نشده است." });
+    }
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload) {
+        return res.status(400).json({ success: false, message: "توکن معتبر نیست." });
+      }
+
+      const { email, name, picture } = payload;
+
+      let user = null;
+      if (prisma) {
+        user = await prisma.user.findUnique({
+          where: { email: email },
+        });
+
+        if (!user) {
+          const role = email === ADMIN_EMAIL ? "ADMIN" : "USER";
+          user = await prisma.user.create({
+            data: {
+              email,
+              name,
+              avatar: picture,
+              role,
+            },
+          });
+        }
+      } else {
+        user = {
+          id: "google_mock_" + Date.now(),
+          email,
+          name,
+          avatar: picture,
+          role: email === ADMIN_EMAIL ? "ADMIN" : "USER",
+        };
+      }
+
+      const token = jwt.sign(
+        { id: user.id, email: user.email, role: user.role === "ADMIN" ? "admin" : "user" },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      res.cookie("promty_session", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.json({
+        success: true,
+        user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, role: user.role.toLowerCase() },
+      });
+    } catch (err: any) {
+      console.error("Google Auth error:", err);
+      return res.status(500).json({ success: false, message: "احراز هویت گوگل ناموفق بود: " + err.message });
+    }
+  });
+
+  // API - Get User Profile (Auth status check)
+  app.get("/api/auth/me", async (req, res) => {
+    const token = req.cookies.promty_session;
+    if (!token) {
+      return res.json({ success: false, user: null });
+    }
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      if (!decoded) {
+        return res.json({ success: false, user: null });
+      }
+
+      let user = null;
+      if (prisma && decoded.id && !decoded.id.startsWith("google_mock") && !decoded.id.startsWith("mock")) {
+        user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+        });
+      }
+
+      if (!user) {
+        user = {
+          id: decoded.id || "admin",
+          email: decoded.email,
+          name: decoded.role === "admin" ? "مدیر سیستم" : "کاربر",
+          avatar: null,
+          role: decoded.role === "admin" ? "ADMIN" : "USER",
+        };
+      }
+
+      return res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: (user as any).phone,
+          name: user.name,
+          avatar: user.avatar,
+          role: user.role.toLowerCase(),
+        },
+      });
+    } catch (err) {
+      return res.json({ success: false, user: null });
+    }
+  });
+
+  // API - Public Configuration (Google Client ID)
+  app.get("/api/config", (req, res) => {
+    res.json({
+      googleClientId: process.env.GOOGLE_CLIENT_ID || ""
+    });
+  });
+
+  // API - Mock OTP Login for user verification
+  app.post("/api/auth/otp-mock", (req, res) => {
+    const { phone, code } = req.body;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: "شماره تلفن الزامی است." });
+    }
+    if (code === "1234") {
+      const mockId = "mock_otp_" + Date.now();
+      const token = jwt.sign(
+        { id: mockId, email: `${phone}@promty.ir`, phone, role: "user" },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      res.cookie("promty_session", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.json({
+        success: true,
+        user: { id: mockId, email: `${phone}@promty.ir`, phone, name: `کاربر ${phone}`, role: "user" }
+      });
+    }
+    return res.status(400).json({ success: false, message: "کد تایید اشتباه است. (کد پیش‌فرض ۱۲۳۴ است)" });
+  });
+
   // Admin middleware
   const adminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader === `Bearer ${AUTH_TOKEN_SECRET}`) {
-      next();
-    } else {
-      res.status(403).json({ success: false, message: "دسترسی غیرمجاز" });
+    const token = req.cookies.promty_session;
+    if (!token) {
+      return res.status(403).json({ success: false, message: "دسترسی غیرمجاز (کوکی یافت نشد)" });
+    }
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      if (decoded && decoded.role === "admin") {
+        (req as any).user = decoded;
+        next();
+      } else {
+        res.status(403).json({ success: false, message: "دسترسی غیرمجاز" });
+      }
+    } catch (err) {
+      res.status(403).json({ success: false, message: "توکن نامعتبر است" });
     }
   };
 
@@ -715,6 +940,25 @@ async function startServer() {
   app.get("/api/categories", (req, res) => {
     const db = readDB();
     res.json({ categories: db.categories });
+  });
+
+  // API - Get Facets for progressive filtering
+  app.get("/api/facets", async (req, res) => {
+    try {
+      const { q, tool, domain, intent, difficulty, language } = req.query;
+      const filters = {
+        q: typeof q === "string" ? q : undefined,
+        tool: typeof tool === "string" ? tool : undefined,
+        domain: typeof domain === "string" ? domain : undefined,
+        intent: typeof intent === "string" ? intent : undefined,
+        difficulty: typeof difficulty === "string" ? difficulty : undefined,
+        language: typeof language === "string" ? language : undefined,
+      };
+      const facetsResult = await promptRepo.getFacets(filters);
+      res.json({ success: true, facets: facetsResult });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
   });
 
   // API - Get Prompt list (all active, or with category filter)
@@ -726,8 +970,16 @@ async function startServer() {
       const limit = limitQuery ? parseInt(limitQuery as string, 10) : 20;
 
       // Non-admin users should only see active prompts by default
-      const authHeader = req.headers.authorization;
-      const isAdmin = authHeader === `Bearer ${AUTH_TOKEN_SECRET}`;
+      let isAdmin = false;
+      const token = req.cookies.promty_session;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          if (decoded && decoded.role === "admin") {
+            isAdmin = true;
+          }
+        } catch (e) {}
+      }
 
       const filters: any = {
         page,
@@ -1029,14 +1281,15 @@ async function startServer() {
 
   // API - Update Settings (admin only)
   app.post("/api/settings", adminAuth, (req, res) => {
-    const { n8nAnalyzeWebhook, n8nRefineWebhook, geminiApiKey, openaiApiKey } = req.body;
+    const { n8nAnalyzeWebhook, n8nRefineWebhook, geminiApiKey, openaiApiKey, siteTitle } = req.body;
     const db = readDB();
     db.settings = {
       n8nWebhookUrl: n8nRefineWebhook || "",
       n8nAnalyzeWebhook: n8nAnalyzeWebhook || "",
       n8nRefineWebhook: n8nRefineWebhook || "",
       geminiApiKey: geminiApiKey || "",
-      openaiApiKey: openaiApiKey || ""
+      openaiApiKey: openaiApiKey || "",
+      siteTitle: siteTitle || "Promty.ir"
     };
     writeDB(db);
     res.json({ success: true, settings: db.settings });
@@ -1046,7 +1299,8 @@ async function startServer() {
   app.get("/api/settings/public", (req, res) => {
     const db = readDB();
     res.json({
-      isWebhookConfigured: !!(db.settings && (db.settings.n8nRefineWebhook || db.settings.n8nWebhookUrl))
+      isWebhookConfigured: !!(db.settings && (db.settings.n8nRefineWebhook || db.settings.n8nWebhookUrl)),
+      siteTitle: db.settings?.siteTitle || "Promty.ir"
     });
   });
 
@@ -1091,7 +1345,8 @@ async function startServer() {
 
       if (analyzeUrl.length > 0) {
         // Fetch active taxonomies from the database for n8n Webhook context
-        const activeTaxonomies = await prisma.taxonomy.findMany({ where: { status: "active" } });
+        const allTaxonomies = await taxonomyRepo.getAll();
+        const activeTaxonomies = allTaxonomies.filter((t: any) => t.status === "active");
 
         const tIntents = activeTaxonomies.filter(t => t.type?.toLowerCase() === "intent").map(t => t.slug);
         const intentsStr = tIntents.length > 0 ? tIntents.join(", ") : INTENT_OPTIONS.join(", ");
@@ -1529,8 +1784,16 @@ ${sourceText}
       const queryStr = typeof q === "string" ? q : "";
       
       // Non-admin users only search active prompts
-      const authHeader = req.headers.authorization;
-      const isAdmin = authHeader === `Bearer ${AUTH_TOKEN_SECRET}`;
+      let isAdmin = false;
+      const token = req.cookies.promty_session;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          if (decoded && decoded.role === "admin") {
+            isAdmin = true;
+          }
+        } catch (e) {}
+      }
 
       const filters: any = {};
       if (!isAdmin) {
@@ -1582,7 +1845,7 @@ ${sourceText}
         let html = fs.readFileSync(indexPath, "utf-8");
         
         // Fetch dynamic page SEO & Schema meta
-        const metaTags = await getPageMetadata(req.path, prisma);
+        const metaTags = await getPageMetadata(req.path);
         
         // Remove standard title tag first if exists to prevent duplication
         html = html.replace(/<title>.*?<\/title>/gi, "");

@@ -9,4 +9,11 @@ export interface IPromptRepository {
   delete(id: string): Promise<boolean>;
   incrementUsageCount(id: string): Promise<void>;
   getStats(): Promise<{ totalPrompts: number; totalUsages: number; mostPopular: string }>;
+  getFacets(filters?: { q?: string; tool?: string; domain?: string; intent?: string; difficulty?: string; language?: string }): Promise<{
+    tools: Record<string, number>;
+    domains: Record<string, number>;
+    intents: Record<string, number>;
+    difficulties: Record<string, number>;
+    languages: Record<string, number>;
+  }>;
 }

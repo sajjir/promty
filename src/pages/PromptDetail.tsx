@@ -84,6 +84,105 @@ const RUN_URLS: Record<string, string> = {
   "stable diffusion": "https://dreamstudio.ai/"
 };
 
+function TaxonomyBlock({ prompt }: { prompt: Prompt }) {
+  return (
+    <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4 text-right" dir="rtl">
+      <div className="flex items-center gap-1.5 pb-2.5 border-b border-slate-50">
+        <Tag className="w-4 h-4 text-[#6C47FF]" />
+        <h4 className="text-xs font-black text-slate-800">شناسنامه پرامپت</h4>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3.5 text-xs text-slate-600">
+        {prompt.tools && prompt.tools.length > 0 && (
+          <div className="space-y-1">
+            <span className="text-[10px] text-slate-400 font-bold block">🛠️ ابزار هوش مصنوعی:</span>
+            <div className="flex flex-wrap gap-1">
+              {prompt.tools.map(t => (
+                <Link 
+                  key={t} 
+                  to={`/?tool=${t}`}
+                  className="bg-indigo-50 text-[#6C47FF] px-2 py-0.5 rounded text-[10px] font-bold border border-indigo-100/50 hover:ring-2 hover:ring-[#6C47FF]/50 transition-all cursor-pointer block"
+                >
+                  {t}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {prompt.domains && prompt.domains.length > 0 && (
+          <div className="space-y-1">
+            <span className="text-[10px] text-slate-400 font-bold block">🌐 حوزه کاری (Domain):</span>
+            <div className="flex flex-wrap gap-1">
+              {prompt.domains.map(d => (
+                <Link 
+                  key={d} 
+                  to={`/?domain=${d}`}
+                  className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold hover:ring-2 hover:ring-[#6C47FF]/50 transition-all cursor-pointer block"
+                >
+                  {TRANSLATIONS[d] || TRANSLATIONS[d.toLowerCase()] || d}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {prompt.intent && (
+          <div className="space-y-1">
+            <span className="text-[10px] text-slate-400 font-bold block">🎯 قصد و هدف پرامپت:</span>
+            <Link 
+              to={`/?intent=${prompt.intent}`}
+              className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100/30 inline-block hover:ring-2 hover:ring-[#6C47FF]/50 transition-all cursor-pointer"
+            >
+              {TRANSLATIONS[prompt.intent] || TRANSLATIONS[prompt.intent.toLowerCase()] || prompt.intent}
+            </Link>
+          </div>
+        )}
+
+        {prompt.language && (
+          <div className="space-y-1">
+            <span className="text-[10px] text-slate-400 font-bold block">💬 زبان پرامپت:</span>
+            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold inline-block">
+              {TRANSLATIONS[prompt.language] || TRANSLATIONS[prompt.language.toLowerCase()] || prompt.language}
+            </span>
+          </div>
+        )}
+
+        {prompt.difficulty && (
+          <div className="space-y-1 col-span-2">
+            <span className="text-[10px] text-slate-400 font-bold block">⚡ سطح تخصص مورد نیاز:</span>
+            <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold inline-block border ${
+              prompt.difficulty.toLowerCase() === "beginner" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+              prompt.difficulty.toLowerCase() === "intermediate" ? "bg-blue-50 text-blue-700 border-blue-100" :
+              prompt.difficulty.toLowerCase() === "advanced" ? "bg-amber-50 text-amber-700 border-amber-100" :
+              "bg-rose-50 text-rose-700 border-rose-100"
+            }`}>
+              {TRANSLATIONS[prompt.difficulty] || TRANSLATIONS[prompt.difficulty.toLowerCase()] || prompt.difficulty}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {prompt.tags && prompt.tags.length > 0 && (
+        <div className="pt-3 border-t border-slate-50 space-y-1.5">
+          <span className="text-[10px] text-slate-400 font-bold block">برچسب‌ها:</span>
+          <div className="flex flex-wrap gap-1">
+            {prompt.tags.map((tag) => (
+              <Link 
+                key={tag} 
+                to={`/?tag=${tag}`}
+                className="px-2 py-0.5 bg-slate-50 text-slate-500 text-[10px] font-medium rounded border border-slate-100 hover:ring-2 hover:ring-[#6C47FF]/50 transition-all cursor-pointer block"
+              >
+                #{tag}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PromptDetail() {
   const { id } = useParams<{ id: string }>();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
@@ -91,6 +190,7 @@ export default function PromptDetail() {
   const [renderedBody, setRenderedBody] = useState("");
   const [showWizard, setShowWizard] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const isAdmin = !!localStorage.getItem("promty_admin_token");
 
@@ -190,7 +290,7 @@ export default function PromptDetail() {
       
       const steps = [
         "در حال فراخوانی عامل هوش مصنوعی (AI Agent)...",
-        "در حال مهندسی و بازنویسی متغیرها تحت گایدلاین‌های n8n...",
+        "در حال مهندسی و بازنویسی متغیرها تحت گایدلاین‌ها...",
         "بهینه‌سازی کلمات کلیدی، پرسپکتیو و فریم‌ورک‌های رندر...",
         "افزودن تنظیمات کیفیت بالا (Photorealistic & 8K Directives)...",
         "اعمال ویژگی‌های اختصاصی سبک و نورپردازی حرفه‌ای سینمایی..."
@@ -352,7 +452,8 @@ export default function PromptDetail() {
   const IconComponent = categoryIcons[prompt.category || ""] || Sparkles;
 
   // Render a mock preview of textual output (for ChatGPT, Claude, etc)
-  const isImagePrompt = prompt.tools?.some(t => ["midjourney", "flux", "stable diffusion", "stable-diffusion", "ideogram", "mj"].includes(t.toLowerCase())) || prompt.category === "عکاسی" || prompt.category === "ویدیو";
+  const IMAGE_TOOLS = ['midjourney', 'flux', 'stable-diffusion', 'dalle', 'runway', 'kling'];
+  const isImagePrompt = prompt.tools ? prompt.tools.some(tool => IMAGE_TOOLS.includes(tool.toLowerCase())) : false;
 
   const isCoding = 
     prompt.tools?.some(t => ["chatgpt", "claude", "gemini", "grok"].includes(t.toLowerCase())) || 
@@ -363,6 +464,16 @@ export default function PromptDetail() {
   const mediaGalleryArray = Array.isArray(prompt.mediaGallery) 
     ? (prompt.mediaGallery as unknown as string[]) 
     : [];
+
+  const allMedia: string[] = [];
+  if (prompt.coverImage) {
+    allMedia.push(prompt.coverImage);
+  }
+  mediaGalleryArray.forEach((url) => {
+    if (url && !allMedia.includes(url)) {
+      allMedia.push(url);
+    }
+  });
 
   return (
     <div className="space-y-8 pb-16 animate-fade-in text-right" dir="rtl">
@@ -415,6 +526,21 @@ export default function PromptDetail() {
           
           {/* Main Visual/Image Card */}
           <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm p-5 space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs text-[#6C47FF] font-black">
+                <IconComponent className="w-4 h-4" />
+                <span>دسته‌بندی: {prompt.category || "عمومی"}</span>
+              </div>
+
+              <h1 className="text-lg md:text-xl font-black text-slate-800 leading-tight">
+                {prompt.title}
+              </h1>
+
+              <p className="text-slate-500 text-xs leading-relaxed">
+                {prompt.description || "توضیحی برای این پرامپت مهندسی شده ثبت نشده است."}
+              </p>
+            </div>
+
             <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-100">
               {prompt.coverImage ? (
                 <img
@@ -442,98 +568,47 @@ export default function PromptDetail() {
                 </span>
               )}
             </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs text-[#6C47FF] font-black">
-                <IconComponent className="w-4 h-4" />
-                <span>دسته‌بندی: {prompt.category || "عمومی"}</span>
-              </div>
-
-              <h1 className="text-lg md:text-xl font-black text-slate-800 leading-tight">
-                {prompt.title}
-              </h1>
-
-              <p className="text-slate-500 text-xs leading-relaxed">
-                {prompt.description || "توضیحی برای این پرامپت مهندسی شده ثبت نشده است."}
-              </p>
-            </div>
           </div>
 
-          {/* Structured Taxonomy Dimensions */}
-          <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4">
-            <div className="flex items-center gap-1.5 pb-2.5 border-b border-slate-50">
-              <Tag className="w-4 h-4 text-[#6C47FF]" />
-              <h4 className="text-xs font-black text-slate-800">ابعاد طبقه‌بندی معنایی (Taxonomies)</h4>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3.5 text-xs text-slate-600">
-              {prompt.tools && prompt.tools.length > 0 && (
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-bold block">🛠️ ابزار هوش مصنوعی:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {prompt.tools.map(t => (
-                      <span key={t} className="bg-indigo-50 text-[#6C47FF] px-2 py-0.5 rounded text-[10px] font-bold border border-indigo-100/50">{t}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {prompt.domains && prompt.domains.length > 0 && (
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-bold block">🌐 حوزه کاری (Domain):</span>
-                  <div className="flex flex-wrap gap-1">
-                    {prompt.domains.map(d => (
-                      <span key={d} className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">{TRANSLATIONS[d] || TRANSLATIONS[d.toLowerCase()] || d}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {prompt.intent && (
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-bold block">🎯 قصد و هدف پرامپت:</span>
-                  <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100/30 inline-block">
-                    {TRANSLATIONS[prompt.intent] || TRANSLATIONS[prompt.intent.toLowerCase()] || prompt.intent}
-                  </span>
-                </div>
-              )}
-
-              {prompt.language && (
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-bold block">💬 زبان پرامپت:</span>
-                  <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold inline-block">
-                    {TRANSLATIONS[prompt.language] || TRANSLATIONS[prompt.language.toLowerCase()] || prompt.language}
-                  </span>
-                </div>
-              )}
-
-              {prompt.difficulty && (
-                <div className="space-y-1 col-span-2">
-                  <span className="text-[10px] text-slate-400 font-bold block">⚡ سطح تخصص مورد نیاز:</span>
-                  <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold inline-block border ${
-                    prompt.difficulty.toLowerCase() === "beginner" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
-                    prompt.difficulty.toLowerCase() === "intermediate" ? "bg-blue-50 text-blue-700 border-blue-100" :
-                    prompt.difficulty.toLowerCase() === "advanced" ? "bg-amber-50 text-amber-700 border-amber-100" :
-                    "bg-rose-50 text-rose-700 border-rose-100"
-                  }`}>
-                    {TRANSLATIONS[prompt.difficulty] || TRANSLATIONS[prompt.difficulty.toLowerCase()] || prompt.difficulty}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {prompt.tags && prompt.tags.length > 0 && (
-              <div className="pt-3 border-t border-slate-50 space-y-1.5">
-                <span className="text-[10px] text-slate-400 font-bold block">برچسب‌ها:</span>
-                <div className="flex flex-wrap gap-1">
-                  {prompt.tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 bg-slate-50 text-slate-500 text-[10px] font-medium rounded border border-slate-100">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
+          {/* Smart Media Gallery Section */}
+          {mediaGalleryArray.length > 0 && (
+            <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4">
+              <div className="flex items-center gap-2 pb-2.5 border-b border-slate-50">
+                <Camera className="w-4.5 h-4.5 text-[#6C47FF]" />
+                <h4 className="text-xs font-black text-slate-800">📸 نمونه خروجی‌ها</h4>
               </div>
-            )}
+
+              <div className="grid grid-cols-3 gap-3">
+                {mediaGalleryArray.map((url, index) => (
+                  <div
+                    key={index}
+                    onClick={() => {
+                      const originalUrl = url.replace("thumbnail-", "gallery-");
+                      setLightboxImage(originalUrl);
+                    }}
+                    className="group relative aspect-video rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shadow-xs cursor-pointer block"
+                  >
+                    <img 
+                      src={url} 
+                      alt={`${prompt.title} - نمونه خروجی ${index + 1}`} 
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-300 cursor-pointer hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition duration-200 flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-white bg-black/60 px-2 py-0.5 rounded">
+                        🔍 بزرگنمایی
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Desktop Taxonomy Block */}
+          <div className="hidden lg:block">
+            <TaxonomyBlock prompt={prompt} />
           </div>
 
           {/* SEO Performance Visual Card Accordion */}
@@ -694,39 +769,10 @@ export default function PromptDetail() {
             )}
           </div>
 
-          {/* Smart Media Gallery Section */}
-          {mediaGalleryArray.length > 0 && (
-            <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 pb-3 border-b border-slate-50">
-                <Camera className="w-4.5 h-4.5 text-[#6C47FF]" />
-                <h4 className="text-xs font-black text-slate-800">📸 گالری نمونه خروجی‌های این پرامپت</h4>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {mediaGalleryArray.map((url, index) => (
-                  <a
-                    key={index}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group relative aspect-video rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shadow-xs cursor-pointer block"
-                  >
-                    <img 
-                      src={url} 
-                      alt={`${prompt.title} - نمونه خروجی ${index + 1}`} 
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition duration-200 flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-white bg-black/60 px-2.5 py-1 rounded-md">
-                        مشاهده تصویر اصلی 🔍
-                      </span>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Mobile Taxonomy block */}
+          <div className="block lg:hidden mt-6">
+            <TaxonomyBlock prompt={prompt} />
+          </div>
 
           {/* AI Refinement Panel */}
           <div className="bg-gradient-to-r from-[#6C47FF]/10 to-indigo-50/20 border border-[#6C47FF]/20 rounded-2xl p-5 space-y-4 shadow-sm">
@@ -858,37 +904,21 @@ export default function PromptDetail() {
           )}
 
           {/* Sample Output Mocking container Accordion */}
-          <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm transition-all duration-300">
-            <button
-              onClick={() => setShowOutputAccordion(!showOutputAccordion)}
-              className="w-full flex items-center justify-between p-6 text-right font-sans focus:outline-none cursor-pointer"
-            >
-              <div className="flex items-center gap-1.5">
-                <MessageSquare className="w-4.5 h-4.5 text-[#6C47FF]" />
-                <h4 className="text-xs font-black text-slate-800">پیش‌نمایش خروجی نمونه (Sample Output Mock)</h4>
-              </div>
-              <span className="text-slate-400 text-xs">{showOutputAccordion ? "▲" : "▼"}</span>
-            </button>
+          {!isImagePrompt && (
+            <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm transition-all duration-300">
+              <button
+                onClick={() => setShowOutputAccordion(!showOutputAccordion)}
+                className="w-full flex items-center justify-between p-6 text-right font-sans focus:outline-none cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5">
+                  <MessageSquare className="w-4.5 h-4.5 text-[#6C47FF]" />
+                  <h4 className="text-xs font-black text-slate-800">پیش‌نمایش خروجی نمونه (Sample Output Mock)</h4>
+                </div>
+                <span className="text-slate-400 text-xs">{showOutputAccordion ? "▲" : "▼"}</span>
+              </button>
 
-            {showOutputAccordion && (
-              <div className="p-6 pt-0 border-t border-slate-50 space-y-4">
-                {isImagePrompt ? (
-                  <div className="space-y-2.5">
-                    <p className="text-xs text-slate-500 leading-relaxed">تصویر زیر نمونه‌ای از خروجی رندر شده توسط ابزارهای تصویرساز به کمک این پرامپت است:</p>
-                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-xs max-w-md mx-auto">
-                      {prompt.sampleImage ? (
-                        <img
-                          src={prompt.sampleImage}
-                          alt="Sample render"
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold text-xs bg-slate-100">نمونه تصویری یافت نشد</div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
+              {showOutputAccordion && (
+                <div className="p-6 pt-0 border-t border-slate-50 space-y-4">
                   <div className="space-y-4">
                     <p className="text-xs text-slate-500 leading-relaxed">شبیه‌سازی گفت‌وگو و نمونه پاسخ دریافتی از مدل‌های متنی (مانند ChatGPT / Claude):</p>
                     
@@ -919,10 +949,10 @@ export default function PromptDetail() {
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Operational Guidance Block */}
           <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-3.5">
@@ -972,6 +1002,33 @@ export default function PromptDetail() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* Lightbox Modal */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
+          onClick={() => setLightboxImage(null)}
+        >
+          {/* Close button */}
+          <button 
+            className="absolute top-4 right-4 text-white hover:text-slate-300 p-2 cursor-pointer transition focus:outline-none"
+            onClick={() => setLightboxImage(null)}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Central Image */}
+          <img 
+            src={lightboxImage} 
+            alt="نمای بزرگ تصویر" 
+            referrerPolicy="no-referrer"
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
 
     </div>

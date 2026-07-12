@@ -2,6 +2,20 @@ import React, { useState, useEffect } from "react";
 import { FieldSchema } from "../types";
 import { renderPrompt } from "../lib/renderPrompt";
 
+function parseOption(opt: string) {
+  const parts = opt.split("|");
+  if (parts.length > 1) {
+    return {
+      value: parts[0].trim(),
+      label: parts[1].trim()
+    };
+  }
+  return {
+    value: opt.trim(),
+    label: opt.trim()
+  };
+}
+
 interface PromptWizardProps {
   fields: FieldSchema[];
   promptBody: string;
@@ -73,11 +87,14 @@ export default function PromptWizard({ fields, promptBody, onRendered }: PromptW
                   className="w-full text-xs p-2.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition cursor-pointer"
                 >
                   <option value="">{field.placeholder || "یکی را انتخاب کنید"}</option>
-                  {field.options?.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
+                  {field.options?.map((opt) => {
+                    const parsed = parseOption(opt);
+                    return (
+                      <option key={opt} value={parsed.value}>
+                        {parsed.label}
+                      </option>
+                    );
+                  })}
                 </select>
               ) : field.type === "color" ? (
                 <div id="color-picker-group" className="flex items-center gap-2">
@@ -126,31 +143,35 @@ export default function PromptWizard({ fields, promptBody, onRendered }: PromptW
                 </div>
               ) : field.type === "radio" ? (
                 <div className="flex flex-wrap gap-3 mt-1">
-                  {field.options?.map((opt) => (
-                    <label key={opt} className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600">
-                      <input
-                        type="radio"
-                        name={field.key}
-                        value={opt}
-                        checked={value === opt}
-                        onChange={() => handleInputChange(field.key, opt)}
-                        className="w-3.5 h-3.5 text-[#6C47FF] focus:ring-[#6C47FF]"
-                      />
-                      <span>{opt}</span>
-                    </label>
-                  ))}
+                  {field.options?.map((opt) => {
+                    const parsed = parseOption(opt);
+                    return (
+                      <label key={opt} className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600">
+                        <input
+                          type="radio"
+                          name={field.key}
+                          value={parsed.value}
+                          checked={value === parsed.value}
+                          onChange={() => handleInputChange(field.key, parsed.value)}
+                          className="w-3.5 h-3.5 text-[#6C47FF] focus:ring-[#6C47FF]"
+                        />
+                        <span>{parsed.label}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               ) : field.type === "multiselect" ? (
                 <div className="flex flex-wrap gap-2 mt-1 p-2 bg-white border border-slate-200 rounded-lg max-h-24 overflow-y-auto w-full">
                   {field.options?.map((opt) => {
+                    const parsed = parseOption(opt);
                     const selectedList = value ? value.split(", ") : [];
-                    const isSelected = selectedList.includes(opt);
+                    const isSelected = selectedList.includes(parsed.value);
                     const toggleOption = () => {
                       let newList;
                       if (isSelected) {
-                        newList = selectedList.filter((s) => s !== opt);
+                        newList = selectedList.filter((s) => s !== parsed.value);
                       } else {
-                        newList = [...selectedList, opt];
+                        newList = [...selectedList, parsed.value];
                       }
                       handleInputChange(field.key, newList.join(", "));
                     };
@@ -163,7 +184,7 @@ export default function PromptWizard({ fields, promptBody, onRendered }: PromptW
                           onChange={toggleOption}
                           className="w-3.5 h-3.5 text-[#6C47FF] focus:ring-[#6C47FF] rounded"
                         />
-                        <span>{opt}</span>
+                        <span>{parsed.label}</span>
                       </label>
                     );
                   })}

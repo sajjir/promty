@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Prompt } from "../types";
 import PromptCard from "../components/PromptCard";
 import { 
@@ -13,14 +13,67 @@ import { motion, AnimatePresence } from "motion/react";
 export default function Homepage() {
   const navigate = useNavigate();
   const { toolSlug, domainSlug } = useParams<{ toolSlug?: string; domainSlug?: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Search parameters parsed from URL
+  const searchQuery = searchParams.get("q") || "";
+  const selectedTool = searchParams.get("tool") || "";
+  const selectedDomain = searchParams.get("domain") || "";
+  const selectedIntent = searchParams.get("intent") || "";
+  const selectedDifficulty = searchParams.get("difficulty") || "";
+  const selectedLanguage = searchParams.get("language") || "";
+
+  // Helper to update any filter in URL search params
+  const updateFilter = (key: string, value: string, isSearch: boolean = false) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    // Always reset page to 1 when filters change
+    newParams.delete("page");
+    setSearchParams(newParams, { replace: isSearch });
+  };
+
+  const setSearchQuery = (val: string) => {
+    updateFilter("q", val, true);
+  };
+
+  const setSelectedTool = (val: string) => updateFilter("tool", val);
+  const setSelectedDomain = (val: string) => updateFilter("domain", val);
+  const setSelectedIntent = (val: string) => updateFilter("intent", val);
+  const setSelectedDifficulty = (val: string) => updateFilter("difficulty", val);
+  const setSelectedLanguage = (val: string) => updateFilter("language", val);
+
   const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   
   // Dynamic DB Taxonomies & Facet Counts state
   const [dbTaxonomies, setDbTaxonomies] = useState<any[]>([]);
-  const [facets, setFacets] = useState<any>(null);
-  const [filterHistory, setFilterHistory] = useState<{ type: string; value: string; label: string }[]>([]);
+  const [availableFacets, setAvailableFacets] = useState<any>(null);
+  const facets = availableFacets;
+
+  // Translate helper using dynamic taxonomies
+  const getTranslation = (slug: string, type: string) => {
+    if (!slug) return "";
+    const term = dbTaxonomies.find(
+      (t) => t.slug?.toLowerCase() === slug.toLowerCase() && t.type?.toLowerCase() === type.toLowerCase()
+    );
+    return term ? term.titleFa : slug;
+  };
+
+  // Compute filterHistory dynamically from URL parameters
+  const filterHistory = [
+    selectedIntent ? { type: "intent", value: selectedIntent, label: "" } : null,
+    selectedTool ? { type: "tool", value: selectedTool, label: "" } : null,
+    selectedDomain ? { type: "domain", value: selectedDomain, label: "" } : null,
+    selectedDifficulty ? { type: "difficulty", value: selectedDifficulty, label: "" } : null,
+    selectedLanguage ? { type: "language", value: selectedLanguage, label: "" } : null,
+  ].filter(Boolean).map((item: any) => ({
+    ...item,
+    label: getTranslation(item.value, item.type)
+  })) as { type: string; value: string; label: string }[];
 
   // Search state response from server
   const [searchResults, setSearchResults] = useState<{
@@ -87,15 +140,6 @@ export default function Homepage() {
   useEffect(() => {
     setActiveSuggestionIndex(-1);
   }, [searchQuery]);
-
-  // Translate helper using dynamic taxonomies
-  const getTranslation = (slug: string, type: string) => {
-    if (!slug) return "";
-    const term = dbTaxonomies.find(
-      (t) => t.slug?.toLowerCase() === slug.toLowerCase() && t.type?.toLowerCase() === type.toLowerCase()
-    );
-    return term ? term.titleFa : slug;
-  };
 
   // Derived taxonomy lists for filters
   const tools = dbTaxonomies.filter((t) => t.type?.toLowerCase() === "tool" && t.status === "active");
@@ -182,11 +226,6 @@ export default function Homepage() {
 
   // Advanced Filters State
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedIntent, setSelectedIntent] = useState<string>("");
-  const [selectedTool, setSelectedTool] = useState<string>("");
-  const [selectedDomain, setSelectedDomain] = useState<string>("");
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("");
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("");
   const [sortBy, setSortBy] = useState<"usage" | "latest" | "title">("usage");
 
   const [page, setPage] = useState(1);
@@ -212,7 +251,7 @@ export default function Homepage() {
       const total = response.pagination?.total || 0;
 
       if (response.facets) {
-        setFacets(response.facets);
+        setAvailableFacets(response.facets);
       }
 
       if (append) {
@@ -243,40 +282,14 @@ export default function Homepage() {
     loadPrompts(page + 1, true);
   };
 
-  const handleFilterToggle = (type: string, value: string, label: string) => {
-    if (type === "intent") {
-      setSelectedIntent(value);
-    } else if (type === "tool") {
-      setSelectedTool(value);
-    } else if (type === "domain") {
-      setSelectedDomain(value);
-    } else if (type === "difficulty") {
-      setSelectedDifficulty(value);
-    } else if (type === "language") {
-      setSelectedLanguage(value);
-    }
-
-    if (value) {
-      setFilterHistory((prev) => {
-        const cleaned = prev.filter((item) => item.type !== type);
-        return [...cleaned, { type, value, label }];
-      });
-    } else {
-      setFilterHistory((prev) => prev.filter((item) => item.type !== type));
-    }
+  const handleFilterToggle = (type: string, value: string, label?: string) => {
+    updateFilter(type, value);
   };
 
   const handleRemoveLastFilter = () => {
     if (filterHistory.length === 0) return;
     const last = filterHistory[filterHistory.length - 1];
-    
-    if (last.type === "intent") setSelectedIntent("");
-    else if (last.type === "tool") setSelectedTool("");
-    else if (last.type === "domain") setSelectedDomain("");
-    else if (last.type === "difficulty") setSelectedDifficulty("");
-    else if (last.type === "language") setSelectedLanguage("");
-
-    setFilterHistory((prev) => prev.slice(0, -1));
+    updateFilter(last.type, "");
   };
 
   // Initial Data Fetch
@@ -304,42 +317,80 @@ export default function Homepage() {
     init();
   }, []);
 
-  // Sync route parameters with active filter states
+  // Fetch available facets on any search parameter change (progressive narrowing)
+  useEffect(() => {
+    const fetchFacets = async () => {
+      try {
+        const queryParams = searchParams.toString();
+        const res = await fetch(`/api/facets?${queryParams}`);
+        const data = await res.json();
+        if (data.success && data.facets) {
+          setAvailableFacets(data.facets);
+        }
+      } catch (err) {
+        console.error("Error fetching facets:", err);
+      }
+    };
+    fetchFacets();
+  }, [searchParams]);
+
+  // Sync route parameters (toolSlug, domainSlug) with active filter states
   useEffect(() => {
     if (dbTaxonomies.length > 0) {
+      let changed = false;
+      const newParams = new URLSearchParams(searchParams);
       if (toolSlug) {
         const found = dbTaxonomies.find(
           t => t.slug?.toLowerCase() === toolSlug.toLowerCase() && t.type?.toLowerCase() === "tool"
         );
-        if (found) {
-          setSelectedTool(found.slug);
-          setFilterHistory(prev => {
-            const cleaned = prev.filter(item => item.type !== "tool");
-            return [...cleaned, { type: "tool", value: found.slug, label: found.titleFa }];
-          });
+        if (found && searchParams.get("tool") !== found.slug) {
+          newParams.set("tool", found.slug);
+          changed = true;
         }
-      } else {
-        setSelectedTool("");
-        setFilterHistory(prev => prev.filter(item => item.type !== "tool"));
       }
-
       if (domainSlug) {
         const found = dbTaxonomies.find(
           t => t.slug?.toLowerCase() === domainSlug.toLowerCase() && t.type?.toLowerCase() === "domain"
         );
-        if (found) {
-          setSelectedDomain(found.slug);
-          setFilterHistory(prev => {
-            const cleaned = prev.filter(item => item.type !== "domain");
-            return [...cleaned, { type: "domain", value: found.slug, label: found.titleFa }];
-          });
+        if (found && searchParams.get("domain") !== found.slug) {
+          newParams.set("domain", found.slug);
+          changed = true;
         }
-      } else {
-        setSelectedDomain("");
-        setFilterHistory(prev => prev.filter(item => item.type !== "domain"));
+      }
+      if (changed) {
+        setSearchParams(newParams, { replace: true });
+        navigate(`/?${newParams.toString()}`, { replace: true });
       }
     }
   }, [toolSlug, domainSlug, dbTaxonomies]);
+
+  // Find taxonomy suggestions matching the user's input
+  const taxonomySuggestions = React.useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const normalizedQuery = searchQuery.toLowerCase().trim();
+    return dbTaxonomies.filter((tax) => {
+      const titleFa = (tax.titleFa || "").toLowerCase();
+      const slug = (tax.slug || "").toLowerCase();
+      const titleEn = (tax.titleEn || "").toLowerCase();
+      return (
+        titleFa.includes(normalizedQuery) ||
+        slug.includes(normalizedQuery) ||
+        titleEn.includes(normalizedQuery)
+      );
+    }).slice(0, 5); // Limit to top 5 suggestions
+  }, [searchQuery, dbTaxonomies]);
+
+  const handleTaxonomySuggestionClick = (tax: any) => {
+    const paramKey = tax.type.toLowerCase();
+    const newParams = new URLSearchParams(searchParams);
+    // Set the taxonomy parameter
+    newParams.set(paramKey, tax.slug);
+    // Clear the search query 'q'
+    newParams.delete("q");
+    newParams.delete("page");
+    setSearchParams(newParams, { replace: true });
+    setShowSuggestions(false);
+  };
 
   // Sync Search Query with Server endpoint
   useEffect(() => {
@@ -410,13 +461,8 @@ export default function Homepage() {
   };
 
   const handleClearFilters = () => {
-    setSelectedIntent("");
-    setSelectedTool("");
-    setSelectedDomain("");
-    setSelectedDifficulty("");
-    setSelectedLanguage("");
+    setSearchParams(new URLSearchParams());
     setSortBy("usage");
-    setFilterHistory([]);
   };
 
   return (
@@ -514,6 +560,45 @@ export default function Homepage() {
 
                   {/* Autocomplete list */}
                   <div className="p-2 space-y-1">
+                    {/* Taxonomy-Aware Autocomplete Suggestions */}
+                    {taxonomySuggestions.length > 0 && (
+                      <div className="border-b border-slate-100 pb-2 mb-2">
+                        <div className="text-[10px] text-slate-400 font-bold px-3 py-1 bg-slate-50 rounded mb-1.5">پیشنهادهای هوشمند طبقه‌بندی</div>
+                        <div className="flex flex-wrap gap-2 p-2">
+                          {taxonomySuggestions.map((tax) => {
+                            let emoji = "🏷";
+                            let prefix = "کلیدواژه";
+                            const typeLower = tax.type?.toLowerCase();
+                            if (typeLower === "tool") {
+                              emoji = "🛠️";
+                              prefix = "ابزار";
+                            } else if (typeLower === "domain") {
+                              emoji = "🌐";
+                              prefix = "حوزه";
+                            } else if (typeLower === "intent") {
+                              emoji = "🎯";
+                              prefix = "هدف";
+                            } else if (typeLower === "difficulty") {
+                              emoji = "⚡";
+                              prefix = "سطح";
+                            } else if (typeLower === "language") {
+                              emoji = "💬";
+                              prefix = "زبان";
+                            }
+                            return (
+                              <button
+                                key={tax.id}
+                                onClick={() => handleTaxonomySuggestionClick(tax)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-[#6C47FF]/10 text-[#6C47FF] border border-[#6C47FF]/20 hover:border-[#6C47FF]/40 rounded-xl text-xs font-bold transition-all duration-150 shadow-sm"
+                              >
+                                <span className="text-sm">{emoji}</span>
+                                <span>{prefix}: {tax.titleFa}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                     {searchQuery.trim() && searchResults && searchResults.prompts.length > 0 ? (
                       <div>
                         <div className="text-[10px] text-slate-400 font-bold px-3 py-1 bg-slate-50 rounded mb-1">پرامپت‌های تطبیق‌یافته ({searchResults.prompts.length})</div>

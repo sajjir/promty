@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, Mail, AlertTriangle, Loader2 } from "lucide-react";
+import { useAuth } from "../components/AuthContext";
 
 export default function AdminLogin() {
+  const { loginAsAdmin } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,18 +17,11 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        localStorage.setItem("promty_admin_token", data.token);
+      const success = await loginAsAdmin(email, password);
+      if (success) {
         navigate("/admin");
       } else {
-        setError(data.message || "ایمیل یا رمز عبور نامعتبر است.");
+        setError("ایمیل یا رمز عبور نامعتبر است.");
       }
     } catch (err) {
       console.error("Error logging in:", err);

@@ -107,6 +107,72 @@ export class JsonPromptRepository implements IPromptRepository {
     }
   }
 
+  public async getFacets(filters?: { q?: string; tool?: string; domain?: string; intent?: string; difficulty?: string; language?: string }): Promise<{
+    tools: Record<string, number>;
+    domains: Record<string, number>;
+    intents: Record<string, number>;
+    difficulties: Record<string, number>;
+    languages: Record<string, number>;
+  }> {
+    const db = this.readDB();
+    let list: Prompt[] = db.prompts || [];
+
+    if (filters) {
+      if (filters.q) {
+        const keyword = filters.q.toLowerCase();
+        list = list.filter(p => p.title.toLowerCase().includes(keyword) || (p.body && p.body.toLowerCase().includes(keyword)));
+      }
+      if (filters.tool) {
+        list = list.filter(p => (p.tools || []).some(t => t.toLowerCase() === filters.tool!.toLowerCase()));
+      }
+      if (filters.domain) {
+        list = list.filter(p => (p.domains || []).some(d => d.toLowerCase() === filters.domain!.toLowerCase()));
+      }
+      if (filters.intent) {
+        list = list.filter(p => p.intent?.toLowerCase() === filters.intent!.toLowerCase());
+      }
+      if (filters.difficulty) {
+        list = list.filter(p => p.difficulty?.toLowerCase() === filters.difficulty!.toLowerCase());
+      }
+      if (filters.language) {
+        list = list.filter(p => p.language?.toLowerCase() === filters.language!.toLowerCase());
+      }
+    }
+
+    const aggregated = {
+      tools: {} as Record<string, number>,
+      domains: {} as Record<string, number>,
+      intents: {} as Record<string, number>,
+      difficulties: {} as Record<string, number>,
+      languages: {} as Record<string, number>
+    };
+
+    for (const p of list) {
+      for (const t of p.tools || []) {
+        const key = t.toLowerCase();
+        aggregated.tools[key] = (aggregated.tools[key] || 0) + 1;
+      }
+      for (const d of p.domains || []) {
+        const key = d.toLowerCase();
+        aggregated.domains[key] = (aggregated.domains[key] || 0) + 1;
+      }
+      if (p.intent) {
+        const key = p.intent.toLowerCase();
+        aggregated.intents[key] = (aggregated.intents[key] || 0) + 1;
+      }
+      if (p.difficulty) {
+        const key = p.difficulty.toLowerCase();
+        aggregated.difficulties[key] = (aggregated.difficulties[key] || 0) + 1;
+      }
+      if (p.language) {
+        const key = p.language.toLowerCase();
+        aggregated.languages[key] = (aggregated.languages[key] || 0) + 1;
+      }
+    }
+
+    return aggregated;
+  }
+
   public async getStats(): Promise<{ totalPrompts: number; totalUsages: number; mostPopular: string }> {
     const db = this.readDB();
     const list: Prompt[] = db.prompts || [];

@@ -28,6 +28,11 @@ model Prompt {
   parent        Prompt?  @relation("PromptToPrompt", fields: [parentId], references: [id])
   children      Prompt[] @relation("PromptToPrompt")
 
+  forkedFromId  String?
+  forkedFrom    Prompt?  @relation("PromptForks", fields: [forkedFromId], references: [id])
+  forks         Prompt[] @relation("PromptForks")
+  savedBy       SavedPrompt[]
+
   // Smart Media Engine
   coverImage    String?
   mediaGallery  Json?
@@ -76,3 +81,32 @@ model AdminUser {
   password  String
   createdAt DateTime @default(now())
 }
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String?       @unique
+  phone        String?       @unique
+  name         String?
+  avatar       String?
+  role         Role          @default(USER)
+  savedPrompts SavedPrompt[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model SavedPrompt {
+  id        String   @id @default(cuid())
+  userId    String
+  promptId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt    Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, promptId])
+}
+

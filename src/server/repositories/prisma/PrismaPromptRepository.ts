@@ -2,6 +2,7 @@
 import { PrismaClient, Prompt as PrismaPrompt } from "@prisma/client";
 import { IPromptRepository } from "../IPromptRepository";
 import { Prompt, FieldSchema } from "../../../types";
+import { SearchService } from "../../services/SearchService";
 import fs from "fs/promises";
 import path from "path";
 
@@ -229,6 +230,114 @@ export class PrismaPromptRepository implements IPromptRepository {
     } catch (error) {
       console.error("Prisma getStats failed:", error);
       return { totalPrompts: 0, totalUsages: 0, mostPopular: "خطا در دریافت اطلاعات" };
+    }
+  }
+
+  public async getFacets(filters?: {
+    q?: string;
+    tool?: string;
+    domain?: string;
+    intent?: string;
+    difficulty?: string;
+    language?: string;
+  }): Promise<{
+    tools: Record<string, number>;
+    domains: Record<string, number>;
+    intents: Record<string, number>;
+    difficulties: Record<string, number>;
+    languages: Record<string, number>;
+  }> {
+    try {
+      const dbPrompts = await this.prisma.prompt.findMany({
+        where: { isActive: true },
+      });
+      const prompts = dbPrompts.map((p) => this.mapPrismaPrompt(p));
+
+      let matchedPrompts = prompts;
+      if (filters?.q && filters.q.trim()) {
+        matchedPrompts = SearchService.search(prompts, filters.q).prompts;
+      }
+
+      if (filters) {
+        if (filters.tool) {
+          const tLower = filters.tool.toLowerCase();
+          matchedPrompts = matchedPrompts.filter((p) =>
+            (p.tools || []).some((t) => t.toLowerCase() === tLower)
+          );
+        }
+        if (filters.domain) {
+          const dLower = filters.domain.toLowerCase();
+          matchedPrompts = matchedPrompts.filter((p) =>
+            (p.domains || []).some((d) => d.toLowerCase() === dLower)
+          );
+        }
+        if (filters.intent) {
+          const iLower = filters.intent.toLowerCase();
+          matchedPrompts = matchedPrompts.filter(
+            (p) => p.intent && p.intent.toLowerCase() === iLower
+          );
+        }
+        if (filters.difficulty) {
+          const diffLower = filters.difficulty.toLowerCase();
+          matchedPrompts = matchedPrompts.filter(
+            (p) => p.difficulty && p.difficulty.toLowerCase() === diffLower
+          );
+        }
+        if (filters.language) {
+          const langLower = filters.language.toLowerCase();
+          matchedPrompts = matchedPrompts.filter(
+            (p) => p.language && p.language.toLowerCase() === langLower
+          );
+        }
+      }
+
+      const toolsCount: Record<string, number> = {};
+      const domainsCount: Record<string, number> = {};
+      const intentsCount: Record<string, number> = {};
+      const difficultiesCount: Record<string, number> = {};
+      const languagesCount: Record<string, number> = {};
+
+      for (const p of matchedPrompts) {
+        if (p.tools && Array.isArray(p.tools)) {
+          for (const t of p.tools) {
+            if (t) {
+              const key = t.toLowerCase();
+              toolsCount[key] = (toolsCount[key] || 0) + 1;
+            }
+          }
+        }
+        if (p.domains && Array.isArray(p.domains)) {
+          for (const d of p.domains) {
+            if (d) {
+              const key = d.toLowerCase();
+              domainsCount[key] = (domainsCount[key] || 0) + 1;
+            }
+          }
+        }
+        if (p.intent) {
+          const key = p.intent.toLowerCase();
+          intentsCount[key] = (intentsCount[key] || 0) + 1;
+        }
+        if (p.difficulty) {
+          const key = p.difficulty.toLowerCase();
+          difficultiesCount[key] = (difficultiesCount[key] || 0) + 1;
+        }
+        if (p.language) {
+          const key = p.language.toLowerCase();
+          languagesCount[key] = (languagesCount[key] || 0) + 1;
+        }
+      }
+
+      return {
+        tools: toolsCount,
+        domains: domainsCount,
+        intents: intentsCount,
+        difficulties: difficultiesCount,
+        languages: languagesCount,
+      };
+    } catch (error) {
+      console.error("Prisma getFacets failed:", error);
+      throw new Error("Failed to retrieve facets", { cause: error });
     }
   }
 }

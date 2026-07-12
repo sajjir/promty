@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Prompt, Stats } from "../types";
+import { useAuth } from "../components/AuthContext";
 import { 
   Plus, Trash2, Edit3, Eye, EyeOff, BarChart3, HelpCircle, 
   LogOut, CheckCircle, Loader2, Sparkles, Settings, Network, 
@@ -35,6 +36,7 @@ interface Relationship {
 }
 
 export default function AdminDashboard() {
+  const { setSiteTitle } = useAuth();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +44,7 @@ export default function AdminDashboard() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   
   // Settings Integration state
+  const [siteTitleLocal, setSiteTitleLocal] = useState("");
   const [n8nAnalyzeWebhook, setN8nAnalyzeWebhook] = useState("");
   const [n8nRefineWebhook, setN8nRefineWebhook] = useState("");
   const [geminiApiKey, setGeminiApiKey] = useState("");
@@ -130,6 +133,7 @@ export default function AdminDashboard() {
         setN8nRefineWebhook(s.n8nRefineWebhook || s.n8nWebhookUrl || "");
         setGeminiApiKey(s.geminiApiKey || "");
         setOpenaiApiKey(s.openaiApiKey || "");
+        setSiteTitleLocal(s.siteTitle || "Promty.ir");
       }
 
       // Fetch Taxonomy Terms
@@ -239,12 +243,14 @@ export default function AdminDashboard() {
           n8nAnalyzeWebhook,
           n8nRefineWebhook,
           geminiApiKey,
-          openaiApiKey
+          openaiApiKey,
+          siteTitle: siteTitleLocal
         })
       });
       
       if (res.ok) {
-        setSettingsSuccess("تنظیمات مرکز کنترل هوش مصنوعی با موفقیت به‌روزرسانی شد.");
+        setSettingsSuccess("تنظیمات مرکز کنترل هوش مصنوعی و نام سایت با موفقیت به‌روزرسانی شد.");
+        setSiteTitle(siteTitleLocal);
       } else {
         const errData = await res.json();
         setSettingsError(errData.message || "خطا در تنظیم و ذخیره اطلاعات.");
@@ -1105,6 +1111,28 @@ export default function AdminDashboard() {
 
               <form onSubmit={handleSaveSettings} className="space-y-6">
                 
+                {/* Global Brand Settings */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
+                    🌐 تنظیمات عمومی برند و وب‌سایت
+                  </h4>
+                  
+                  <div className="space-y-1.5">
+                    <label htmlFor="site_title_input_tab" className="text-xs font-bold text-slate-500 block">
+                      عنوان وب‌سایت و برند پلتفرم (Site Title)
+                    </label>
+                    <input
+                      id="site_title_input_tab"
+                      type="text"
+                      value={siteTitleLocal}
+                      onChange={(e) => setSiteTitleLocal(e.target.value)}
+                      placeholder="Promty.ir"
+                      className="w-full text-slate-700 bg-slate-50 placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition text-right font-bold"
+                      required
+                    />
+                  </div>
+                </div>
+
                 {/* Webhook block */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
