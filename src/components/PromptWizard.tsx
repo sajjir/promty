@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FieldSchema } from "../types";
 import { renderPrompt } from "../lib/renderPrompt";
 import { useAuth } from "./AuthContext";
-import { Wand2, X, AlertCircle, CheckCircle, Save, Sparkles, FolderPlus } from "lucide-react";
+import { Wand2, X, AlertCircle, CheckCircle, Save, Sparkles, FolderPlus, RotateCcw } from "lucide-react";
 
 function parseOption(opt: string) {
   const parts = opt.split("|");
@@ -116,8 +116,43 @@ export default function PromptWizard({
     onRendered(rendered);
   }, [finalValues, promptBody]);
 
+  const updateValues = (newValuesOrUpdater: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => {
+    if (typeof newValuesOrUpdater === "function") {
+      finalSetValues((prev) => {
+        const updated = newValuesOrUpdater(prev);
+        if (onValuesChange) {
+          onValuesChange(updated);
+        }
+        return updated;
+      });
+    } else {
+      finalSetValues(newValuesOrUpdater);
+      if (onValuesChange) {
+        onValuesChange(newValuesOrUpdater);
+      }
+    }
+  };
+
   const handleInputChange = (key: string, value: string) => {
-    finalSetValues((prev) => ({ ...prev, [key]: value }));
+    updateValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const resetForm = () => {
+    const initial: Record<string, string> = {};
+    fields.forEach((field) => {
+      if (field.type === "switch") {
+        initial[field.key] = "خیر";
+      } else if (field.type === "slider") {
+        initial[field.key] = String(field.min ?? 10);
+      } else {
+        initial[field.key] = "";
+      }
+    });
+    updateValues(initial);
+    setCustomMode({});
+    if (setActivePresetId) {
+      setActivePresetId(null);
+    }
   };
 
   const handleSaveNewPresetClick = () => {
@@ -444,6 +479,14 @@ export default function PromptWizard({
           </div>
 
           <div className="flex flex-wrap gap-2 justify-end w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={resetForm}
+              className="px-4 py-2 text-xs font-black text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-700 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>بازنشانی مقادیر</span>
+            </button>
             {finalActivePresetId ? (
               <>
                 <button

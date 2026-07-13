@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Prompt } from "../types";
 import PromptWizard from "../components/PromptWizard";
@@ -10,7 +10,8 @@ import {
   ChevronRight, Megaphone, Globe, Video, Camera, Sparkles, 
   Wand2, PlayCircle, Loader2, Copy, Layers, Eye, Compass, 
   HelpCircle, MessageSquare, BookOpen, Search, Share2, Tag, 
-  Info, Cpu, Check, FileCode, CheckCircle2, ChevronLeft, Trash2
+  Info, Cpu, Check, FileCode, CheckCircle2, ChevronLeft, Trash2,
+  Pencil, X
 } from "lucide-react";
 
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -203,6 +204,14 @@ export default function PromptDetail() {
   // Step 2: Live Preview State
   const [liveValues, setLiveValues] = useState<Record<string, string>>({});
 
+  // Inline editing presets name states
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [isUpdatingPresetName, setIsUpdatingPresetName] = useState(false);
+
+  // Wizard Ref for Smooth Scrolling
+  const wizardRef = useRef<HTMLDivElement>(null);
+
   const fetchPresets = async () => {
     if (!user || !id) return;
     try {
@@ -215,6 +224,35 @@ export default function PromptDetail() {
       }
     } catch (err) {
       console.error("Failed to fetch presets:", err);
+    }
+  };
+
+  const handleUpdatePresetNameSubmit = async (presetId: string) => {
+    if (!editingName.trim()) return;
+    try {
+      setIsUpdatingPresetName(true);
+      const res = await fetch(`/api/presets/${presetId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name: editingName.trim() })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setPresets((prev) =>
+            prev.map((p) => (p.id === presetId ? { ...p, name: data.preset.name } : p))
+          );
+          setEditingPresetId(null);
+          setEditingName("");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update preset name:", err);
+    } finally {
+      setIsUpdatingPresetName(false);
     }
   };
 
@@ -246,6 +284,11 @@ export default function PromptDetail() {
     setWizardValues(preset.values);
     setLiveValues(preset.values);
     setShowWizard(true);
+
+    // Smooth Scroll to Wizard Form
+    setTimeout(() => {
+      wizardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   };
 
   const handleDeletePreset = async (presetId: string, e: React.MouseEvent) => {
@@ -287,6 +330,7 @@ export default function PromptDetail() {
           <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
             {presets.map((preset) => {
               const isActive = activePresetId === preset.id;
+              const isEditing = editingPresetId === preset.id;
               const dateStr = new Date(preset.createdAt).toLocaleDateString("fa-IR", {
                 month: "long",
                 day: "numeric"
@@ -294,30 +338,89 @@ export default function PromptDetail() {
               return (
                 <div
                   key={preset.id}
-                  onClick={() => handleLoadPreset(preset)}
+                  onClick={() => !isEditing && handleLoadPreset(preset)}
                   className={`group relative p-3 rounded-2xl border transition-all cursor-pointer text-right flex items-center justify-between gap-2 ${
                     isActive
                       ? "bg-indigo-50/40 border-[#6C47FF] shadow-xs"
                       : "bg-slate-50 hover:bg-slate-100/70 border-slate-100"
                   }`}
                 >
-                  <div className="space-y-1 min-w-0">
-                    <span className={`text-[11px] font-black block truncate ${isActive ? 'text-[#6C47FF]' : 'text-slate-700'}`}>
-                      {preset.name}
-                    </span>
-                    <span className="text-[9px] text-slate-400 block">
-                      تاریخ ثبت: {dateStr}
-                    </span>
+                  <div className="space-y-1 min-w-0 flex-1">
+                    {isEditing ? (
+                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          disabled={isUpdatingPresetName}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleUpdatePresetNameSubmit(preset.id);
+                            } else if (e.key === "Escape") {
+                              setEditingPresetId(null);
+                            }
+                          }}
+                          className="w-full text-xs p-1.5 bg-white border border-[#6C47FF] rounded-lg outline-none"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleUpdatePresetNameSubmit(preset.id)}
+                          disabled={isUpdatingPresetName}
+                          className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition disabled:opacity-50 shrink-0"
+                          title="تایید"
+                        >
+                          {isUpdatingPresetName ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingPresetId(null)}
+                          disabled={isUpdatingPresetName}
+                          className="p-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg transition disabled:opacity-50 shrink-0"
+                          title="انصراف"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className={`text-[11px] font-black block truncate ${isActive ? 'text-[#6C47FF]' : 'text-slate-700'}`}>
+                          {preset.name}
+                        </span>
+                        <span className="text-[9px] text-slate-400 block">
+                          تاریخ ثبت: {dateStr}
+                        </span>
+                      </>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition">
-                    <button
-                      onClick={(e) => handleDeletePreset(preset.id, e)}
-                      className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition"
-                      title="حذف نسخه"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {!isEditing && (
+                    <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingPresetId(preset.id);
+                          setEditingName(preset.name);
+                        }}
+                        className="p-1.5 hover:bg-indigo-50 text-slate-400 hover:text-[#6C47FF] rounded-lg transition"
+                        title="ویرایش نام"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeletePreset(preset.id, e)}
+                        className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition"
+                        title="حذف نسخه"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -904,7 +1007,7 @@ export default function PromptDetail() {
 
             {/* Live Wizard Form (Toggleable Section) */}
             {showWizard && prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
-              <div className="pt-2">
+              <div className="pt-2" ref={wizardRef}>
                 <PromptWizard
                   fields={prompt.fieldsSchema}
                   promptBody={refinedPrompt || getVersionedBody(selectedVersion) || prompt.body}
