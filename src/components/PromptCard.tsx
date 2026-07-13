@@ -1,11 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Prompt } from "../types";
-import { Megaphone, Globe, Video, Camera, Sparkles, ArrowLeft } from "lucide-react";
+import { Megaphone, Globe, Video, Camera, Sparkles, ArrowLeft, Bookmark } from "lucide-react";
 import { getToolIcon, getDomainGradient } from "../lib/toolIcons";
+import { useAuth } from "./AuthContext";
 
 interface PromptCardProps {
   prompt: Prompt;
+  isInitiallyBookmarked?: boolean;
   key?: any;
 }
 
@@ -61,7 +63,44 @@ const TRANSLATIONS: Record<string, string> = {
   "n8n ai agent": "اتوماسیون n8n"
 };
 
-export default function PromptCard({ prompt }: PromptCardProps) {
+export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCardProps) {
+  const { user, setPhoneModalOpen } = useAuth();
+  const [isBookmarked, setIsBookmarked] = React.useState(isInitiallyBookmarked || false);
+
+  React.useEffect(() => {
+    if (isInitiallyBookmarked !== undefined) {
+      setIsBookmarked(isInitiallyBookmarked);
+    }
+  }, [isInitiallyBookmarked]);
+
+  const handleBookmarkClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      alert("لطفاً ابتدا وارد حساب کاربری خود شوید.");
+      setPhoneModalOpen(true);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/prompts/${prompt.id}/bookmark`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsBookmarked(data.bookmarked);
+      } else {
+        alert(data.message || "خطایی رخ داد.");
+      }
+    } catch (err) {
+      alert("برقراری ارتباط با سرور با خطا مواجه شد.");
+    }
+  };
+
   const rawLabel = (prompt.tools && prompt.tools[0]) || (prompt.domains && prompt.domains[0]) || prompt.intent || (prompt as any).category || "عمومی";
   const categoryLabel = TRANSLATIONS[rawLabel.toLowerCase()] || rawLabel;
   const extraToolsCount = (prompt.tools?.length || 0) > 1 ? prompt.tools!.length - 1 : 0;
@@ -112,6 +151,15 @@ export default function PromptCard({ prompt }: PromptCardProps) {
       {/* Sample Image */}
       <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
         {coverElement}
+
+        {/* Bookmark Toggle Button */}
+        <button
+          onClick={handleBookmarkClick}
+          className="absolute top-3 left-3 p-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-600 hover:text-[#6C47FF] backdrop-blur-xs shadow-sm hover:shadow-md transition cursor-pointer z-10"
+          title={isBookmarked ? "حذف از نشان‌شده‌ها" : "نشان کردن پرامپت"}
+        >
+          <Bookmark className={`w-4 h-4 transition-colors ${isBookmarked ? "fill-amber-500 text-amber-500" : ""}`} />
+        </button>
 
         {/* Premium / Free Badge */}
         <span

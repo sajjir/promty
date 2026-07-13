@@ -5,7 +5,8 @@ import PromptDetail from "./pages/PromptDetail";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPromptAddEdit from "./pages/AdminPromptAddEdit";
-import { Sparkles, LayoutDashboard, Home, FileCode, Check } from "lucide-react";
+import UserDashboard from "./pages/UserDashboard";
+import { Sparkles, LayoutDashboard, Home, FileCode, Check, Bookmark } from "lucide-react";
 import { AuthProvider, useAuth } from "./components/AuthContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import PhoneLoginModal from "./components/PhoneLoginModal";
@@ -40,6 +41,16 @@ function AppContent() {
                 <Home className="w-4 h-4" />
                 <span className="hidden sm:inline">خانه</span>
               </Link>
+
+              {user && (
+                <Link
+                  to="/dashboard"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#6C47FF] hover:bg-[#6C47FF]/5 transition"
+                >
+                  <Bookmark className="w-4 h-4 text-[#6C47FF]" />
+                  <span>داشبورد من</span>
+                </Link>
+              )}
 
               {user && user.role === "admin" && (
                 <Link
@@ -99,6 +110,7 @@ function AppContent() {
           <Route path="/domain/:domainSlug" element={<Homepage />} />
           <Route path="/prompts/:id" element={<PromptDetail />} />
           <Route path="/prompt/:id" element={<PromptDetail />} />
+          <Route path="/dashboard" element={<UserDashboard />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/prompts/new" element={<AdminPromptAddEdit />} />

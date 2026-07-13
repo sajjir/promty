@@ -1209,6 +1209,133 @@ async function startServer() {
     }
   });
 
+  // API - Toggle Bookmark for a prompt
+  app.post("/api/prompts/:id/bookmark", userAuth, async (req, res) => {
+    const { id: promptId } = req.params;
+    const userId = (req as any).user.id;
+
+    try {
+      if (prisma) {
+        // 1. Check/Create User record in prisma
+        const userExists = await prisma.user.findUnique({
+          where: { id: userId },
+        });
+        if (!userExists) {
+          await prisma.user.create({
+            data: {
+              id: userId,
+              email: (req as any).user.email || null,
+              name: (req as any).user.name || `کاربر ${(req as any).user.phone || (req as any).user.id}`,
+              role: "USER",
+            },
+          });
+        }
+
+        // 2. Check if already bookmarked
+        const existing = await prisma.savedPrompt.findUnique({
+          where: {
+            userId_promptId: {
+              userId,
+              promptId,
+            },
+          },
+        });
+
+        if (existing) {
+          await prisma.savedPrompt.delete({
+            where: {
+              userId_promptId: {
+                userId,
+                promptId,
+              },
+            },
+          });
+          return res.json({ success: true, bookmarked: false, message: "پرامپت از نشان‌شده‌ها حذف شد." });
+        } else {
+          await prisma.savedPrompt.create({
+            data: {
+              userId,
+              promptId,
+            },
+          });
+          return res.json({ success: true, bookmarked: true, message: "پرامپت به نشان‌شده‌ها اضافه شد." });
+        }
+      } else {
+        const db = readDB();
+        if (!db.savedPrompts) db.savedPrompts = [];
+
+        const index = db.savedPrompts.findIndex(
+          (sp: any) => sp.userId === userId && sp.promptId === promptId
+        );
+
+        if (index > -1) {
+          db.savedPrompts.splice(index, 1);
+          writeDB(db);
+          return res.json({ success: true, bookmarked: false, message: "پرامپت از نشان‌شده‌ها حذف شد." });
+        } else {
+          db.savedPrompts.push({
+            id: "sp_" + Date.now(),
+            userId,
+            promptId,
+            createdAt: new Date().toISOString(),
+          });
+          writeDB(db);
+          return res.json({ success: true, bookmarked: true, message: "پرامپت به نشان‌شده‌ها اضافه شد." });
+        }
+      }
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Get User Dashboard data (all saved / bookmarked prompts)
+  app.get("/api/user/dashboard", userAuth, async (req, res) => {
+    const userId = (req as any).user.id;
+
+    try {
+      if (prisma) {
+        const savedPrompts = await prisma.savedPrompt.findMany({
+          where: { userId },
+          include: {
+            prompt: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
+
+        const bookmarks = savedPrompts.map((sp) => ({
+          id: sp.id,
+          promptId: sp.promptId,
+          createdAt: sp.createdAt,
+          prompt: sp.prompt,
+        }));
+
+        return res.json({ success: true, bookmarks });
+      } else {
+        const db = readDB();
+        if (!db.savedPrompts) db.savedPrompts = [];
+
+        const userSaved = db.savedPrompts.filter((sp: any) => sp.userId === userId);
+        userSaved.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        const bookmarks = userSaved.map((sp: any) => {
+          const prompt = db.prompts.find((p: any) => p.id === sp.promptId);
+          return {
+            id: sp.id,
+            promptId: sp.promptId,
+            createdAt: sp.createdAt,
+            prompt,
+          };
+        }).filter((sp: any) => sp.prompt);
+
+        return res.json({ success: true, bookmarks });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
   // API - Get Category list
   app.get("/api/categories", (req, res) => {
     const db = readDB();
