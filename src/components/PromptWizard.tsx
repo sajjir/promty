@@ -28,6 +28,7 @@ interface PromptWizardProps {
   values?: Record<string, string>;
   setValues?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   onPresetSavedOrUpdated?: () => void;
+  onValuesChange?: (values: Record<string, string>) => void;
 }
 
 export default function PromptWizard({
@@ -39,10 +40,14 @@ export default function PromptWizard({
   setActivePresetId,
   values,
   setValues,
-  onPresetSavedOrUpdated
+  onPresetSavedOrUpdated,
+  onValuesChange
 }: PromptWizardProps) {
   const { user, setPhoneModalOpen } = useAuth();
   
+  // State to track customized text input fields instead of selects
+  const [customMode, setCustomMode] = useState<Record<string, boolean>>({});
+
   // Fallback states if not passed as props (e.g. in Admin live form preview)
   const [localValues, setLocalValues] = useState<Record<string, string>>({});
   const [localActivePresetId, setLocalActivePresetId] = useState<string | null>(null);
@@ -57,6 +62,36 @@ export default function PromptWizard({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Sync values to parent components
+  useEffect(() => {
+    if (onValuesChange) {
+      onValuesChange(finalValues);
+    }
+  }, [finalValues, onValuesChange]);
+
+  // Auto-detect customMode when values/presets are loaded
+  useEffect(() => {
+    if (finalValues) {
+      const updatedCustomMode: Record<string, boolean> = {};
+      fields.forEach((field) => {
+        if (field.type === "select") {
+          const val = finalValues[field.key];
+          if (val) {
+            const optionsList = field.options || [];
+            const hasOption = optionsList.some((opt) => {
+              const parsed = parseOption(opt);
+              return parsed.value === val;
+            });
+            if (!hasOption) {
+              updatedCustomMode[field.key] = true;
+            }
+          }
+        }
+      });
+      setCustomMode((prev) => ({ ...prev, ...updatedCustomMode }));
+    }
+  }, [finalValues, fields]);
 
   // Initialize local fallback values when fields change (if uncontrolled)
   useEffect(() => {
@@ -226,22 +261,55 @@ export default function PromptWizard({
                   className="w-full text-xs p-2.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition"
                 />
               ) : field.type === "select" ? (
-                <select
-                  id={field.key}
-                  value={value}
-                  onChange={(e) => handleInputChange(field.key, e.target.value)}
-                  className="w-full text-xs p-2.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition cursor-pointer"
-                >
-                  <option value="">{field.placeholder || "یکی را انتخاب کنید"}</option>
-                  {field.options?.map((opt) => {
-                    const parsed = parseOption(opt);
-                    return (
-                      <option key={opt} value={parsed.value}>
-                        {parsed.label}
-                      </option>
-                    );
-                  })}
-                </select>
+                customMode[field.key] ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      id={field.key}
+                      value={value}
+                      onChange={(e) => handleInputChange(field.key, e.target.value)}
+                      placeholder={field.placeholder || "مقدار دلخواه خود را بنویسید..."}
+                      className="flex-1 text-xs p-2.5 bg-white border border-[#6C47FF] focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomMode((prev) => ({ ...prev, [field.key]: false }));
+                        handleInputChange(field.key, "");
+                      }}
+                      className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded-lg transition shrink-0 cursor-pointer"
+                      title="بازگشت به لیست"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    id={field.key}
+                    value={value}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "__CUSTOM__") {
+                        setCustomMode((prev) => ({ ...prev, [field.key]: true }));
+                        handleInputChange(field.key, "");
+                      } else {
+                        handleInputChange(field.key, val);
+                      }
+                    }}
+                    className="w-full text-xs p-2.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition cursor-pointer"
+                  >
+                    <option value="">{field.placeholder || "یکی را انتخاب کنید"}</option>
+                    {field.options?.map((opt) => {
+                      const parsed = parseOption(opt);
+                      return (
+                        <option key={opt} value={parsed.value}>
+                          {parsed.label}
+                        </option>
+                      );
+                    })}
+                    <option value="__CUSTOM__" className="text-[#6C47FF] font-bold">+ تایپ مقدار دلخواه...</option>
+                  </select>
+                )
               ) : field.type === "color" ? (
                 <div id="color-picker-group" className="flex items-center gap-2">
                   <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-slate-200 cursor-pointer flex-shrink-0">

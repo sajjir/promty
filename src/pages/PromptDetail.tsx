@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Prompt } from "../types";
 import PromptWizard from "../components/PromptWizard";
+import { renderPrompt } from "../lib/renderPrompt";
 import CopyButton from "../components/CopyButton";
 import PromptCard from "../components/PromptCard";
 import { useAuth } from "../components/AuthContext";
@@ -199,6 +200,9 @@ export default function PromptDetail() {
   const [wizardValues, setWizardValues] = useState<Record<string, string>>({});
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
 
+  // Step 2: Live Preview State
+  const [liveValues, setLiveValues] = useState<Record<string, string>>({});
+
   const fetchPresets = async () => {
     if (!user || !id) return;
     try {
@@ -232,6 +236,7 @@ export default function PromptDetail() {
         }
       });
       setWizardValues(initial);
+      setLiveValues(initial);
       setActivePresetId(null);
     }
   }, [prompt]);
@@ -239,6 +244,7 @@ export default function PromptDetail() {
   const handleLoadPreset = (preset: any) => {
     setActivePresetId(preset.id);
     setWizardValues(preset.values);
+    setLiveValues(preset.values);
     setShowWizard(true);
   };
 
@@ -551,8 +557,18 @@ export default function PromptDetail() {
     }
   };
 
+  // Sync final rendered body with live template and wizard inputs
+  useEffect(() => {
+    if (prompt) {
+      const baseTemplate = refinedPrompt || getVersionedBody(selectedVersion) || prompt.body;
+      const finalRenderedText = renderPrompt(baseTemplate, liveValues);
+      setRenderedBody(finalRenderedText);
+    }
+  }, [liveValues, selectedVersion, refinedPrompt, prompt]);
+
   const handleVersionChange = (v: "v1" | "v2" | "v3") => {
     setSelectedVersion(v);
+    setRefinedPrompt(null); // Switch back to versioned template
     const body = getVersionedBody(v);
     setRenderedBody(body);
   };
@@ -735,9 +751,6 @@ export default function PromptDetail() {
             </div>
           )}
 
-          {/* My Saved Presets Section */}
-          {renderPresetsSection()}
-
           {/* Desktop Taxonomy Block */}
           <div className="hidden lg:block">
             <TaxonomyBlock prompt={prompt} />
@@ -894,7 +907,7 @@ export default function PromptDetail() {
               <div className="pt-2">
                 <PromptWizard
                   fields={prompt.fieldsSchema}
-                  promptBody={renderedBody}
+                  promptBody={refinedPrompt || getVersionedBody(selectedVersion) || prompt.body}
                   onRendered={(rendered) => setRenderedBody(rendered)}
                   promptId={prompt.id}
                   activePresetId={activePresetId}
@@ -902,6 +915,7 @@ export default function PromptDetail() {
                   values={wizardValues}
                   setValues={setWizardValues}
                   onPresetSavedOrUpdated={fetchPresets}
+                  onValuesChange={setLiveValues}
                 />
               </div>
             )}
