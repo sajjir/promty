@@ -4,11 +4,12 @@ import { Prompt } from "../types";
 import PromptWizard from "../components/PromptWizard";
 import CopyButton from "../components/CopyButton";
 import PromptCard from "../components/PromptCard";
+import { useAuth } from "../components/AuthContext";
 import { 
   ChevronRight, Megaphone, Globe, Video, Camera, Sparkles, 
   Wand2, PlayCircle, Loader2, Copy, Layers, Eye, Compass, 
   HelpCircle, MessageSquare, BookOpen, Search, Share2, Tag, 
-  Info, Cpu, Check, FileCode, CheckCircle2, ChevronLeft
+  Info, Cpu, Check, FileCode, CheckCircle2, ChevronLeft, Trash2
 } from "lucide-react";
 
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -185,12 +186,140 @@ function TaxonomyBlock({ prompt }: { prompt: Prompt }) {
 
 export default function PromptDetail() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [allPrompts, setAllPrompts] = useState<Prompt[]>([]);
   const [renderedBody, setRenderedBody] = useState("");
   const [showWizard, setShowWizard] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  // Custom Prompt Presets (My Saved Presets) states
+  const [presets, setPresets] = useState<any[]>([]);
+  const [wizardValues, setWizardValues] = useState<Record<string, string>>({});
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+
+  const fetchPresets = async () => {
+    if (!user || !id) return;
+    try {
+      const res = await fetch(`/api/prompts/${id}/presets`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setPresets(data.presets);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch presets:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPresets();
+  }, [id, user]);
+
+  // Initialize wizardValues dictionary with appropriate defaults when prompt changes
+  useEffect(() => {
+    if (prompt && prompt.fieldsSchema) {
+      const initial: Record<string, string> = {};
+      prompt.fieldsSchema.forEach((field) => {
+        if (field.type === "switch") {
+          initial[field.key] = "خیر";
+        } else if (field.type === "slider") {
+          initial[field.key] = String(field.min ?? 10);
+        } else {
+          initial[field.key] = "";
+        }
+      });
+      setWizardValues(initial);
+      setActivePresetId(null);
+    }
+  }, [prompt]);
+
+  const handleLoadPreset = (preset: any) => {
+    setActivePresetId(preset.id);
+    setWizardValues(preset.values);
+    setShowWizard(true);
+  };
+
+  const handleDeletePreset = async (presetId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm("آیا از حذف این نسخه شخصی مطمئن هستید؟")) return;
+
+    try {
+      const res = await fetch(`/api/presets/${presetId}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setPresets(prev => prev.filter(p => p.id !== presetId));
+          if (activePresetId === presetId) {
+            setActivePresetId(null);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete preset:", err);
+    }
+  };
+
+  const renderPresetsSection = () => {
+    if (!user) return null;
+    return (
+      <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4 text-right" dir="rtl">
+        <div className="flex items-center gap-1.5 pb-2.5 border-b border-slate-50">
+          <Sparkles className="w-4 h-4 text-[#6C47FF]" />
+          <h4 className="text-xs font-black text-slate-800">نسخه‌های شخصی من (My Presets)</h4>
+        </div>
+
+        {presets.length === 0 ? (
+          <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+            هنوز هیچ نسخه‌ای برای این پرامپت ذخیره نکرده‌اید. برای شروع مقادیر دلخواه خود را در فرم شخصی‌سازی وارد کرده و دکمه ذخیره نسخه را بزنید.
+          </p>
+        ) : (
+          <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+            {presets.map((preset) => {
+              const isActive = activePresetId === preset.id;
+              const dateStr = new Date(preset.createdAt).toLocaleDateString("fa-IR", {
+                month: "long",
+                day: "numeric"
+              });
+              return (
+                <div
+                  key={preset.id}
+                  onClick={() => handleLoadPreset(preset)}
+                  className={`group relative p-3 rounded-2xl border transition-all cursor-pointer text-right flex items-center justify-between gap-2 ${
+                    isActive
+                      ? "bg-indigo-50/40 border-[#6C47FF] shadow-xs"
+                      : "bg-slate-50 hover:bg-slate-100/70 border-slate-100"
+                  }`}
+                >
+                  <div className="space-y-1 min-w-0">
+                    <span className={`text-[11px] font-black block truncate ${isActive ? 'text-[#6C47FF]' : 'text-slate-700'}`}>
+                      {preset.name}
+                    </span>
+                    <span className="text-[9px] text-slate-400 block">
+                      تاریخ ثبت: {dateStr}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition">
+                    <button
+                      onClick={(e) => handleDeletePreset(preset.id, e)}
+                      className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition"
+                      title="حذف نسخه"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const isAdmin = !!localStorage.getItem("promty_admin_token");
 
@@ -606,6 +735,9 @@ export default function PromptDetail() {
             </div>
           )}
 
+          {/* My Saved Presets Section */}
+          {renderPresetsSection()}
+
           {/* Desktop Taxonomy Block */}
           <div className="hidden lg:block">
             <TaxonomyBlock prompt={prompt} />
@@ -764,10 +896,19 @@ export default function PromptDetail() {
                   fields={prompt.fieldsSchema}
                   promptBody={renderedBody}
                   onRendered={(rendered) => setRenderedBody(rendered)}
+                  promptId={prompt.id}
+                  activePresetId={activePresetId}
+                  setActivePresetId={setActivePresetId}
+                  values={wizardValues}
+                  setValues={setWizardValues}
+                  onPresetSavedOrUpdated={fetchPresets}
                 />
               </div>
             )}
           </div>
+
+          {/* My Saved Presets Section */}
+          {renderPresetsSection()}
 
           {/* Mobile Taxonomy block */}
           <div className="block lg:hidden mt-6">

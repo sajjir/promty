@@ -94,6 +94,8 @@ interface DB {
   settings: DBSettings;
   relationships?: any[];
   taxonomies?: any[];
+  presets?: any[];
+  savedPrompts?: any[];
 }
 
 const DB_FILE = path.join(process.cwd(), "db.json");
@@ -935,6 +937,277 @@ async function startServer() {
       res.status(403).json({ success: false, message: "توکن نامعتبر است" });
     }
   };
+
+  // User middleware for authenticated routes
+  const userAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const token = req.cookies.promty_session;
+    if (!token) {
+      return res.status(401).json({ success: false, message: "لطفاً ابتدا وارد حساب کاربری خود شوید." });
+    }
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      if (decoded && decoded.id) {
+        (req as any).user = decoded;
+        next();
+      } else {
+        res.status(401).json({ success: false, message: "توکن نامعتبر است." });
+      }
+    } catch (err) {
+      res.status(401).json({ success: false, message: "نشست شما منقضی شده است. لطفا مجدد وارد شوید." });
+    }
+  };
+
+  // API - Get Presets of user for a specific Prompt
+  app.get("/api/prompts/:id/presets", userAuth, async (req, res) => {
+    const { id: promptId } = req.params;
+    const userId = (req as any).user.id;
+
+    try {
+      if (prisma) {
+        const presets = await prisma.promptPreset.findMany({
+          where: {
+            promptId,
+            userId,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
+        return res.json({ success: true, presets });
+      } else {
+        const db = readDB();
+        if (!db.presets) db.presets = [];
+        const userPresets = db.presets.filter(
+          (p: any) => p.promptId === promptId && p.userId === userId
+        );
+        userPresets.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return res.json({ success: true, presets: userPresets });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Save a new Preset for a specific Prompt (Auto-Bookmark)
+  app.post("/api/prompts/:id/presets", userAuth, async (req, res) => {
+    const { id: promptId } = req.params;
+    const userId = (req as any).user.id;
+    const { name, values } = req.body;
+
+    if (!name || !values) {
+      return res.status(400).json({ success: false, message: "نام نسخه و مقادیر فیلدها الزامی هستند." });
+    }
+
+    try {
+      if (prisma) {
+        const count = await prisma.promptPreset.count({
+          where: {
+            promptId,
+            userId,
+          },
+        });
+
+        if (count >= 10) {
+          return res.status(400).json({
+            success: false,
+            message: "سقف ذخیره‌سازی نسخه برای هر پرامپت ۱۰ عدد است.",
+          });
+        }
+
+        // Auto-Bookmark check
+        const existingSaved = await prisma.savedPrompt.findUnique({
+          where: {
+            userId_promptId: {
+              userId,
+              promptId,
+            },
+          },
+        });
+
+        if (!existingSaved) {
+          const userExists = await prisma.user.findUnique({
+            where: { id: userId },
+          });
+          if (!userExists) {
+            await prisma.user.create({
+              data: {
+                id: userId,
+                email: (req as any).user.email || null,
+                name: (req as any).user.name || `کاربر ${(req as any).user.phone || (req as any).user.id}`,
+                role: "USER",
+              },
+            });
+          }
+
+          await prisma.savedPrompt.create({
+            data: {
+              userId,
+              promptId,
+            },
+          });
+        }
+
+        const preset = await prisma.promptPreset.create({
+          data: {
+            name,
+            values,
+            userId,
+            promptId,
+          },
+        });
+
+        return res.status(201).json({ success: true, preset });
+      } else {
+        const db = readDB();
+        if (!db.presets) db.presets = [];
+        if (!db.savedPrompts) db.savedPrompts = [];
+
+        const count = db.presets.filter(
+          (p: any) => p.promptId === promptId && p.userId === userId
+        ).length;
+
+        if (count >= 10) {
+          return res.status(400).json({
+            success: false,
+            message: "سقف ذخیره‌سازی نسخه برای هر پرامپت ۱۰ عدد است.",
+          });
+        }
+
+        const isSaved = db.savedPrompts.some(
+          (sp: any) => sp.userId === userId && sp.promptId === promptId
+        );
+
+        if (!isSaved) {
+          db.savedPrompts.push({
+            id: "sp_" + Date.now(),
+            userId,
+            promptId,
+            createdAt: new Date().toISOString(),
+          });
+        }
+
+        const newPreset = {
+          id: "preset_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+          name,
+          values,
+          userId,
+          promptId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        db.presets.push(newPreset);
+        writeDB(db);
+
+        return res.status(201).json({ success: true, preset: newPreset });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Update a Preset
+  app.put("/api/presets/:presetId", userAuth, async (req, res) => {
+    const { presetId } = req.params;
+    const userId = (req as any).user.id;
+    const { name, values } = req.body;
+
+    try {
+      if (prisma) {
+        const preset = await prisma.promptPreset.findUnique({
+          where: { id: presetId },
+        });
+
+        if (!preset) {
+          return res.status(404).json({ success: false, message: "نسخه مورد نظر پیدا نشد." });
+        }
+
+        if (preset.userId !== userId) {
+          return res.status(403).json({ success: false, message: "شما مجاز به تغییر این نسخه نیستید." });
+        }
+
+        const updated = await prisma.promptPreset.update({
+          where: { id: presetId },
+          data: {
+            ...(name && { name }),
+            ...(values && { values }),
+          },
+        });
+
+        return res.json({ success: true, preset: updated });
+      } else {
+        const db = readDB();
+        if (!db.presets) db.presets = [];
+
+        const presetIndex = db.presets.findIndex((p: any) => p.id === presetId);
+        if (presetIndex === -1) {
+          return res.status(404).json({ success: false, message: "نسخه مورد نظر پیدا نشد." });
+        }
+
+        const preset = db.presets[presetIndex];
+        if (preset.userId !== userId) {
+          return res.status(403).json({ success: false, message: "شما مجاز به تغییر این نسخه نیستید." });
+        }
+
+        if (name) preset.name = name;
+        if (values) preset.values = values;
+        preset.updatedAt = new Date().toISOString();
+
+        writeDB(db);
+        return res.json({ success: true, preset });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // API - Delete a Preset
+  app.delete("/api/presets/:presetId", userAuth, async (req, res) => {
+    const { presetId } = req.params;
+    const userId = (req as any).user.id;
+
+    try {
+      if (prisma) {
+        const preset = await prisma.promptPreset.findUnique({
+          where: { id: presetId },
+        });
+
+        if (!preset) {
+          return res.status(404).json({ success: false, message: "نسخه مورد نظر پیدا نشد." });
+        }
+
+        if (preset.userId !== userId) {
+          return res.status(403).json({ success: false, message: "شما مجاز به حذف این نسخه نیستید." });
+        }
+
+        await prisma.promptPreset.delete({
+          where: { id: presetId },
+        });
+
+        return res.json({ success: true, message: "نسخه با موفقیت حذف شد." });
+      } else {
+        const db = readDB();
+        if (!db.presets) db.presets = [];
+
+        const presetIndex = db.presets.findIndex((p: any) => p.id === presetId);
+        if (presetIndex === -1) {
+          return res.status(404).json({ success: false, message: "نسخه مورد نظر پیدا نشد." });
+        }
+
+        const preset = db.presets[presetIndex];
+        if (preset.userId !== userId) {
+          return res.status(403).json({ success: false, message: "شما مجاز به حذف این نسخه نیستید." });
+        }
+
+        db.presets.splice(presetIndex, 1);
+        writeDB(db);
+
+        return res.json({ success: true, message: "نسخه با موفقیت حذف شد." });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  });
 
   // API - Get Category list
   app.get("/api/categories", (req, res) => {

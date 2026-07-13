@@ -32,6 +32,7 @@ model Prompt {
   forkedFrom    Prompt?  @relation("PromptForks", fields: [forkedFromId], references: [id])
   forks         Prompt[] @relation("PromptForks")
   savedBy       SavedPrompt[]
+  presets       PromptPreset[]
 
   // Smart Media Engine
   coverImage    String?
@@ -95,6 +96,7 @@ model User {
   avatar       String?
   role         Role          @default(USER)
   savedPrompts SavedPrompt[]
+  presets      PromptPreset[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -108,5 +110,17 @@ model SavedPrompt {
   createdAt DateTime @default(now())
 
   @@unique([userId, promptId])
+}
+
+model PromptPreset {
+  id        String   @id @default(uuid())
+  name      String   // نام نسخه مثلا: کاور آموزشی
+  values    Json     // مقادیر فیلدها (key-value)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promptId  String
+  prompt    Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 

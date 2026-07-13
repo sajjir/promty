@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { FieldSchema } from "../types";
 import { renderPrompt } from "../lib/renderPrompt";
+import { useAuth } from "./AuthContext";
+import { Wand2, X, AlertCircle, CheckCircle, Save, Sparkles, FolderPlus } from "lucide-react";
 
 function parseOption(opt: string) {
   const parts = opt.split("|");
@@ -20,51 +22,195 @@ interface PromptWizardProps {
   fields: FieldSchema[];
   promptBody: string;
   onRendered: (rendered: string) => void;
+  promptId?: string;
+  activePresetId?: string | null;
+  setActivePresetId?: (id: string | null) => void;
+  values?: Record<string, string>;
+  setValues?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  onPresetSavedOrUpdated?: () => void;
 }
 
-export default function PromptWizard({ fields, promptBody, onRendered }: PromptWizardProps) {
-  const [values, setValues] = useState<Record<string, string>>({});
+export default function PromptWizard({
+  fields,
+  promptBody,
+  onRendered,
+  promptId,
+  activePresetId,
+  setActivePresetId,
+  values,
+  setValues,
+  onPresetSavedOrUpdated
+}: PromptWizardProps) {
+  const { user, setPhoneModalOpen } = useAuth();
+  
+  // Fallback states if not passed as props (e.g. in Admin live form preview)
+  const [localValues, setLocalValues] = useState<Record<string, string>>({});
+  const [localActivePresetId, setLocalActivePresetId] = useState<string | null>(null);
 
-  // Initialize values dictionary with appropriate defaults
+  const finalValues = values !== undefined ? values : localValues;
+  const finalSetValues = setValues !== undefined ? setValues : setLocalValues;
+  const finalActivePresetId = activePresetId !== undefined ? activePresetId : localActivePresetId;
+  const finalSetActivePresetId = setActivePresetId !== undefined ? setActivePresetId : setLocalActivePresetId;
+
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [presetName, setPresetName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Initialize local fallback values when fields change (if uncontrolled)
   useEffect(() => {
-    const initial: Record<string, string> = {};
-    fields.forEach((field) => {
-      if (field.type === "switch") {
-        initial[field.key] = "خیر";
-      } else if (field.type === "slider") {
-        initial[field.key] = String(field.min ?? 10);
-      } else {
-        initial[field.key] = "";
-      }
-    });
-    setValues(initial);
-  }, [fields]);
+    if (values === undefined) {
+      const initial: Record<string, string> = {};
+      fields.forEach((field) => {
+        if (field.type === "switch") {
+          initial[field.key] = "خیر";
+        } else if (field.type === "slider") {
+          initial[field.key] = String(field.min ?? 10);
+        } else {
+          initial[field.key] = "";
+        }
+      });
+      setLocalValues(initial);
+    }
+  }, [fields, values]);
+
+  // Perform live client-side replacement when values or promptBody change
+  useEffect(() => {
+    const rendered = renderPrompt(promptBody, finalValues);
+    onRendered(rendered);
+  }, [finalValues, promptBody]);
 
   const handleInputChange = (key: string, value: string) => {
-    const updated = { ...values, [key]: value };
-    setValues(updated);
-    
-    // Perform live client-side replacement
-    const rendered = renderPrompt(promptBody, updated);
-    onRendered(rendered);
+    finalSetValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveNewPresetClick = () => {
+    if (!user) {
+      setPhoneModalOpen(true);
+      return;
+    }
+    // Set smart default name
+    const now = new Date();
+    const faDate = now.toLocaleDateString("fa-IR");
+    const faTime = now.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
+    setPresetName(`نسخه شخصی - ${faDate} ساعت ${faTime}`);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setIsSaveModalOpen(true);
+  };
+
+  const submitNewPreset = async () => {
+    if (!presetName.trim()) {
+      setErrorMessage("لطفاً نامی برای نسخه خود وارد کنید.");
+      return;
+    }
+
+    if (!promptId) {
+      setErrorMessage("شناسه پرامپت معتبر یافت نشد.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setErrorMessage(null);
+      const res = await fetch(`/api/prompts/${promptId}/presets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: presetName.trim(),
+          values: finalValues
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccessMessage("نسخه با موفقیت ذخیره و به بوکمارک‌های شما اضافه شد.");
+        finalSetActivePresetId(data.preset.id);
+        setIsSaveModalOpen(false);
+        if (onPresetSavedOrUpdated) {
+          onPresetSavedOrUpdated();
+        }
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setErrorMessage(data.message || "خطایی رخ داد.");
+      }
+    } catch (err: any) {
+      setErrorMessage("برقراری ارتباط با سرور با خطا مواجه شد.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdatePreset = async () => {
+    if (!user) {
+      setPhoneModalOpen(true);
+      return;
+    }
+    if (!finalActivePresetId) return;
+
+    try {
+      setIsSubmitting(true);
+      setErrorMessage(null);
+      const res = await fetch(`/api/presets/${finalActivePresetId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          values: finalValues
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccessMessage("نسخه با موفقیت بروزرسانی شد.");
+        if (onPresetSavedOrUpdated) {
+          onPresetSavedOrUpdated();
+        }
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setErrorMessage(data.message || "خطایی رخ داد.");
+      }
+    } catch (err: any) {
+      setErrorMessage("برقراری ارتباط با سرور با خطا مواجه شد.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div id="prompt-wizard-container" className="bg-slate-50 border border-slate-100 rounded-xl p-5 space-y-4 animate-fade-in">
-      <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+    <div id="prompt-wizard-container" className="bg-slate-50 border border-slate-100 rounded-xl p-5 space-y-4 animate-fade-in text-right" dir="rtl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-2">
         <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
           <span>✏️</span>
           <span>شخصی‌سازی مقادیر پرامپت</span>
         </h4>
-        <span className="text-xs text-slate-400">تمام تغییرات در همان لحظه در پرامپت بالا اعمال می‌شود</span>
+        <span className="text-[10px] text-slate-400">تغییرات در همان لحظه اعمال می‌شود</span>
       </div>
+
+      {successMessage && (
+        <div className="flex items-center gap-2 p-3 bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-lg text-xs font-bold">
+          <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="flex items-center gap-2 p-3 bg-rose-50 text-rose-800 border border-rose-100 rounded-lg text-xs font-bold">
+          <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {fields.map((field) => {
-          const value = values[field.key] || "";
+          const value = finalValues[field.key] || "";
 
           return (
-            <div key={field.key} className="flex flex-col gap-1.5 text-right">
+            <div key={field.key} className="flex flex-col gap-1.5">
               <label htmlFor={field.key} className="text-xs font-semibold text-slate-700 flex items-center gap-1">
                 <span>{field.label}</span>
                 {field.required && <span className="text-rose-500 text-xs">*</span>}
@@ -213,6 +359,107 @@ export default function PromptWizard({ fields, promptBody, onRendered }: PromptW
           );
         })}
       </div>
+
+      {/* Preset Customizer Controls */}
+      {promptId && (
+        <div className="flex flex-col sm:flex-row gap-2.5 pt-4 border-t border-slate-200 justify-between items-center">
+          <div className="text-right">
+            {finalActivePresetId ? (
+              <p className="text-[10px] text-[#6C47FF] font-black flex items-center gap-1">
+                <span>🌟 درحال ویرایش نسخه فعال لود شده</span>
+              </p>
+            ) : (
+              <p className="text-[10px] text-slate-400 font-semibold">
+                می‌توانید مقادیر بالا را به عنوان یک نسخه شخصی (Preset) برای بعد ذخیره کنید.
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2 justify-end w-full sm:w-auto">
+            {finalActivePresetId ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleUpdatePreset}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-xs font-black text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0"
+                >
+                  💾 بروزرسانی این نسخه
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveNewPresetClick}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-xs font-black text-white bg-[#6C47FF] hover:bg-[#5935e6] rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-sm"
+                >
+                  <FolderPlus className="w-3.5 h-3.5" />
+                  <span>ذخیره به عنوان نسخه جدید</span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSaveNewPresetClick}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-xs font-black text-white bg-[#6C47FF] hover:bg-[#5935e6] rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-md shadow-[#6C47FF]/10"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>ذخیره مقادیر به عنوان نسخه شخصی (Preset)</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Elegant Naming Modal */}
+      {isSaveModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 max-w-sm w-full space-y-4 shadow-xl text-right animate-scale-up" dir="rtl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h5 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-[#6C47FF]" />
+                <span>ذخیره نسخه جدید پرامپت</span>
+              </h5>
+              <button
+                onClick={() => setIsSaveModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="preset-name-input" className="text-[11px] font-bold text-slate-500">نام نسخه شخصی:</label>
+              <input
+                id="preset-name-input"
+                type="text"
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                placeholder="مثلا: نسخه تست بازاریابی"
+                className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:bg-white rounded-xl outline-none transition"
+              />
+            </div>
+
+            <div className="flex gap-2.5 pt-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setIsSaveModalOpen(false)}
+                className="px-3 py-2 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition cursor-pointer"
+              >
+                انصراف
+              </button>
+              <button
+                type="button"
+                onClick={submitNewPreset}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-xs font-black text-white bg-[#6C47FF] hover:bg-[#5935e6] rounded-xl transition cursor-pointer shadow-sm flex items-center gap-1.5"
+              >
+                {isSubmitting ? "در حال ذخیره‌سازی..." : "ثبت و ذخیره"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
