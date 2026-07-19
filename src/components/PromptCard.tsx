@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Prompt } from "../types";
-import { Megaphone, Globe, Video, Camera, Sparkles, ArrowLeft, Bookmark } from "lucide-react";
+import { Megaphone, Globe, Video, Camera, Sparkles, ArrowLeft, Bookmark, Copy } from "lucide-react";
 import { getToolIcon, getDomainGradient } from "../lib/toolIcons";
 import { useAuth } from "./AuthContext";
 
@@ -66,6 +66,7 @@ const TRANSLATIONS: Record<string, string> = {
 export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCardProps) {
   const { user, setPhoneModalOpen } = useAuth();
   const [isBookmarked, setIsBookmarked] = React.useState(isInitiallyBookmarked || false);
+  const [isCopied, setIsCopied] = React.useState(false);
 
   React.useEffect(() => {
     if (isInitiallyBookmarked !== undefined) {
@@ -78,7 +79,6 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
     e.stopPropagation();
 
     if (!user) {
-      alert("لطفاً ابتدا وارد حساب کاربری خود شوید.");
       setPhoneModalOpen(true);
       return;
     }
@@ -93,15 +93,25 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
       const data = await res.json();
       if (res.ok && data.success) {
         setIsBookmarked(data.bookmarked);
-      } else {
-        alert(data.message || "خطایی رخ داد.");
       }
     } catch (err) {
-      alert("برقراری ارتباط با سرور با خطا مواجه شد.");
+      console.error("Bookmark error:", err);
     }
   };
 
-  const rawLabel = (prompt.tools && prompt.tools[0]) || (prompt.domains && prompt.domains[0]) || prompt.intent || (prompt as any).category || "عمومی";
+  const handleQuickCopy = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(prompt.body);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy prompt body:", err);
+    }
+  };
+
+  const rawLabel = (prompt.tools && prompt.tools[0]) || (prompt.domains && prompt.domains[0]) || (prompt.intents && prompt.intents[0]) || prompt.intent || (prompt as any).category || "عمومی";
   const categoryLabel = TRANSLATIONS[rawLabel.toLowerCase()] || rawLabel;
   const extraToolsCount = (prompt.tools?.length || 0) > 1 ? prompt.tools!.length - 1 : 0;
   const IconComponent = categoryIcons[categoryLabel] || Sparkles;
@@ -150,7 +160,9 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
     >
       {/* Sample Image */}
       <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
-        {coverElement}
+        <Link to={`/prompts/${prompt.id}`} className="block w-full h-full">
+          {coverElement}
+        </Link>
 
         {/* Bookmark Toggle Button */}
         <button
@@ -159,6 +171,15 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
           title={isBookmarked ? "حذف از نشان‌شده‌ها" : "نشان کردن پرامپت"}
         >
           <Bookmark className={`w-4 h-4 transition-colors ${isBookmarked ? "fill-amber-500 text-amber-500" : ""}`} />
+        </button>
+
+        {/* Quick Copy Button */}
+        <button
+          onClick={handleQuickCopy}
+          className={`absolute top-3 left-12 p-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-600 backdrop-blur-xs shadow-sm hover:shadow-md transition cursor-pointer z-10 ${isCopied ? "text-emerald-500" : "hover:text-[#6C47FF]"}`}
+          title={isCopied ? "کپی شد!" : "کپی سریع پرامپت"}
+        >
+          <Copy className="w-4 h-4" />
         </button>
 
         {/* Premium / Free Badge */}
@@ -192,14 +213,16 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-bold text-slate-800 line-clamp-1 group-hover:text-[#6C47FF] transition-colors mb-2 flex items-center gap-1.5">
-          {prompt.parentId && (
-            <span className="text-xs bg-amber-50 text-amber-600 border border-amber-200/50 px-1.5 py-0.5 rounded-md font-black shrink-0" title="نسخه انشعاب یافته">
-              🔄 انشعاب
-            </span>
-          )}
-          <span>{prompt.title}</span>
-        </h3>
+        <Link to={`/prompts/${prompt.id}`} className="block">
+          <h3 className="text-lg font-bold text-slate-800 line-clamp-1 group-hover:text-[#6C47FF] transition-colors mb-2 flex items-center gap-1.5">
+            {prompt.parentId && (
+              <span className="text-xs bg-amber-50 text-amber-600 border border-amber-200/50 px-1.5 py-0.5 rounded-md font-black shrink-0" title="نسخه انشعاب یافته">
+                🔄 انشعاب
+              </span>
+            )}
+            <span>{prompt.title}</span>
+          </h3>
+        </Link>
 
         {/* Description */}
         <p className="text-slate-500 text-sm line-clamp-2 leading-relaxed mb-4 flex-1 text-right">

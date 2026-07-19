@@ -40,6 +40,7 @@ model Prompt {
   
   // AI Metadata Layers (Dynamic Validation)
   intent        String?
+  intents       String[]
   domains       String[]
   tools         String[]
   task          String?
@@ -47,6 +48,8 @@ model Prompt {
   difficulty    String?
   outputFormats String[]
   industry      String?
+  industries    String[]
+  bodyFa        String?  @db.Text
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

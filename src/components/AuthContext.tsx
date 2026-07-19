@@ -18,6 +18,7 @@ interface AuthContextType {
   loginAsAdmin: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: (credential: string) => Promise<boolean>;
   loginWithPhoneMock: (phone: string, code: string) => Promise<boolean>;
+  completePhoneRegistration: (phone: string, name: string, email: string) => Promise<{ success: boolean; message?: string; user?: User }>;
   logout: () => Promise<void>;
   isPhoneModalOpen: boolean;
   setPhoneModalOpen: (open: boolean) => void;
@@ -173,6 +174,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const completePhoneRegistration = async (phone: string, name: string, email: string): Promise<{ success: boolean; message?: string; user?: User }> => {
+    try {
+      const res = await fetch("/api/auth/phone-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, name, email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setUser(data.user);
+        if (data.user.role === "admin") {
+          localStorage.setItem("promty_admin_token", "active_jwt_session");
+        }
+        return { success: true, user: data.user };
+      }
+      return { success: false, message: data.message || "خطایی در ثبت‌نام رخ داد." };
+    } catch (e) {
+      console.error("Phone register failed:", e);
+      return { success: false, message: "ارتباط با سرور برقرار نشد." };
+    }
+  };
+
   const logout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -199,6 +222,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginAsAdmin,
         loginWithGoogle,
         loginWithPhoneMock,
+        completePhoneRegistration,
         logout,
         isPhoneModalOpen,
         setPhoneModalOpen,

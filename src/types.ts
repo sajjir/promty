@@ -18,6 +18,7 @@ export interface Prompt {
   category?: string;
   // Metadata Layers
   intent?: string;
+  intents?: string[];
   domains?: string[];      // قبلاً domain?: string بود
   tools?: string[];        // قبلاً tool?: string بود
   task?: string;
@@ -25,6 +26,8 @@ export interface Prompt {
   difficulty?: string;
   outputFormats?: string[]; // قبلاً outputFormat?: string بود
   industry?: string;
+  industries?: string[];
+  bodyFa?: string;
   tags: string[];
   // Stats & Status
   sampleImage?: string;

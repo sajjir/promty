@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Prompt } from "../types";
 import PromptCard from "../components/PromptCard";
+import { useAuth } from "../components/AuthContext";
 import { 
   Search, Megaphone, Globe, Video, Camera, Sparkles, 
   SlidersHorizontal, Loader2, X, Clock, Tag, Check, 
@@ -14,6 +15,23 @@ export default function Homepage() {
   const navigate = useNavigate();
   const { toolSlug, domainSlug } = useParams<{ toolSlug?: string; domainSlug?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!user) {
+      setBookmarkedIds(new Set());
+      return;
+    }
+    fetch("/api/user/dashboard")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.bookmarks)) {
+          setBookmarkedIds(new Set(data.bookmarks.map((b: any) => b.promptId)));
+        }
+      })
+      .catch((err) => console.error("Error fetching bookmarks:", err));
+  }, [user]);
 
   // Search parameters parsed from URL
   const searchQuery = searchParams.get("q") || "";
@@ -438,7 +456,11 @@ export default function Homepage() {
     : prompts;
 
   const filteredPrompts = displayPrompts.filter((p) => {
-    if (selectedIntent && p.intent?.toLowerCase() !== selectedIntent.toLowerCase()) return false;
+    if (selectedIntent) {
+      const pIntents = Array.isArray(p.intents) ? p.intents : (p.intent ? [p.intent] : []);
+      const matched = pIntents.some(i => i.toLowerCase() === selectedIntent.toLowerCase());
+      if (!matched) return false;
+    }
     if (selectedTool && !(p.tools || []).some(t => t.toLowerCase() === selectedTool.toLowerCase())) return false;
     if (selectedDomain && !(p.domains || []).some(d => d.toLowerCase() === selectedDomain.toLowerCase())) return false;
     if (selectedDifficulty && p.difficulty?.toLowerCase() !== selectedDifficulty.toLowerCase()) return false;
@@ -975,7 +997,7 @@ export default function Homepage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <PromptCard prompt={prompt} />
+                  <PromptCard prompt={prompt} isInitiallyBookmarked={bookmarkedIds.has(prompt.id)} />
                 </motion.div>
               ))}
             </motion.div>

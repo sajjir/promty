@@ -1237,7 +1237,7 @@ export default function AdminDashboard() {
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
                   <p className="text-[10px] text-slate-400">
-                    💡 تمام تنظیمات ثبت شده در این صفحه، به صورت بلادرنگ در پرونده دیتابیس بومی MVP ذخیره شده و از تغییر فایل‌های سرور شما را بی‌نیاز می‌کند.
+                    💡 تمام تنظیمات ثبت شده در این صفحه، به صورت بلادرنگ در پرونده دیتابیس بومی سامانه ذخیره شده و از تغییر فایل‌های سرور شما را بی‌نیاز می‌کند.
                   </p>
                   
                   <button

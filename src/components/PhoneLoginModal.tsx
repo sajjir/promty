@@ -1,16 +1,20 @@
 import React, { useState } from "react";
 import { useAuth } from "./AuthContext";
-import { Phone, Key, X, Check, AlertCircle } from "lucide-react";
+import { Phone, Key, X, Check, AlertCircle, User, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import GoogleLoginButton from "./GoogleLoginButton";
 
 export default function PhoneLoginModal() {
-  const { isPhoneModalOpen, setPhoneModalOpen, loginWithPhoneMock } = useAuth();
+  const { isPhoneModalOpen, setPhoneModalOpen, completePhoneRegistration } = useAuth();
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [step, setStep] = useState<"phone" | "otp" | "complete-profile">("phone");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [sending, setSending] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isPhoneModalOpen) return null;
 
@@ -30,7 +34,7 @@ export default function PhoneLoginModal() {
     }, 1000);
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  const handleVerifyOtp = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -39,19 +43,38 @@ export default function PhoneLoginModal() {
       return;
     }
 
-    const success = await loginWithPhoneMock(phone, code);
-    if (success) {
-      setSuccess(true);
-      setTimeout(() => {
-        setPhoneModalOpen(false);
-        // reset form
-        setPhone("");
-        setCode("");
-        setStep("phone");
-        setSuccess(false);
-      }, 1500);
-    } else {
-      setError("خطا در تایید کد و ورود.");
+    setStep("complete-profile");
+  };
+
+  const handleCompleteRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) {
+      setError("لطفاً نام و ایمیل را وارد کنید.");
+      return;
+    }
+    setIsSubmitting(true);
+    setError("");
+    try {
+      const res = await completePhoneRegistration(phone, name.trim(), email.trim());
+      if (res.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          setPhoneModalOpen(false);
+          // reset form
+          setPhone("");
+          setCode("");
+          setName("");
+          setEmail("");
+          setStep("phone");
+          setSuccess(false);
+        }, 1500);
+      } else {
+        setError(res.message || "خطایی در ثبت‌نام رخ داد.");
+      }
+    } catch (err) {
+      setError("ارتباط با سرور برقرار نشد.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -61,6 +84,8 @@ export default function PhoneLoginModal() {
     setStep("phone");
     setPhone("");
     setCode("");
+    setName("");
+    setEmail("");
   };
 
   return (
@@ -110,39 +135,51 @@ export default function PhoneLoginModal() {
               )}
 
               {step === "phone" ? (
-                <form onSubmit={handleSendOtp} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500">شماره موبایل</label>
-                    <div className="relative">
-                      <Phone className="absolute right-3.5 top-3 w-4 h-4 text-slate-400" />
-                      <input 
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="مثال: 09123456789"
-                        className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#6C47FF] focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/10 text-right font-medium"
-                        required
-                        disabled={sending}
-                      />
+                <div className="space-y-4">
+                  {/* Google Login Section (Phase 1.2) */}
+                  <div className="space-y-3">
+                    <GoogleLoginButton />
+                    <div className="flex items-center gap-3 my-4">
+                      <div className="h-px bg-slate-100 flex-1" />
+                      <span className="text-[11px] font-bold text-slate-400">یا</span>
+                      <div className="h-px bg-slate-100 flex-1" />
                     </div>
-                    <p className="text-[10px] text-slate-400 leading-relaxed">
-                      شماره موبایل خود را بدون صفر یا همراه با صفر وارد نمایید.
-                    </p>
                   </div>
 
-                  <button
-                    type="submit"
-                    className="w-full bg-[#6C47FF] hover:bg-[#5B3CE0] text-white text-xs font-bold py-3 rounded-xl transition shadow-md shadow-[#6C47FF]/10 flex items-center justify-center gap-1.5"
-                    disabled={sending}
-                  >
-                    {sending ? (
-                      <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      "ارسال کد تایید"
-                    )}
-                  </button>
-                </form>
-              ) : (
+                  <form onSubmit={handleSendOtp} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500">شماره موبایل</label>
+                      <div className="relative">
+                        <Phone className="absolute right-3.5 top-3 w-4 h-4 text-slate-400" />
+                        <input 
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="مثال: 09123456789"
+                          className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#6C47FF] focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/10 text-right font-medium"
+                          required
+                          disabled={sending}
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">
+                        شماره موبایل خود را بدون صفر یا همراه با صفر وارد نمایید.
+                      </p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-[#6C47FF] hover:bg-[#5B3CE0] text-white text-xs font-bold py-3 rounded-xl transition shadow-md shadow-[#6C47FF]/10 flex items-center justify-center gap-1.5"
+                      disabled={sending}
+                    >
+                      {sending ? (
+                        <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        "ارسال کد تایید"
+                      )}
+                    </button>
+                  </form>
+                </div>
+              ) : step === "otp" ? (
                 <form onSubmit={handleVerifyOtp} className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500">کد تایید ارسال شده</label>
@@ -173,7 +210,53 @@ export default function PhoneLoginModal() {
                     type="submit"
                     className="w-full bg-[#6C47FF] hover:bg-[#5B3CE0] text-white text-xs font-bold py-3 rounded-xl transition shadow-md shadow-[#6C47FF]/10"
                   >
-                    ورود و تایید
+                    تایید کد و ادامه
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleCompleteRegistration} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500">نام و نام خانوادگی</label>
+                    <div className="relative">
+                      <User className="absolute right-3.5 top-3 w-4 h-4 text-slate-400" />
+                      <input 
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="نام خود را وارد کنید"
+                        className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#6C47FF] focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/10 text-right font-medium"
+                        required
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500">ایمیل</label>
+                    <div className="relative">
+                      <Mail className="absolute right-3.5 top-3 w-4 h-4 text-slate-400" />
+                      <input 
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="example@gmail.com"
+                        className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#6C47FF] focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/10 text-left font-medium"
+                        required
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-[#6C47FF] hover:bg-[#5B3CE0] text-white text-xs font-bold py-3 rounded-xl transition shadow-md shadow-[#6C47FF]/10 flex items-center justify-center gap-1.5"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      "تکمیل ثبت‌نام"
+                    )}
                   </button>
                 </form>
               )}

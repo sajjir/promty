@@ -121,16 +121,16 @@ function AppContent() {
       {/* Footer Area */}
       <footer className="bg-white border-t border-slate-100 py-8 mt-12 text-center text-xs text-slate-400 font-sans">
         <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-3">
-          <p className="font-bold text-slate-600 mb-1">{siteTitle} — پلتفرم آرشیو و شخصی‌سازی پرامپت‌های آماده هوش مصنوعی</p>
+          <p className="font-bold text-slate-600 mb-1">Promty — بزرگترین آرشیو پرامپت‌های مهندسی‌شده‌ی فارسی و انگلیسی</p>
           <p className="leading-relaxed max-w-xl mx-auto">
-            این پلتفرم به عنوان یک محصول کمینه ارزشمند (MVP) جهت کپی سریع کدهای مهندسی شده هوش مصنوعی در ابزارهای تصویرسازی و متنی توسعه یافته است.
+            این پلتفرم به عنوان بزرگترین آرشیو پرامپت‌های مهندسی‌شده‌ی فارسی و انگلیسی جهت کپی سریع کدهای مهندسی شده هوش مصنوعی در ابزارهای تصویرسازی و متنی توسعه یافته است.
           </p>
           <div className="text-[10px] text-slate-400 pt-4 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-2">
             <span>کلیه حقوق برای توسعه‌دهندگان پلتفرم محفوظ است. © ۲۰۲۶</span>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
                 <Check className="w-3.5 h-3.5 text-emerald-500" />
-                <span>توسعه‌یافته مطابق چک‌لیست MVP</span>
+                <span>توسعه‌یافته با بالاترین استانداردهای مهندسی و کاربری</span>
               </span>
             </div>
           </div>

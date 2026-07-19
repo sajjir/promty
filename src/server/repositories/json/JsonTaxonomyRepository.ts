@@ -50,7 +50,7 @@ export class JsonTaxonomyRepository implements ITaxonomyRepository {
     const dict: Record<string, string> = {
       Create: "ایجاد", Write: "نگارش", Code: "کدنویسی", Design: "طراحی", Market: "بازاریابی",
       Analyze: "تحلیل", Learn: "آموزش", Automate: "اتوماسیون", Research: "تحقیق", Productivity: "بهره‌وری",
-      Business: "تجارت", Marketing: "مارکتینگ", Education: "آموزش", Medical: "پزشکی", Health: "سلامت",
+      Business: "تجارت", Marketing: "مارکتینگ", Education: "آموزش", Medical: "سلامت و پزشکی", Health: "سلامت و پزشکی", "Health & Medical": "سلامت و پزشکی",
       Legal: "حقوقی", Finance: "مالی", Programming: "برنامه‌نویسی", Gaming: "بازی", Food: "غذا",
       Travel: "سفر", Architecture: "معماری", Photography: "عکاسی", "Real Estate": "املاک", Sports: "ورزش",
       AI: "هوش مصنوعی", Robotics: "رباتیک", Science: "علمی", Religion: "مذهبی", History: "تاریخ",

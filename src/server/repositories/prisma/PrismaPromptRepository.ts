@@ -27,6 +27,7 @@ export class PrismaPromptRepository implements IPromptRepository {
       isActive: dbPrompt.isActive,
       usageCount: dbPrompt.usageCount,
       intent: dbPrompt.intent || undefined,
+      intents: dbPrompt.intents && dbPrompt.intents.length > 0 ? dbPrompt.intents : (dbPrompt.intent ? [dbPrompt.intent] : []),
       domains: dbPrompt.domains,
       tools: dbPrompt.tools,
       task: dbPrompt.task || undefined,
@@ -34,6 +35,8 @@ export class PrismaPromptRepository implements IPromptRepository {
       difficulty: dbPrompt.difficulty || undefined,
       outputFormats: dbPrompt.outputFormats,
       industry: dbPrompt.industry || undefined,
+      industries: dbPrompt.industries && dbPrompt.industries.length > 0 ? dbPrompt.industries : (dbPrompt.industry ? [dbPrompt.industry] : []),
+      bodyFa: dbPrompt.bodyFa || undefined,
       createdAt: dbPrompt.createdAt.toISOString(),
       updatedAt: dbPrompt.updatedAt.toISOString(),
       parentId: dbPrompt.parentId || undefined,
@@ -116,6 +119,7 @@ export class PrismaPromptRepository implements IPromptRepository {
           isActive: promptData.isActive !== undefined ? promptData.isActive : true,
           usageCount: 0,
           intent: promptData.intent || null,
+          intents: promptData.intents || [],
           domains: promptData.domains || [],
           tools: promptData.tools || [],
           task: promptData.task || null,
@@ -123,6 +127,8 @@ export class PrismaPromptRepository implements IPromptRepository {
           difficulty: promptData.difficulty || null,
           outputFormats: promptData.outputFormats || [],
           industry: promptData.industry || null,
+          industries: promptData.industries || [],
+          bodyFa: promptData.bodyFa || null,
           parentId: promptData.parentId || null,
           sourceText: promptData.sourceText || null,
           coverImage: promptData.coverImage || null,
@@ -150,6 +156,7 @@ export class PrismaPromptRepository implements IPromptRepository {
       if (updates.isActive !== undefined) data.isActive = updates.isActive;
       if (updates.usageCount !== undefined) data.usageCount = updates.usageCount;
       if (updates.intent !== undefined) data.intent = updates.intent || null;
+      if (updates.intents !== undefined) data.intents = updates.intents;
       if (updates.domains !== undefined) data.domains = updates.domains;
       if (updates.tools !== undefined) data.tools = updates.tools;
       if (updates.task !== undefined) data.task = updates.task || null;
@@ -157,6 +164,8 @@ export class PrismaPromptRepository implements IPromptRepository {
       if (updates.difficulty !== undefined) data.difficulty = updates.difficulty || null;
       if (updates.outputFormats !== undefined) data.outputFormats = updates.outputFormats;
       if (updates.industry !== undefined) data.industry = updates.industry || null;
+      if (updates.industries !== undefined) data.industries = updates.industries;
+      if (updates.bodyFa !== undefined) data.bodyFa = updates.bodyFa || null;
       if (updates.parentId !== undefined) data.parentId = updates.parentId || null;
       if (updates.sourceText !== undefined) data.sourceText = updates.sourceText || null;
       if (updates.coverImage !== undefined) data.coverImage = updates.coverImage || null;

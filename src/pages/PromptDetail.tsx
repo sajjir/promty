@@ -11,7 +11,7 @@ import {
   Wand2, PlayCircle, Loader2, Copy, Layers, Eye, Compass, 
   HelpCircle, MessageSquare, BookOpen, Search, Share2, Tag, 
   Info, Cpu, Check, FileCode, CheckCircle2, ChevronLeft, Trash2,
-  Pencil, X
+  Pencil, X, Bookmark
 } from "lucide-react";
 
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -35,8 +35,9 @@ const TRANSLATIONS: Record<string, string> = {
   "business": "کسب‌وکار", 
   "marketing": "مارکتینگ", 
   "education": "آموزش", 
-  "medical": "پزشکی", 
-  "health": "سلامت", 
+  "medical": "سلامت و پزشکی", 
+  "health": "سلامت و پزشکی", 
+  "health & medical": "سلامت و پزشکی", 
   "legal": "حقوقی",
   "finance": "مالی", 
   "programming": "برنامه‌نویسی", 
@@ -62,8 +63,9 @@ const TRANSLATIONS: Record<string, string> = {
   "Business": "کسب‌وکار", 
   "Marketing": "مارکتینگ", 
   "Education": "آموزش", 
-  "Medical": "پزشکی", 
-  "Health": "سلامت", 
+  "Medical": "سلامت و پزشکی", 
+  "Health": "سلامت و پزشکی", 
+  "Health & Medical": "سلامت و پزشکی", 
   "Legal": "حقوقی",
   "Finance": "مالی", 
   "Programming": "برنامه‌نویسی", 
@@ -188,13 +190,59 @@ function TaxonomyBlock({ prompt }: { prompt: Prompt }) {
 
 export default function PromptDetail() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, setPhoneModalOpen } = useAuth();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [allPrompts, setAllPrompts] = useState<Prompt[]>([]);
   const [renderedBody, setRenderedBody] = useState("");
   const [showWizard, setShowWizard] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [promptLang, setPromptLang] = useState<"en" | "fa">("fa");
+  const [selectedRunTool, setSelectedRunTool] = useState<string>("");
+
+  useEffect(() => {
+    if (prompt?.tools && prompt.tools.length > 0) {
+      setSelectedRunTool(prompt.tools[0]);
+    }
+  }, [prompt]);
+
+  useEffect(() => {
+    if (!user || !id) {
+      setIsBookmarked(false);
+      return;
+    }
+    fetch("/api/user/dashboard")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.bookmarks)) {
+          const found = data.bookmarks.some((b: any) => b.promptId === id);
+          setIsBookmarked(found);
+        }
+      })
+      .catch((err) => console.error("Error fetching bookmark status:", err));
+  }, [id, user]);
+
+  const handleBookmarkToggle = async () => {
+    if (!user) {
+      setPhoneModalOpen(true);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/prompts/${id}/bookmark`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsBookmarked(data.bookmarked);
+      }
+    } catch (err) {
+      console.error("Error toggling bookmark:", err);
+    }
+  };
 
   // Custom Prompt Presets (My Saved Presets) states
   const [presets, setPresets] = useState<any[]>([]);
@@ -432,7 +480,7 @@ export default function PromptDetail() {
 
   const isAdmin = !!localStorage.getItem("promty_admin_token");
 
-  const handleRunExternal = async (textToRun: string) => {
+  const handleRunExternal = async (textToRun: string, overrideTool?: string) => {
     if (!textToRun) return;
 
     // 1. Copy to clipboard
@@ -445,11 +493,11 @@ export default function PromptDetail() {
     }
 
     // 2. Determine target tool and URL
-    const firstTool = prompt?.tools && prompt.tools.length > 0 ? prompt.tools[0] : "";
-    const toolLower = firstTool.toLowerCase();
+    const targetTool = overrideTool || (prompt?.tools && prompt.tools.length > 0 ? prompt.tools[0] : "");
+    const toolLower = targetTool.toLowerCase();
 
     let baseUrl = "https://chatgpt.com/?q="; // Default
-    if (firstTool) {
+    if (targetTool) {
       const matchedKey = Object.keys(RUN_URLS).find(k => toolLower.includes(k) || k.includes(toolLower));
       if (matchedKey) {
         baseUrl = RUN_URLS[matchedKey];
@@ -593,13 +641,16 @@ export default function PromptDetail() {
           const data = await res.json();
           currentPrompt = data.prompt;
           setPrompt(data.prompt);
-          setRenderedBody(data.prompt.body);
+          const initialLang = data.prompt.bodyFa ? "fa" : "en";
+          setPromptLang(initialLang);
+          const initialBody = initialLang === "fa" && data.prompt.bodyFa ? data.prompt.bodyFa : data.prompt.body;
+          setRenderedBody(initialBody);
           setSelectedVersion("v1"); // Reset version on prompt change
           setRefineHistory([
             {
               timestamp: new Date().toLocaleTimeString("fa-IR"),
               versionName: "نسخه اصلی اولیه (V1)",
-              body: data.prompt.body
+              body: initialBody
             }
           ]);
         }
@@ -646,28 +697,29 @@ export default function PromptDetail() {
   // Version body generator based on base body
   const getVersionedBody = (v: "v1" | "v2" | "v3") => {
     if (!prompt) return "";
+    const currentBase = (promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body;
     if (v === "v1") {
-      return prompt.body;
+      return currentBase;
     } else if (v === "v2") {
       // Cinematic/Detailed variant
       if (prompt.category === "عکاسی" || prompt.category === "ویدیو" || prompt.tools?.includes("Midjourney") || prompt.tools?.includes("Flux")) {
-        return `${prompt.body} --ar 16:9 --style raw --v 6.0 --stylize 250 --quality 2 --contrast high --cinematic-lighting --focal-length 85mm`;
+        return `${currentBase} --ar 16:9 --style raw --v 6.0 --stylize 250 --quality 2 --contrast high --cinematic-lighting --focal-length 85mm`;
       }
-      return `${prompt.body}\n\n[Note: Please focus on extreme photorealism, detailed volumetric rendering, cinematic shadows, 8K textures, depth of field, and volumetric fog elements to make the outcome stand out.]`;
+      return `${currentBase}\n\n[Note: Please focus on extreme photorealism, detailed volumetric rendering, cinematic shadows, 8K textures, depth of field, and volumetric fog elements to make the outcome stand out.]`;
     } else {
       // Dev & Production structure variant
-      return `/* System: Output structured JSON exclusively. Bypassing greeting. */\n{\n  "instruction": "${prompt.title}",\n  "prompt": "${prompt.body.replace(/"/g, '\\"')}",\n  "parameters": {\n    "temperature": 0.3,\n    "top_p": 0.95,\n    "system_anchor": "Act as an expert AI consultant targeting extreme accuracy and formatting output directly in valid clean syntax."\n  }\n}`;
+      return `/* System: Output structured JSON exclusively. Bypassing greeting. */\n{\n  "instruction": "${prompt.title}",\n  "prompt": "${currentBase.replace(/"/g, '\\"')}",\n  "parameters": {\n    "temperature": 0.3,\n    "top_p": 0.95,\n    "system_anchor": "Act as an expert AI consultant targeting extreme accuracy and formatting output directly in valid clean syntax."\n  }\n}`;
     }
   };
 
   // Sync final rendered body with live template and wizard inputs
   useEffect(() => {
     if (prompt) {
-      const baseTemplate = refinedPrompt || getVersionedBody(selectedVersion) || prompt.body;
+      const baseTemplate = refinedPrompt || getVersionedBody(selectedVersion) || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body);
       const finalRenderedText = renderPrompt(baseTemplate, liveValues);
       setRenderedBody(finalRenderedText);
     }
-  }, [liveValues, selectedVersion, refinedPrompt, prompt]);
+  }, [liveValues, selectedVersion, refinedPrompt, prompt, promptLang]);
 
   const handleVersionChange = (v: "v1" | "v2" | "v3") => {
     setSelectedVersion(v);
@@ -737,6 +789,19 @@ export default function PromptDetail() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {/* Bookmark Button */}
+          <button
+            onClick={handleBookmarkToggle}
+            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+              isBookmarked
+                ? "bg-amber-50 text-amber-600 border-amber-200"
+                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? "fill-amber-500 text-amber-500" : ""}`} />
+            <span>{isBookmarked ? "نشان شده" : "نشان کردن"}</span>
+          </button>
+
           {isAdmin && (
             <Link
               to={`/admin/prompts/new?forkedFrom=${prompt.id}`}
@@ -962,7 +1027,43 @@ export default function PromptDetail() {
             {/* Prompt Textbox */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="prompt-box-area" className="text-xs font-black text-slate-400">متن پرامپت نهایی:</label>
+                <div className="flex items-center gap-3">
+                  <label htmlFor="prompt-box-area" className="text-xs font-black text-slate-400">متن پرامپت نهایی:</label>
+                  {prompt.bodyFa && (
+                    <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPromptLang("fa");
+                          setRefinedPrompt(null);
+                        }}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${
+                          promptLang === "fa"
+                            ? "bg-white text-slate-800 shadow-xs"
+                            : "text-slate-400 hover:text-slate-600"
+                        }`}
+                        title="نمایش پرامپت فارسی"
+                      >
+                        🇮🇷 فارسی
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPromptLang("en");
+                          setRefinedPrompt(null);
+                        }}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${
+                          promptLang === "en"
+                            ? "bg-white text-slate-800 shadow-xs"
+                            : "text-slate-400 hover:text-slate-600"
+                        }`}
+                        title="نمایش پرامپت انگلیسی"
+                      >
+                        🇬🇧 English
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md">
                   {prompt.usageCount} کپی و بررسی موفقیت‌آمیز
                 </span>
@@ -972,38 +1073,62 @@ export default function PromptDetail() {
                 rows={9}
                 value={renderedBody}
                 onChange={(e) => setRenderedBody(e.target.value)}
-                className="w-full p-4.5 bg-slate-900 text-slate-100 font-mono text-xs leading-relaxed rounded-2xl ring-4 ring-slate-900/5 focus:outline-none focus:ring-4 focus:ring-[#6C47FF]/20 text-left"
-                style={{ direction: "ltr" }}
+                className={`w-full p-4.5 bg-slate-900 text-slate-100 font-mono text-xs leading-relaxed rounded-2xl ring-4 ring-slate-900/5 focus:outline-none focus:ring-4 focus:ring-[#6C47FF]/20 ${
+                  promptLang === "fa" ? "text-right" : "text-left"
+                }`}
+                style={{ direction: promptLang === "fa" ? "rtl" : "ltr" }}
                 placeholder="متن کامل پرامپت در این قسمت بارگذاری می‌شود..."
               />
             </div>
 
-            {/* Buttons Row */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <CopyButton text={renderedBody} onCopy={handleTrackCopy} className="flex-1 text-sm py-4" />
-
-              <button
-                onClick={() => handleRunExternal(renderedBody)}
-                className="flex items-center justify-center gap-2 px-5 py-4 text-sm font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl cursor-pointer transition-all duration-300 shadow-md shadow-emerald-600/10 flex-1"
-              >
-                <span>▶️ اجرا در {prompt.tools && prompt.tools.length > 0 ? prompt.tools[0] : "ابزار هوش مصنوعی"}</span>
-              </button>
-              
-              {prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
-                <button
-                  id="toggle-wizard-btn"
-                  onClick={() => setShowWizard(!showWizard)}
-                  className={`flex items-center justify-center gap-2 px-5 py-4 text-sm font-black rounded-xl cursor-pointer transition-all duration-300 shadow-sm shrink-0 ${
-                    showWizard
-                      ? "bg-slate-800 text-white"
-                      : "bg-[#6C47FF] hover:bg-[#5935e6] text-white shadow-md shadow-[#6C47FF]/20"
-                  }`}
-                >
-                  <Wand2 className="w-5 h-5" />
-                  <span>شخصی‌سازی مقادیر متغیر پرامپت ✏️</span>
-                </button>
-              )}
-            </div>
+             {/* Buttons Row */}
+             <div className="flex flex-col sm:flex-row gap-3 pt-2">
+               <CopyButton text={renderedBody} onCopy={handleTrackCopy} className="flex-1 text-sm py-4" />
+ 
+               {prompt.tools && prompt.tools.length > 1 ? (
+                 <div className="flex items-center bg-emerald-600 hover:bg-emerald-700 rounded-xl text-white flex-1 overflow-hidden transition-all duration-300 shadow-md shadow-emerald-600/10">
+                   <button
+                     onClick={() => handleRunExternal(renderedBody, selectedRunTool)}
+                     className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-black cursor-pointer border-r border-emerald-500/50"
+                   >
+                     <span>▶️ اجرا در {selectedRunTool}</span>
+                   </button>
+                   <select
+                     value={selectedRunTool}
+                     onChange={(e) => setSelectedRunTool(e.target.value)}
+                     className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold py-4 px-3 outline-none cursor-pointer border-none shrink-0"
+                   >
+                     {prompt.tools.map((t) => (
+                       <option key={t} value={t} className="bg-slate-800 text-white">
+                         {t}
+                       </option>
+                     ))}
+                   </select>
+                 </div>
+               ) : (
+                 <button
+                   onClick={() => handleRunExternal(renderedBody)}
+                   className="flex items-center justify-center gap-2 px-5 py-4 text-sm font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl cursor-pointer transition-all duration-300 shadow-md shadow-emerald-600/10 flex-1"
+                 >
+                   <span>▶️ اجرا در {prompt.tools && prompt.tools.length > 0 ? prompt.tools[0] : "ابزار هوش مصنوعی"}</span>
+                 </button>
+               )}
+               
+               {prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
+                 <button
+                   id="toggle-wizard-btn"
+                   onClick={() => setShowWizard(!showWizard)}
+                   className={`flex items-center justify-center gap-2 px-5 py-4 text-sm font-black rounded-xl cursor-pointer transition-all duration-300 shadow-sm shrink-0 ${
+                     showWizard
+                       ? "bg-slate-800 text-white"
+                       : "bg-[#6C47FF] hover:bg-[#5935e6] text-white shadow-md shadow-[#6C47FF]/20"
+                   }`}
+                 >
+                   <Wand2 className="w-5 h-5" />
+                   <span>شخصی‌سازی مقادیر متغیر پرامپت ✏️</span>
+                 </button>
+               )}
+             </div>
 
             {/* Live Wizard Form (Toggleable Section) */}
             {showWizard && prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (

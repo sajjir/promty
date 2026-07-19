@@ -833,6 +833,13 @@ async function startServer() {
         user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, role: user.role.toLowerCase() },
       });
     } catch (err: any) {
+      if (err.code === "P2002") {
+        const field = err.meta?.target?.[0] || "این مقدار";
+        return res.status(409).json({
+          success: false,
+          message: field === "email" ? "این ایمیل قبلاً توسط حساب دیگری ثبت شده است." : "این شماره قبلاً ثبت شده است.",
+        });
+      }
       console.error("Google Auth error:", err);
       return res.status(500).json({ success: false, message: "احراز هویت گوگل ناموفق بود: " + err.message });
     }
@@ -917,6 +924,81 @@ async function startServer() {
       });
     }
     return res.status(400).json({ success: false, message: "کد تایید اشتباه است. (کد پیش‌فرض ۱۲۳۴ است)" });
+  });
+
+  // API - Complete registration / Phone registration
+  app.post("/api/auth/phone-register", async (req, res) => {
+    const { phone, name, email } = req.body;
+    if (!phone || !name || !email) {
+      return res.status(400).json({ success: false, message: "شماره، نام و ایمیل الزامی است." });
+    }
+    try {
+      let user = null;
+      if (prisma) {
+        user = await prisma.user.findUnique({ where: { phone } });
+        if (!user) {
+          user = await prisma.user.create({
+            data: { phone, name, email, role: "USER" },
+          });
+        } else if (!user.name || !user.email) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { name, email },
+          });
+        }
+      } else {
+        const dbPath = path.join(process.cwd(), "db.json");
+        let db: any = {};
+        if (fs.existsSync(dbPath)) {
+          db = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
+        }
+        if (!db.users) db.users = [];
+        user = db.users.find((u: any) => u.phone === phone);
+        if (!user) {
+          user = {
+            id: "phone_mock_" + Date.now(),
+            phone,
+            name,
+            email,
+            role: "USER"
+          };
+          db.users.push(user);
+          fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
+        } else {
+          user.name = name;
+          user.email = email;
+          fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
+        }
+      }
+
+      const token = jwt.sign(
+        { id: user.id, email: user.email, phone: user.phone, role: "user" },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      res.cookie("promty_session", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.json({
+        success: true,
+        user: { id: user.id, phone: user.phone, name: user.name, email: user.email, role: String(user.role).toLowerCase() },
+      });
+    } catch (err: any) {
+      if (err.code === "P2002") {
+        const field = err.meta?.target?.[0] || "این مقدار";
+        return res.status(409).json({
+          success: false,
+          message: field === "email" ? "این ایمیل قبلاً توسط حساب دیگری ثبت شده است." : "این شماره قبلاً ثبت شده است.",
+        });
+      }
+      console.error("Phone register error:", err);
+      return res.status(500).json({ success: false, message: "خطایی در ثبتنام رخ داد. دوباره تلاش کنید." });
+    }
   });
 
   // Admin middleware
