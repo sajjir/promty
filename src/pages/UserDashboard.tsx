@@ -5,12 +5,19 @@ import PromptCard from "../components/PromptCard";
 import { Sparkles, Bookmark, Loader2, Compass, ArrowRight, User, Phone, Mail, Calendar } from "lucide-react";
 
 export default function UserDashboard() {
-  const { user, setPhoneModalOpen } = useAuth();
+  const { user, setPhoneModalOpen, updateUser } = useAuth();
   const navigate = useNavigate();
   
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"bookmarked" | "profile">("bookmarked");
+
+  // Profile editing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
 
   // Authentication Guard
   useEffect(() => {
@@ -19,6 +26,12 @@ export default function UserDashboard() {
       navigate("/");
     }
   }, [user, navigate, setPhoneModalOpen]);
+
+  useEffect(() => {
+    if (user) {
+      setEditName(user.name || "");
+    }
+  }, [user]);
 
   const fetchDashboardData = async () => {
     if (!user) return;
@@ -46,6 +59,35 @@ export default function UserDashboard() {
     return null; // Let the guard redirect
   }
 
+  const handleSaveName = async () => {
+    if (!editName.trim()) {
+      setProfileError("نام نمی‌تواند خالی باشد.");
+      return;
+    }
+    try {
+      setSavingProfile(true);
+      setProfileError("");
+      setProfileSuccess("");
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setProfileSuccess("نام شما با موفقیت بروزرسانی شد.");
+        updateUser(data.user);
+        setIsEditing(false);
+      } else {
+        setProfileError(data.message || "خطایی در بروزرسانی نام رخ داد.");
+      }
+    } catch (err) {
+      setProfileError("ارتباط با سرور برقرار نشد.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   // Calculate some quick stats
   const dateStr = user.createdAt ? new Date(user.createdAt).toLocaleDateString("fa-IR", {
     year: "numeric",
@@ -55,7 +97,7 @@ export default function UserDashboard() {
 
   return (
     <div id="user-dashboard-wrapper" className="space-y-8 text-right" dir="rtl">
-      {/* Premium Header Profile Hero banner */}
+      {/* Profile Hero banner */}
       <div id="profile-hero" className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-4 text-right">
           {user.avatar ? (
@@ -73,9 +115,6 @@ export default function UserDashboard() {
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl md:text-2xl font-black text-slate-800">{user.name}</h2>
-              <span className="px-2.5 py-0.5 text-[10px] font-black bg-[#6C47FF]/10 text-[#6C47FF] rounded-full">
-                کاربر طلایی
-              </span>
             </div>
             <p className="text-xs text-slate-400 font-semibold flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
@@ -91,13 +130,6 @@ export default function UserDashboard() {
               {bookmarks.length}
             </span>
             <span className="text-[10px] text-slate-400 font-bold block">پرامپت نشان‌شده</span>
-          </div>
-          <div className="h-8 w-px bg-slate-200"></div>
-          <div className="text-center px-4">
-            <span className="text-lg md:text-xl font-black text-[#6C47FF] block">
-              VIP
-            </span>
-            <span className="text-[10px] text-slate-400 font-bold block">سطح دسترسی</span>
           </div>
         </div>
       </div>
@@ -178,15 +210,63 @@ export default function UserDashboard() {
               <span>جزییات اطلاعات کاربری</span>
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1 bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
-                <span className="text-[10px] text-slate-400 font-bold block">نام و نام خانوادگی:</span>
-                <span className="text-xs font-black text-slate-700 block">{user.name || "ثبت نشده"}</span>
+            {profileError && (
+              <div className="p-3.5 bg-rose-50 border border-rose-100 text-rose-700 text-xs font-bold rounded-2xl">
+                {profileError}
               </div>
+            )}
+            {profileSuccess && (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold rounded-2xl">
+                {profileSuccess}
+              </div>
+            )}
 
-              <div className="space-y-1 bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
-                <span className="text-[10px] text-slate-400 font-bold block">کد ملی / شناسه کاربری:</span>
-                <span className="text-xs font-mono font-black text-slate-700 block">{user.id}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-100/50 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold block">نام و نام خانوادگی:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="mt-1 w-full px-3 py-1.5 text-xs font-black text-slate-800 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/20"
+                    />
+                  ) : (
+                    <span className="text-xs font-black text-slate-700 block mt-1">{user.name || "ثبت نشده"}</span>
+                  )}
+                </div>
+
+                <div className="mt-3 flex items-center gap-2">
+                  {isEditing ? (
+                    <>
+                      <button
+                        onClick={handleSaveName}
+                        disabled={savingProfile}
+                        className="px-3 py-1.5 bg-[#6C47FF] hover:bg-[#5935e6] text-white text-[10px] font-black rounded-lg transition cursor-pointer disabled:opacity-50"
+                      >
+                        {savingProfile ? "در حال ذخیره..." : "ذخیره تغییرات"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditName(user.name || "");
+                          setProfileError("");
+                        }}
+                        className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black rounded-lg transition cursor-pointer"
+                      >
+                        انصراف
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-black rounded-lg border border-slate-200 transition cursor-pointer"
+                    >
+                      ویرایش نام ✏️
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-1 bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
@@ -211,7 +291,7 @@ export default function UserDashboard() {
             </div>
 
             <div className="p-4 bg-amber-50 text-amber-800 border border-amber-100 rounded-2xl text-xs leading-relaxed font-semibold">
-              ⚠️ جهت تغییر اطلاعات حساب کاربری یا شماره همراه خود، لطفاً با پشتیبانی پلتفرم Promty در تماس باشید. شماره همراه شما به صورت یکپارچه با سیستم احراز هویت متصل است.
+              ⚠️ جهت تغییر شماره همراه یا آدرس ایمیل خود، لطفاً با پشتیبانی پلتفرم Promty در تماس باشید. شماره همراه شما به صورت یکپارچه با سیستم احراز هویت متصل است.
             </div>
           </div>
         )}

@@ -34,9 +34,8 @@ export class PrismaPromptRepository implements IPromptRepository {
       language: dbPrompt.language || undefined,
       difficulty: dbPrompt.difficulty || undefined,
       outputFormats: dbPrompt.outputFormats,
-      industry: dbPrompt.industry || undefined,
-      industries: dbPrompt.industries && dbPrompt.industries.length > 0 ? dbPrompt.industries : (dbPrompt.industry ? [dbPrompt.industry] : []),
       bodyFa: dbPrompt.bodyFa || undefined,
+      requiresReferenceImage: dbPrompt.requiresReferenceImage || false,
       createdAt: dbPrompt.createdAt.toISOString(),
       updatedAt: dbPrompt.updatedAt.toISOString(),
       parentId: dbPrompt.parentId || undefined,
@@ -126,9 +125,8 @@ export class PrismaPromptRepository implements IPromptRepository {
           language: promptData.language || null,
           difficulty: promptData.difficulty || null,
           outputFormats: promptData.outputFormats || [],
-          industry: promptData.industry || null,
-          industries: promptData.industries || [],
           bodyFa: promptData.bodyFa || null,
+          requiresReferenceImage: promptData.requiresReferenceImage !== undefined ? promptData.requiresReferenceImage : false,
           parentId: promptData.parentId || null,
           sourceText: promptData.sourceText || null,
           coverImage: promptData.coverImage || null,
@@ -163,9 +161,8 @@ export class PrismaPromptRepository implements IPromptRepository {
       if (updates.language !== undefined) data.language = updates.language || null;
       if (updates.difficulty !== undefined) data.difficulty = updates.difficulty || null;
       if (updates.outputFormats !== undefined) data.outputFormats = updates.outputFormats;
-      if (updates.industry !== undefined) data.industry = updates.industry || null;
-      if (updates.industries !== undefined) data.industries = updates.industries;
       if (updates.bodyFa !== undefined) data.bodyFa = updates.bodyFa || null;
+      if (updates.requiresReferenceImage !== undefined) data.requiresReferenceImage = updates.requiresReferenceImage;
       if (updates.parentId !== undefined) data.parentId = updates.parentId || null;
       if (updates.sourceText !== undefined) data.sourceText = updates.sourceText || null;
       if (updates.coverImage !== undefined) data.coverImage = updates.coverImage || null;

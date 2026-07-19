@@ -7,7 +7,6 @@ export type TaxonomyType =
   | "language"
   | "difficulty"
   | "outputFormat"
-  | "industry"
   | "fieldType";
 
 export interface TaxonomyTerm {

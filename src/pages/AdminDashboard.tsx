@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "motion/react";
 
 interface TaxonomyTerm {
   id: string;
-  type: "intent" | "domain" | "tool" | "language" | "difficulty" | "outputFormat" | "industry" | "fieldType";
+  type: "intent" | "domain" | "tool" | "language" | "difficulty" | "outputFormat" | "fieldType";
   slug: string;
   titleEn: string;
   titleFa: string;
@@ -702,7 +702,6 @@ export default function AdminDashboard() {
                         <option value="language">Language (زبان)</option>
                         <option value="difficulty">Difficulty (سطوح سختی)</option>
                         <option value="outputFormat">Output Format (قالب خروجی)</option>
-                        <option value="industry">Industry (صنعت تخصصی)</option>
                         <option value="fieldType">Field Type (نوع اینپوت)</option>
                       </select>
                     </div>
@@ -804,7 +803,6 @@ export default function AdminDashboard() {
                       <option value="language">Language (زبان‌ها)</option>
                       <option value="difficulty">Difficulty (سطوح سختی)</option>
                       <option value="outputFormat">Output Format (خروجی‌ها)</option>
-                      <option value="industry">Industry (صنایع)</option>
                       <option value="fieldType">Field Type (ورودی‌ها)</option>
                     </select>
                   </div>

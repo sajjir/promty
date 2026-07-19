@@ -25,9 +25,8 @@ export interface Prompt {
   language?: string;
   difficulty?: string;
   outputFormats?: string[]; // قبلاً outputFormat?: string بود
-  industry?: string;
-  industries?: string[];
   bodyFa?: string;
+  requiresReferenceImage?: boolean;
   tags: string[];
   // Stats & Status
   sampleImage?: string;

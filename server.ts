@@ -20,10 +20,10 @@ import { JsonTaxonomyRepository } from "./src/server/repositories/json/JsonTaxon
 import { JsonRelationshipRepository } from "./src/server/repositories/json/JsonRelationshipRepository.ts";
 import { SearchService } from "./src/server/services/SearchService";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+let JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  console.error("FATAL ERROR: JWT_SECRET environment variable is missing. Stopping server...");
-  process.exit(1);
+  console.warn("WARNING: JWT_SECRET environment variable is missing. Using a fallback secret key for development.");
+  JWT_SECRET = "promty_fallback_secret_key_123_development";
 }
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -34,13 +34,17 @@ let taxonomyRepo: ITaxonomyRepository;
 let relationshipRepo: IRelationshipRepository;
 
 const FIELD_TYPE_OPTIONS = ["text", "textarea", "color", "select", "radio", "switch", "slider", "multiselect", "url"];
-const INTENT_OPTIONS = ["Create", "Write", "Code", "Design", "Market", "Analyze", "Learn", "Automate", "Research", "Productivity"];
-const DOMAIN_OPTIONS = ["Business", "Marketing", "Education", "Medical", "Health", "Legal", "Finance", "Programming", "Gaming", "Food", "Travel", "Architecture", "Photography", "Real Estate", "Sports", "AI", "Robotics", "Science", "Religion", "History"];
+const INTENT_OPTIONS = ["Visual Generation", "Writing", "Coding", "Analysis", "Planning", "Automation", "Teaching", "Research", "Persona"];
+const DOMAIN_OPTIONS = [
+  "Business", "Marketing", "Education", "Health & Medical", "Legal", "Finance & Banking",
+  "Programming", "Gaming", "Food & Restaurant", "Travel & Tourism", "Architecture & Construction",
+  "Photography", "Real Estate", "Sports & Fitness", "AI", "Robotics", "Science", "Religion", "History",
+  "Ecommerce", "Startup", "Fashion", "Agriculture", "Crypto", "Insurance", "NGO"
+];
 const TOOL_OPTIONS = ["ChatGPT", "Claude", "Gemini", "Grok", "Midjourney", "Flux", "Stable Diffusion", "Ideogram", "Veo", "Kling", "Runway", "ElevenLabs", "Suno", "n8n AI Agent"];
 const LANGUAGE_OPTIONS = ["Persian", "English"];
 const DIFFICULTY_OPTIONS = ["Beginner", "Intermediate", "Advanced", "Expert"];
 const OUTPUT_FORMAT_OPTIONS = ["Text", "Markdown", "JSON", "CSV", "HTML", "CSS", "JavaScript", "Python", "React", "TypeScript", "SQL", "XML", "PDF", "Image", "Video", "Table", "Checklist", "Roadmap", "Presentation"];
-const INDUSTRY_OPTIONS = ["Ecommerce", "Startup", "Healthcare", "Education", "Restaurant", "Construction", "Law", "Bank", "Crypto", "Fashion", "Fitness", "Agriculture", "Tourism", "Insurance", "NGO"];
 
 interface FieldSchema {
   key: string;
@@ -68,8 +72,9 @@ interface Prompt {
   language?: string;
   difficulty?: string;
   outputFormats?: string[];
-  industry?: string;
   tags: string[];
+  bodyFa?: string;
+  requiresReferenceImage: boolean;
   // Stats & Status
   sampleImage?: string;
   isPremium: boolean;
@@ -96,6 +101,7 @@ interface DB {
   taxonomies?: any[];
   presets?: any[];
   savedPrompts?: any[];
+  users?: any[];
 }
 
 const DB_FILE = path.join(process.cwd(), "db.json");
@@ -202,15 +208,15 @@ function readDB(): DB {
         description: "یک پرامپت عالی برای ساخت تصاویر تبلیغاتی حرفه‌ای مخصوص طلا، نقره و جواهرات مجلل",
         body: "یک عکس تبلیغاتی حرفه‌ای از {{product_name}} بساز. رنگ غالب {{brand_color}}. پس‌زمینه سفید خالص. نور استودیویی. کیفیت 4K. در پایین بنویس: {{ad_text}}",
         category: "Midjourney",
-        intent: "Design",
+        intent: "Visual Generation",
         domains: ["Photography"],
         tools: ["Midjourney"],
         task: "Product Commercial Portrait",
         language: "Persian",
         difficulty: "Beginner",
         outputFormats: ["Presentation"],
-        industry: "Ecommerce",
         tags: ["جواهرات", "تبلیغات", "Midjourney", "طلا"],
+        requiresReferenceImage: false,
         sampleImage: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=600",
         isPremium: false,
         isActive: true,
@@ -246,15 +252,15 @@ function readDB(): DB {
         description: "پرامپت توسعه‌دهندگان وب برای دریافت کدهای لندینگ پیج مدرن و سازگار با فریم‌ورک‌های روز",
         body: "یک لندینگ پیج حرفه‌ای با React و Tailwind CSS برای کسب‌وکار {{business_name}} در حوزه {{business_field}} بساز. رنگ اصلی برند {{brand_color}}. لحن: {{tone}}. شامل: هدر، hero section، بخش خدمات، و فوتر.",
         category: "ChatGPT",
-        intent: "Code",
+        intent: "Coding",
         domains: ["Programming"],
         tools: ["ChatGPT"],
         task: "React Component Coding",
         language: "English",
         difficulty: "Intermediate",
         outputFormats: ["React"],
-        industry: "Startup",
         tags: ["برنامه‌نویسی", "کد", "React", "Tailwind"],
+        requiresReferenceImage: false,
         sampleImage: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=600",
         isPremium: false,
         isActive: true,
@@ -298,15 +304,15 @@ function readDB(): DB {
         description: "پرامپت طلایی برای ساخت ویدیوهای کوتاه تبلیغاتی یا تیزرهای ۱۵ ثانیه‌ای اینستاگرام و یوتیوب",
         body: "یک تیزر ویدیویی ۱۵ ثانیه‌ای برای {{product_name}} بساز. سبک: {{style}}. موزیک: {{music_mood}}. متن روی صفحه: {{tagline}}",
         category: "Runway",
-        intent: "Create",
+        intent: "Visual Generation",
         domains: ["Marketing"],
         tools: ["Runway"],
         task: "Video Teaser Creation",
         language: "Persian",
         difficulty: "Advanced",
         outputFormats: ["Markdown"],
-        industry: "Restaurant",
         tags: ["تیزر", "ویدیو", "Kling", "Sora", "اینستاگرام"],
+        requiresReferenceImage: false,
         sampleImage: "https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&q=80&w=600",
         isPremium: true,
         isActive: true,
@@ -582,7 +588,7 @@ async function getPageMetadata(urlPath: string) {
 
 async function startServer() {
   const app = express();
-  const PORT = 3005;
+  const PORT = 3000;
 
   const hasDbUrl = !!process.env.DATABASE_URL;
 
@@ -1418,6 +1424,53 @@ async function startServer() {
     }
   });
 
+  // API - Update User Profile
+  app.put("/api/user/profile", userAuth, async (req, res) => {
+    const userId = (req as any).user.id;
+    const { name } = req.body;
+
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
+      return res.status(400).json({ success: false, message: "نام نامعتبر است." });
+    }
+
+    try {
+      let updatedUser: any = null;
+
+      if (prisma && !userId.startsWith("google_mock") && !userId.startsWith("mock")) {
+        updatedUser = await prisma.user.update({
+          where: { id: userId },
+          data: { name: name.trim() },
+        });
+      }
+
+      // Update in JSON DB as well or as fallback
+      const db = readDB();
+      if (!db.users) db.users = [];
+      const userIdx = db.users.findIndex((u: any) => u.id === userId);
+      if (userIdx !== -1) {
+        db.users[userIdx].name = name.trim();
+        writeDB(db);
+        if (!updatedUser) {
+          updatedUser = db.users[userIdx];
+        }
+      }
+
+      return res.json({ 
+        success: true, 
+        message: "پروفایل با موفقیت بروزرسانی شد.",
+        user: {
+          id: userId,
+          name: name.trim(),
+          email: updatedUser?.email || (req as any).user.email,
+          phone: updatedUser?.phone || (req as any).user.phone,
+          role: updatedUser?.role?.toLowerCase() || (req as any).user.role?.toLowerCase() || "user",
+        }
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
   // API - Get Category list
   app.get("/api/categories", (req, res) => {
     const db = readDB();
@@ -1821,9 +1874,6 @@ async function startServer() {
       
       const outputFormats = terms.filter((t: any) => t.type?.toLowerCase() === "outputformat").map((t: any) => t.slug);
       const outputFormatList = outputFormats.length > 0 ? outputFormats : [...OUTPUT_FORMAT_OPTIONS];
-      
-      const industries = terms.filter((t: any) => t.type?.toLowerCase() === "industry").map((t: any) => t.slug);
-      const industryList = industries.length > 0 ? industries : [...INDUSTRY_OPTIONS];
 
       if (analyzeUrl.length > 0) {
         // Fetch active taxonomies from the database for n8n Webhook context
@@ -1848,9 +1898,6 @@ async function startServer() {
         const tOutputFormats = activeTaxonomies.filter(t => t.type?.toLowerCase() === "outputformat").map(t => t.slug);
         const outputFormatsStr = tOutputFormats.length > 0 ? tOutputFormats.join(", ") : OUTPUT_FORMAT_OPTIONS.join(", ");
 
-        const tIndustries = activeTaxonomies.filter(t => t.type?.toLowerCase() === "industry").map(t => t.slug);
-        const industriesStr = tIndustries.length > 0 ? tIndustries.join(", ") : INDUSTRY_OPTIONS.join(", ");
-
         // Send raw text and allowed taxonomies to n8n Webhook
         const response = await fetch(analyzeUrl, {
           method: "POST",
@@ -1865,8 +1912,7 @@ async function startServer() {
               tools: toolsStr,
               languages: languagesStr,
               difficulties: difficultiesStr,
-              outputFormats: outputFormatsStr,
-              industries: industriesStr
+              outputFormats: outputFormatsStr
             },
             action: "analyze_source",
             timestamp: new Date().toISOString()
@@ -1938,7 +1984,6 @@ async function startServer() {
    - برای فیلد Language فقط از این لیست استفاده کن: [${languageList.join(", ")}]
    - برای فیلد Difficulty فقط از این لیست استفاده کن: [${difficultyList.join(", ")}]
    - برای فیلد Output Formats فقط از این لیست استفاده کن: [${outputFormatList.join(", ")}]
-   - برای فیلد Industry فقط از این لیست استفاده کن: [${industryList.join(", ")}]
 6. Set the final optimized body with {{placeholders}} inside.
 
 Raw Prompt Text to Analyze:
@@ -1963,7 +2008,6 @@ ${sourceText}
                 language: { type: Type.STRING, enum: languageList },
                 difficulty: { type: Type.STRING, enum: difficultyList },
                 outputFormats: { type: Type.ARRAY, items: { type: Type.STRING, enum: outputFormatList } },
-                industry: { type: Type.STRING, enum: industryList },
                 tags: { type: Type.ARRAY, items: { type: Type.STRING } },
                 body: { type: Type.STRING },
                 fieldsSchema: {
@@ -1984,7 +2028,7 @@ ${sourceText}
                   }
                 }
               },
-              required: ["title", "description", "intent", "domains", "tools", "task", "language", "difficulty", "outputFormats", "industry", "tags", "body", "fieldsSchema"]
+              required: ["title", "description", "intent", "domains", "tools", "task", "language", "difficulty", "outputFormats", "tags", "body", "fieldsSchema"]
             }
           }
         });

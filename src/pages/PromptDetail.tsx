@@ -533,8 +533,6 @@ export default function PromptDetail() {
     }
   };
 
-  // Versioning state
-  const [selectedVersion, setSelectedVersion] = useState<"v1" | "v2" | "v3">("v1");
   const [refineHistory, setRefineHistory] = useState<Array<{
     timestamp: string;
     versionName: string;
@@ -645,7 +643,6 @@ export default function PromptDetail() {
           setPromptLang(initialLang);
           const initialBody = initialLang === "fa" && data.prompt.bodyFa ? data.prompt.bodyFa : data.prompt.body;
           setRenderedBody(initialBody);
-          setSelectedVersion("v1"); // Reset version on prompt change
           setRefineHistory([
             {
               timestamp: new Date().toLocaleTimeString("fa-IR"),
@@ -694,39 +691,14 @@ export default function PromptDetail() {
     }
   }, [id]);
 
-  // Version body generator based on base body
-  const getVersionedBody = (v: "v1" | "v2" | "v3") => {
-    if (!prompt) return "";
-    const currentBase = (promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body;
-    if (v === "v1") {
-      return currentBase;
-    } else if (v === "v2") {
-      // Cinematic/Detailed variant
-      if (prompt.category === "عکاسی" || prompt.category === "ویدیو" || prompt.tools?.includes("Midjourney") || prompt.tools?.includes("Flux")) {
-        return `${currentBase} --ar 16:9 --style raw --v 6.0 --stylize 250 --quality 2 --contrast high --cinematic-lighting --focal-length 85mm`;
-      }
-      return `${currentBase}\n\n[Note: Please focus on extreme photorealism, detailed volumetric rendering, cinematic shadows, 8K textures, depth of field, and volumetric fog elements to make the outcome stand out.]`;
-    } else {
-      // Dev & Production structure variant
-      return `/* System: Output structured JSON exclusively. Bypassing greeting. */\n{\n  "instruction": "${prompt.title}",\n  "prompt": "${currentBase.replace(/"/g, '\\"')}",\n  "parameters": {\n    "temperature": 0.3,\n    "top_p": 0.95,\n    "system_anchor": "Act as an expert AI consultant targeting extreme accuracy and formatting output directly in valid clean syntax."\n  }\n}`;
-    }
-  };
-
   // Sync final rendered body with live template and wizard inputs
   useEffect(() => {
     if (prompt) {
-      const baseTemplate = refinedPrompt || getVersionedBody(selectedVersion) || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body);
+      const baseTemplate = refinedPrompt || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body);
       const finalRenderedText = renderPrompt(baseTemplate, liveValues);
       setRenderedBody(finalRenderedText);
     }
-  }, [liveValues, selectedVersion, refinedPrompt, prompt, promptLang]);
-
-  const handleVersionChange = (v: "v1" | "v2" | "v3") => {
-    setSelectedVersion(v);
-    setRefinedPrompt(null); // Switch back to versioned template
-    const body = getVersionedBody(v);
-    setRenderedBody(body);
-  };
+  }, [liveValues, refinedPrompt, prompt, promptLang]);
 
   if (loading) {
     return (
@@ -839,7 +811,44 @@ export default function PromptDetail() {
           
           {/* Main Visual/Image Card */}
           <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm p-5 space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
+              {/* Language toggle at top of the card */}
+              {prompt.bodyFa && (
+                <div className="flex items-center gap-2 p-1 bg-slate-50 border border-slate-100 rounded-xl w-fit">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPromptLang("fa");
+                      setRefinedPrompt(null);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
+                      promptLang === "fa"
+                        ? "bg-[#6C47FF] text-white shadow-xs"
+                        : "text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"
+                    }`}
+                  >
+                    <span>🇮🇷</span>
+                    <span>فارسی</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPromptLang("en");
+                      setRefinedPrompt(null);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
+                      promptLang === "en"
+                        ? "bg-[#6C47FF] text-white shadow-xs"
+                        : "text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"
+                    }`}
+                  >
+                    <span>🇬🇧</span>
+                    <span>English</span>
+                    <span className="text-[9px] font-bold opacity-80">(پیشنهاد شده)</span>
+                  </button>
+                </div>
+              )}
+
               <div className="flex items-center gap-1.5 text-xs text-[#6C47FF] font-black">
                 <IconComponent className="w-4 h-4" />
                 <span>دسته‌بندی: {prompt.category || "عمومی"}</span>
@@ -848,6 +857,14 @@ export default function PromptDetail() {
               <h1 className="text-lg md:text-xl font-black text-slate-800 leading-tight">
                 {prompt.title}
               </h1>
+
+              {/* Requires Reference Image Badge */}
+              {prompt.requiresReferenceImage && (
+                <div className="flex items-center gap-2 bg-rose-50 border border-rose-100 text-rose-700 px-3 py-2 rounded-xl text-xs font-black">
+                  <span className="animate-pulse">⚠️</span>
+                  <span>نیاز به تصویر منبع: این پرامپت به بارگذاری تصویر ورودی/منبع نیاز دارد.</span>
+                </div>
+              )}
 
               <p className="text-slate-500 text-xs leading-relaxed">
                 {prompt.description || "توضیحی برای این پرامپت مهندسی شده ثبت نشده است."}
@@ -925,48 +942,50 @@ export default function PromptDetail() {
           </div>
 
           {/* SEO Performance Visual Card Accordion */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-lg transition-all duration-300">
-            <button
-              onClick={() => setShowSeoAccordion(!showSeoAccordion)}
-              className="w-full flex items-center justify-between p-5 text-right font-sans focus:outline-none cursor-pointer"
-            >
-              <div className="flex items-center gap-1.5">
-                <Search className="w-4 h-4 text-[#6C47FF]" />
-                <h4 className="text-xs font-black text-slate-300">نمایه‌سازی موتورهای جستجو (SEO Preview)</h4>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] text-emerald-400 font-black px-2 py-0.5 bg-emerald-500/10 rounded">فعال و بهینه</span>
-                <span className="text-slate-400 text-xs">{showSeoAccordion ? "▲" : "▼"}</span>
-              </div>
-            </button>
+          {isAdmin && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-lg transition-all duration-300">
+              <button
+                onClick={() => setShowSeoAccordion(!showSeoAccordion)}
+                className="w-full flex items-center justify-between p-5 text-right font-sans focus:outline-none cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Search className="w-4 h-4 text-[#6C47FF]" />
+                  <h4 className="text-xs font-black text-slate-300">نمایه‌سازی موتورهای جستجو (SEO Preview)</h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] text-emerald-400 font-black px-2 py-0.5 bg-emerald-500/10 rounded">فعال و بهینه</span>
+                  <span className="text-slate-400 text-xs">{showSeoAccordion ? "▲" : "▼"}</span>
+                </div>
+              </button>
 
-            {showSeoAccordion && (
-              <div className="p-5 pt-0 border-t border-slate-800 space-y-4 text-left font-mono" style={{ direction: "ltr" }}>
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>Google SERP Title (بهینه شده):</span>
-                    <p className="text-xs text-sky-400 font-bold hover:underline cursor-pointer leading-tight">
-                      {prompt.title} | قالب آماده هوش مصنوعی Promty.ir
-                    </p>
-                  </div>
+              {showSeoAccordion && (
+                <div className="p-5 pt-0 border-t border-slate-800 space-y-4 text-left font-mono" style={{ direction: "ltr" }}>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>Google SERP Title (بهینه شده):</span>
+                      <p className="text-xs text-sky-400 font-bold hover:underline cursor-pointer leading-tight">
+                        {prompt.title} | قالب آماده هوش مصنوعی Promty.ir
+                      </p>
+                    </div>
 
-                  <div className="space-y-1">
-                    <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>SEO Meta Description:</span>
-                    <p className="text-[11px] text-slate-400 leading-normal text-right" style={{ direction: "rtl" }}>
-                      دانلود، ویرایش و کپی سریع پرامپت مهندسی‌شده "{prompt.title}" مخصوص {prompt.tools?.join("، ") || "هوش مصنوعی"}. {prompt.description || "بهترین نتایج خروجی در کوتاهترین زمان."}
-                    </p>
-                  </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>SEO Meta Description:</span>
+                      <p className="text-[11px] text-slate-400 leading-normal text-right" style={{ direction: "rtl" }}>
+                        دانلود، ویرایش و کپی سریع پرامپت مهندسی‌شده "{prompt.title}" مخصوص {prompt.tools?.join("، ") || "هوش مصنوعی"}. {prompt.description || "بهترین نتایج خروجی در کوتاهترین زمان."}
+                      </p>
+                    </div>
 
-                  <div className="space-y-1">
-                    <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>URL Slug:</span>
-                    <p className="text-[10px] text-[#6C47FF] hover:underline cursor-pointer">
-                      https://promty.ir/prompts/{prompt.id}
-                    </p>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>URL Slug:</span>
+                      <p className="text-[10px] text-[#6C47FF] hover:underline cursor-pointer">
+                        https://promty.ir/prompts/{prompt.id}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
         </div>
 
@@ -976,93 +995,11 @@ export default function PromptDetail() {
           {/* Main prompt code block */}
           <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-5">
             
-            {/* Version select tabs */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-              <div className="space-y-1">
-                <span className="text-xs font-black text-slate-700 flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-[#6C47FF]" />
-                  <span>نسخه‌های مهندسی‌شده این پرامپت</span>
-                </span>
-                <p className="text-[10px] text-slate-400 font-semibold">متناسب با معماری یا خروجی مد نظرتان نسخه مناسب را انتخاب کنید</p>
-              </div>
-
-              <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100 gap-1 shrink-0 w-full sm:w-auto">
-                <button
-                  onClick={() => handleVersionChange("v1")}
-                  className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-black transition ${
-                    selectedVersion === "v1"
-                      ? "bg-white text-[#6C47FF] shadow-sm border border-slate-100"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  نسخه اصلی (V1)
-                </button>
-                {isImagePrompt && (
-                  <button
-                    onClick={() => handleVersionChange("v2")}
-                    className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-black transition ${
-                      selectedVersion === "v2"
-                        ? "bg-white text-[#6C47FF] shadow-sm border border-slate-100"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    نسخه سینمایی (V2)
-                  </button>
-                )}
-                {isCoding && (
-                  <button
-                    onClick={() => handleVersionChange("v3")}
-                    className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-black transition ${
-                      selectedVersion === "v3"
-                        ? "bg-white text-[#6C47FF] shadow-sm border border-slate-100"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    قالب توسعه (V3)
-                  </button>
-                )}
-              </div>
-            </div>
-
             {/* Prompt Textbox */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <label htmlFor="prompt-box-area" className="text-xs font-black text-slate-400">متن پرامپت نهایی:</label>
-                  {prompt.bodyFa && (
-                    <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPromptLang("fa");
-                          setRefinedPrompt(null);
-                        }}
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${
-                          promptLang === "fa"
-                            ? "bg-white text-slate-800 shadow-xs"
-                            : "text-slate-400 hover:text-slate-600"
-                        }`}
-                        title="نمایش پرامپت فارسی"
-                      >
-                        🇮🇷 فارسی
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPromptLang("en");
-                          setRefinedPrompt(null);
-                        }}
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${
-                          promptLang === "en"
-                            ? "bg-white text-slate-800 shadow-xs"
-                            : "text-slate-400 hover:text-slate-600"
-                        }`}
-                        title="نمایش پرامپت انگلیسی"
-                      >
-                        🇬🇧 English
-                      </button>
-                    </div>
-                  )}
                 </div>
                 <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md">
                   {prompt.usageCount} کپی و بررسی موفقیت‌آمیز
@@ -1135,7 +1072,7 @@ export default function PromptDetail() {
               <div className="pt-2" ref={wizardRef}>
                 <PromptWizard
                   fields={prompt.fieldsSchema}
-                  promptBody={refinedPrompt || getVersionedBody(selectedVersion) || prompt.body}
+                  promptBody={refinedPrompt || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body)}
                   onRendered={(rendered) => setRenderedBody(rendered)}
                   promptId={prompt.id}
                   activePresetId={activePresetId}

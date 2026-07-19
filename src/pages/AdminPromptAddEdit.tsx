@@ -37,8 +37,7 @@ export default function AdminPromptAddEdit() {
   const [language, setLanguage] = useState("Persian");
   const [difficulty, setDifficulty] = useState("Beginner");
   const [outputFormats, setOutputFormats] = useState<string[]>(["Text"]);
-  const [industry, setIndustry] = useState("Ecommerce");
-  const [industries, setIndustries] = useState<string[]>(["Ecommerce"]);
+  const [requiresReferenceImage, setRequiresReferenceImage] = useState(false);
   const [tagsInput, setTagsInput] = useState("");
   const [body, setBody] = useState("");
   const [schemaJson, setSchemaJson] = useState("");
@@ -131,8 +130,7 @@ export default function AdminPromptAddEdit() {
             setLanguage(p.language || "Persian");
             setDifficulty(p.difficulty || "Beginner");
             setOutputFormats(Array.isArray(p.outputFormats) ? p.outputFormats : (p.outputFormat ? [p.outputFormat] : ["Text"]));
-            setIndustry(p.industry || "Ecommerce");
-            setIndustries(Array.isArray(p.industries) ? p.industries : (p.industry ? [p.industry] : ["Ecommerce"]));
+            setRequiresReferenceImage(p.requiresReferenceImage || false);
             setTagsInput(p.tags ? p.tags.join(", ") : "");
             setBody(p.body);
             setSchemaJson(JSON.stringify(p.fieldsSchema, null, 2));
@@ -165,8 +163,7 @@ export default function AdminPromptAddEdit() {
             setLanguage(p.language || "Persian");
             setDifficulty(p.difficulty || "Beginner");
             setOutputFormats(Array.isArray(p.outputFormats) ? p.outputFormats : (p.outputFormat ? [p.outputFormat] : ["Text"]));
-            setIndustry(p.industry || "Ecommerce");
-            setIndustries(Array.isArray(p.industries) ? p.industries : (p.industry ? [p.industry] : ["Ecommerce"]));
+            setRequiresReferenceImage(p.requiresReferenceImage || false);
             setTagsInput(p.tags ? p.tags.join(", ") : "");
             setBody(p.body);
             setSchemaJson(JSON.stringify(p.fieldsSchema || [], null, 2));
@@ -259,8 +256,6 @@ export default function AdminPromptAddEdit() {
         setLanguage(parsed.language || "Persian");
         setDifficulty(parsed.difficulty || "Beginner");
         setOutputFormats(Array.isArray(parsed.outputFormats) ? parsed.outputFormats : (parsed.outputFormat ? [parsed.outputFormat] : ["Text"]));
-        setIndustry(parsed.industry || "Ecommerce");
-        setIndustries(Array.isArray(parsed.industries) ? parsed.industries : (parsed.industry ? [parsed.industry] : ["Ecommerce"]));
         setTagsInput(parsed.tags ? parsed.tags.join(", ") : "");
         setBody(parsed.body || "");
         setSchemaJson(JSON.stringify(parsed.fieldsSchema || [], null, 2));
@@ -307,8 +302,7 @@ export default function AdminPromptAddEdit() {
       language,
       difficulty,
       outputFormats,
-      industry: industries[0] || industry || "Ecommerce",
-      industries,
+      requiresReferenceImage,
       tags,
       body,
       fieldsSchema: parsedSchema,
@@ -623,37 +617,20 @@ export default function AdminPromptAddEdit() {
               </select>
             </div>
 
-            {/* Industry - Multi Select */}
+            {/* Requires Reference Image */}
             <div className="flex flex-col gap-1.5 col-span-2">
-              <label className="text-xs font-bold text-slate-600">صنایع هدف (Industry) * — چندانتخابی</label>
-              <div className="flex flex-wrap gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl max-h-32 overflow-y-auto">
-                {getOptions("industry", [
-                  "Ecommerce", "Startup", "Healthcare", "Education", "Restaurant",
-                  "Construction", "Law", "Bank", "Crypto", "Fashion", "Fitness",
-                  "Agriculture", "Tourism", "Insurance", "NGO"
-                ]).map((opt) => {
-                  const isSelected = industries.includes(opt.value);
-                  return (
-                    <button
-                      type="button"
-                      key={opt.value}
-                      onClick={() => {
-                        if (isSelected) {
-                          setIndustries(industries.filter((i) => i !== opt.value));
-                        } else {
-                          setIndustries([...industries, opt.value]);
-                        }
-                      }}
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
-                        isSelected
-                          ? "bg-[#6C47FF] text-white border-[#6C47FF]"
-                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
+              <label className="text-xs font-bold text-slate-600">نیاز به تصویر منبع (Reference Image)</label>
+              <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  id="requiresReferenceImage"
+                  checked={requiresReferenceImage}
+                  onChange={(e) => setRequiresReferenceImage(e.target.checked)}
+                  className="w-4 h-4 text-[#6C47FF] border-slate-300 rounded focus:ring-[#6C47FF] cursor-pointer"
+                />
+                <label htmlFor="requiresReferenceImage" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                  این پرامپت برای اجرا یا آنالیز نیاز به تصویر ورودی/منبع دارد.
+                </label>
               </div>
             </div>
 

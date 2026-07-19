@@ -47,9 +47,8 @@ model Prompt {
   language      String?
   difficulty    String?
   outputFormats String[]
-  industry      String?
-  industries    String[]
   bodyFa        String?  @db.Text
+  requiresReferenceImage Boolean @default(false)
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

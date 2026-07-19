@@ -23,6 +23,7 @@ interface AuthContextType {
   isPhoneModalOpen: boolean;
   setPhoneModalOpen: (open: boolean) => void;
   refreshUser: () => Promise<void>;
+  updateUser: (updatedUser: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -211,6 +212,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.title = title;
   };
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -227,6 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isPhoneModalOpen,
         setPhoneModalOpen,
         refreshUser,
+        updateUser,
       }}
     >
       {children}
