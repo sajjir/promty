@@ -38,6 +38,7 @@ export const defaultTaxonomies: DefaultTaxonomyItem[] = [
   // DOMAINS
   { type: "domain", slug: "business", titleEn: "Business", titleFa: "کسب و کار" },
   { type: "domain", slug: "marketing", titleEn: "Marketing", titleFa: "بازاریابی" },
+  { type: "domain", slug: "social-media", titleEn: "Social Media", titleFa: "شبکه‌های اجتماعی" },
   { type: "domain", slug: "education", titleEn: "Education", titleFa: "آموزش و تحصیلات" },
   { type: "domain", slug: "health", titleEn: "Health & Medical", titleFa: "سلامت و پزشکی" },
   { type: "domain", slug: "legal", titleEn: "Legal", titleFa: "حقوقی و قانونی" },

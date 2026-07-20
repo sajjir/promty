@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FieldSchema } from "../types";
 import { renderPrompt } from "../lib/renderPrompt";
 import { useAuth } from "./AuthContext";
-import { Wand2, X, AlertCircle, CheckCircle, Save, Sparkles, FolderPlus, RotateCcw } from "lucide-react";
+import { Wand2, X, AlertCircle, CheckCircle, Save, Sparkles, FolderPlus, RotateCcw, Copy } from "lucide-react";
 
 function parseOption(opt: string) {
   const parts = opt.split("|");
@@ -62,6 +62,7 @@ export default function PromptWizard({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [wizardCopied, setWizardCopied] = useState(false);
 
   // Sync values to parent components
   useEffect(() => {
@@ -102,6 +103,8 @@ export default function PromptWizard({
           initial[field.key] = "خیر";
         } else if (field.type === "slider") {
           initial[field.key] = String(field.min ?? 10);
+        } else if ((field.type === "select" || field.type === "radio") && field.options && field.options.length > 0) {
+          initial[field.key] = parseOption(field.options[0]).value;
         } else {
           initial[field.key] = "";
         }
@@ -144,6 +147,8 @@ export default function PromptWizard({
         initial[field.key] = "خیر";
       } else if (field.type === "slider") {
         initial[field.key] = String(field.min ?? 10);
+      } else if ((field.type === "select" || field.type === "radio") && field.options && field.options.length > 0) {
+        initial[field.key] = parseOption(field.options[0]).value;
       } else {
         initial[field.key] = "";
       }
@@ -462,6 +467,21 @@ export default function PromptWizard({
           );
         })}
       </div>
+
+      {/* Glowing Final Copy Button */}
+      <button
+        type="button"
+        onClick={async () => {
+          const finalRenderedText = renderPrompt(promptBody, finalValues);
+          await navigator.clipboard.writeText(finalRenderedText);
+          setWizardCopied(true);
+          setTimeout(() => setWizardCopied(false), 2000);
+        }}
+        className="w-full mt-4 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-l from-[#6C47FF] to-[#8B6CFF] text-white text-sm font-black rounded-2xl shadow-lg shadow-[#6C47FF]/20 hover:shadow-xl transition-all cursor-pointer"
+      >
+        <Copy className="w-4 h-4" />
+        <span>{wizardCopied ? "کپی شد! 🎉" : "✅ کپی پرامپت نهایی شخصی‌سازی‌شده"}</span>
+      </button>
 
       {/* Preset Customizer Controls */}
       {promptId && (

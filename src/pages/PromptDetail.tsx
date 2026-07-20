@@ -14,6 +14,53 @@ import {
   Pencil, X, Bookmark
 } from "lucide-react";
 
+function parseOption(opt: string) {
+  const parts = opt.split("|");
+  if (parts.length > 1) {
+    return {
+      value: parts[0].trim(),
+      label: parts[1].trim()
+    };
+  }
+  return {
+    value: opt.trim(),
+    label: opt.trim()
+  };
+}
+
+function renderHighlightedNodes(body: string, values: Record<string, string>): React.ReactNode[] {
+  const regex = /\{\{(\w+)\}\}|\[\[(\w+)\]\]/g;
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+  while ((match = regex.exec(body)) !== null) {
+    const placeholderKey = match[1] || match[2];
+    if (match.index > lastIndex) {
+      nodes.push(<React.Fragment key={key++}>{body.slice(lastIndex, match.index)}</React.Fragment>);
+    }
+    const value = values[placeholderKey];
+    if (value !== undefined && value !== "") {
+      nodes.push(
+        <span
+          key={key++}
+          className="text-amber-400 border-b border-dashed border-amber-400/70"
+          title="این بخش قابل شخصی‌سازی است"
+        >
+          {value}
+        </span>
+      );
+    } else {
+      nodes.push(<React.Fragment key={key++}>{match[0]}</React.Fragment>);
+    }
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < body.length) {
+    nodes.push(<React.Fragment key={key++}>{body.slice(lastIndex)}</React.Fragment>);
+  }
+  return nodes;
+}
+
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   "تبلیغات": Megaphone,
   "وبسایت": Globe,
@@ -194,12 +241,14 @@ export default function PromptDetail() {
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [allPrompts, setAllPrompts] = useState<Prompt[]>([]);
   const [renderedBody, setRenderedBody] = useState("");
-  const [showWizard, setShowWizard] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [promptLang, setPromptLang] = useState<"en" | "fa">("fa");
   const [selectedRunTool, setSelectedRunTool] = useState<string>("");
+  const [isManualEditMode, setIsManualEditMode] = useState(false);
+  const [boxCopied, setBoxCopied] = useState(false);
+  const [mobileCopied, setMobileCopied] = useState(false);
 
   useEffect(() => {
     if (prompt?.tools && prompt.tools.length > 0) {
@@ -317,6 +366,8 @@ export default function PromptDetail() {
           initial[field.key] = "خیر";
         } else if (field.type === "slider") {
           initial[field.key] = String(field.min ?? 10);
+        } else if ((field.type === "select" || field.type === "radio") && field.options && field.options.length > 0) {
+          initial[field.key] = parseOption(field.options[0]).value;
         } else {
           initial[field.key] = "";
         }
@@ -331,7 +382,6 @@ export default function PromptDetail() {
     setActivePresetId(preset.id);
     setWizardValues(preset.values);
     setLiveValues(preset.values);
-    setShowWizard(true);
 
     // Smooth Scroll to Wizard Form
     setTimeout(() => {
@@ -993,7 +1043,7 @@ export default function PromptDetail() {
         <div className="lg:col-span-7 space-y-6">
           
           {/* Main prompt code block */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-5">
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-5 lg:sticky lg:top-6 lg:self-start z-10">
             
             {/* Prompt Textbox */}
             <div className="space-y-2">
@@ -1005,70 +1055,87 @@ export default function PromptDetail() {
                   {prompt.usageCount} کپی و بررسی موفقیت‌آمیز
                 </span>
               </div>
-              <textarea
-                id="prompt-box-area"
-                rows={9}
-                value={renderedBody}
-                onChange={(e) => setRenderedBody(e.target.value)}
-                className={`w-full p-4.5 bg-slate-900 text-slate-100 font-mono text-xs leading-relaxed rounded-2xl ring-4 ring-slate-900/5 focus:outline-none focus:ring-4 focus:ring-[#6C47FF]/20 ${
-                  promptLang === "fa" ? "text-right" : "text-left"
-                }`}
-                style={{ direction: promptLang === "fa" ? "rtl" : "ltr" }}
-                placeholder="متن کامل پرامپت در این قسمت بارگذاری می‌شود..."
-              />
+              
+              <div className="relative">
+                {isManualEditMode ? (
+                  <textarea
+                    id="prompt-box-area"
+                    rows={9}
+                    value={renderedBody}
+                    onChange={(e) => setRenderedBody(e.target.value)}
+                    className={`w-full p-4.5 pt-11 bg-slate-900 text-slate-100 text-[13px] leading-relaxed rounded-2xl ring-4 ring-slate-900/5 focus:outline-none focus:ring-4 focus:ring-[#6C47FF]/20 ${
+                      promptLang === "fa" ? "text-right font-sans" : "text-left font-mono"
+                    }`}
+                    style={{ direction: promptLang === "fa" ? "rtl" : "ltr" }}
+                  />
+                ) : (
+                  <div
+                    className={`w-full p-4.5 pt-11 bg-slate-900 text-slate-100 text-[13px] leading-relaxed rounded-2xl ring-4 ring-slate-900/5 whitespace-pre-wrap min-h-[220px] max-h-[420px] overflow-y-auto ${
+                      promptLang === "fa" ? "text-right font-sans" : "text-left font-mono"
+                    }`}
+                    style={{ direction: promptLang === "fa" ? "rtl" : "ltr" }}
+                  >
+                    {renderHighlightedNodes(refinedPrompt || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body), liveValues)}
+                  </div>
+                )}
+
+                {/* دکمه کپی داخل خود باکس، بالا-گوشه (استاندارد گیت‌هاب/ChatGPT) */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(renderedBody);
+                    handleTrackCopy?.();
+                    setBoxCopied(true);
+                    setTimeout(() => setBoxCopied(false), 2000);
+                  }}
+                  className={`absolute top-3 ${promptLang === "fa" ? "left-3" : "right-3"} flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg transition cursor-pointer z-20`}
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>{boxCopied ? "کپی شد! 🎉" : "کپی"}</span>
+                </button>
+
+                {/* دکمه سوئیچ حالت ویرایش دستی */}
+                <button
+                  type="button"
+                  onClick={() => setIsManualEditMode(v => !v)}
+                  className={`absolute top-3 ${promptLang === "fa" ? "right-3" : "left-3"} text-[10px] text-slate-500 hover:text-slate-300 font-bold transition cursor-pointer z-20`}
+                >
+                  {isManualEditMode ? "پایان ویرایش دستی" : "✏️ ویرایش دستی متن"}
+                </button>
+              </div>
             </div>
 
              {/* Buttons Row */}
-             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-               <CopyButton text={renderedBody} onCopy={handleTrackCopy} className="flex-1 text-sm py-4" />
- 
+             <div className="flex items-center justify-between pt-2">
+               <div>
+                 {/* Left side empty or metadata */}
+               </div>
+               
                {prompt.tools && prompt.tools.length > 1 ? (
-                 <div className="flex items-center bg-emerald-600 hover:bg-emerald-700 rounded-xl text-white flex-1 overflow-hidden transition-all duration-300 shadow-md shadow-emerald-600/10">
+                 <div className="flex items-center bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 overflow-hidden transition-all text-xs shrink-0 border border-slate-200 shadow-xs">
                    <button
                      onClick={() => handleRunExternal(renderedBody, selectedRunTool)}
-                     className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-black cursor-pointer border-r border-emerald-500/50"
+                     className="flex items-center gap-1 px-3 py-2 font-bold cursor-pointer border-l border-slate-300"
                    >
-                     <span>▶️ اجرا در {selectedRunTool}</span>
+                     <span>▶️ {selectedRunTool}</span>
                    </button>
                    <select
                      value={selectedRunTool}
                      onChange={(e) => setSelectedRunTool(e.target.value)}
-                     className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold py-4 px-3 outline-none cursor-pointer border-none shrink-0"
+                     className="bg-transparent text-slate-500 text-[10px] font-bold py-2 px-2 outline-none cursor-pointer border-none"
                    >
-                     {prompt.tools.map((t) => (
-                       <option key={t} value={t} className="bg-slate-800 text-white">
-                         {t}
-                       </option>
-                     ))}
+                     {prompt.tools.map((t) => (<option key={t} value={t}>{t}</option>))}
                    </select>
                  </div>
                ) : (
-                 <button
-                   onClick={() => handleRunExternal(renderedBody)}
-                   className="flex items-center justify-center gap-2 px-5 py-4 text-sm font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl cursor-pointer transition-all duration-300 shadow-md shadow-emerald-600/10 flex-1"
-                 >
-                   <span>▶️ اجرا در {prompt.tools && prompt.tools.length > 0 ? prompt.tools[0] : "ابزار هوش مصنوعی"}</span>
-                 </button>
-               )}
-               
-               {prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
-                 <button
-                   id="toggle-wizard-btn"
-                   onClick={() => setShowWizard(!showWizard)}
-                   className={`flex items-center justify-center gap-2 px-5 py-4 text-sm font-black rounded-xl cursor-pointer transition-all duration-300 shadow-sm shrink-0 ${
-                     showWizard
-                       ? "bg-slate-800 text-white"
-                       : "bg-[#6C47FF] hover:bg-[#5935e6] text-white shadow-md shadow-[#6C47FF]/20"
-                   }`}
-                 >
-                   <Wand2 className="w-5 h-5" />
-                   <span>شخصی‌سازی مقادیر متغیر پرامپت ✏️</span>
+                 <button onClick={() => handleRunExternal(renderedBody)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 shadow-xs cursor-pointer shrink-0">
+                   <span>▶️ {prompt.tools?.[0] || "اجرا"}</span>
                  </button>
                )}
              </div>
-
-            {/* Live Wizard Form (Toggleable Section) */}
-            {showWizard && prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
+ 
+            {/* Live Wizard Form */}
+            {prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
               <div className="pt-2" ref={wizardRef}>
                 <PromptWizard
                   fields={prompt.fieldsSchema}
@@ -1350,6 +1417,22 @@ export default function PromptDetail() {
           />
         </div>
       )}
+
+      {/* Mobile Floating Copy Button */}
+      <div className="fixed bottom-4 inset-x-4 z-30 lg:hidden">
+        <button
+          onClick={async () => {
+            await navigator.clipboard.writeText(renderedBody);
+            handleTrackCopy?.();
+            setMobileCopied(true);
+            setTimeout(() => setMobileCopied(false), 2000);
+          }}
+          className="w-full flex items-center justify-center gap-2 py-4 bg-[#6C47FF] hover:bg-[#5935e6] text-white text-sm font-black rounded-2xl shadow-2xl shadow-[#6C47FF]/30 cursor-pointer transition-all"
+        >
+          <Copy className="w-4 h-4" />
+          <span>{mobileCopied ? "پرامپت کپی شد! 🎉" : "کپی سریع پرامپت"}</span>
+        </button>
+      </div>
 
     </div>
   );
