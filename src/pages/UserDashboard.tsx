@@ -22,7 +22,7 @@ export default function UserDashboard() {
   // Authentication Guard
   useEffect(() => {
     if (!user) {
-      setPhoneModalOpen(true);
+      setPhoneModalOpen(true, "برای دسترسی به داشبورد خود وارد شوید");
       navigate("/");
     }
   }, [user, navigate, setPhoneModalOpen]);

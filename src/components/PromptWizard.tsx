@@ -3,6 +3,7 @@ import { FieldSchema } from "../types";
 import { renderPrompt } from "../lib/renderPrompt";
 import { useAuth } from "./AuthContext";
 import { Wand2, X, AlertCircle, CheckCircle, Save, Sparkles, FolderPlus, RotateCcw, Copy } from "lucide-react";
+import { Z } from "../lib/zIndex";
 
 function parseOption(opt: string) {
   const parts = opt.split("|");
@@ -162,7 +163,7 @@ export default function PromptWizard({
 
   const handleSaveNewPresetClick = () => {
     if (!user) {
-      setPhoneModalOpen(true);
+      setPhoneModalOpen(true, "برای ذخیره نسخه شخصی پرامپت وارد شوید");
       return;
     }
     // Set smart default name
@@ -221,7 +222,7 @@ export default function PromptWizard({
 
   const handleUpdatePreset = async () => {
     if (!user) {
-      setPhoneModalOpen(true);
+      setPhoneModalOpen(true, "برای بروزرسانی نسخه شخصی پرامپت وارد شوید");
       return;
     }
     if (!finalActivePresetId) return;
@@ -544,7 +545,7 @@ export default function PromptWizard({
 
       {/* Elegant Naming Modal */}
       {isSaveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs" style={{ zIndex: Z.MODAL }}>
           <div className="bg-white rounded-2xl border border-slate-100 p-6 max-w-sm w-full space-y-4 shadow-xl text-right animate-scale-up" dir="rtl">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h5 className="text-xs font-black text-slate-800 flex items-center gap-1.5">

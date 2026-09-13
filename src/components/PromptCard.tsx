@@ -79,7 +79,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
     e.stopPropagation();
 
     if (!user) {
-      setPhoneModalOpen(true);
+      setPhoneModalOpen(true, "برای نشان‌کردن پرامپت‌ها وارد شوید");
       return;
     }
 

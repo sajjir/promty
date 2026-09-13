@@ -6,6 +6,7 @@ import { renderPrompt } from "../lib/renderPrompt";
 import CopyButton from "../components/CopyButton";
 import PromptCard from "../components/PromptCard";
 import { useAuth } from "../components/AuthContext";
+import { Z } from "../lib/zIndex";
 import { 
   ChevronRight, Megaphone, Globe, Video, Camera, Sparkles, 
   Wand2, PlayCircle, Loader2, Copy, Layers, Eye, Compass, 
@@ -274,7 +275,7 @@ export default function PromptDetail() {
 
   const handleBookmarkToggle = async () => {
     if (!user) {
-      setPhoneModalOpen(true);
+      setPhoneModalOpen(true, "برای نشان‌کردن این پرامپت وارد شوید");
       return;
     }
     try {
@@ -1395,6 +1396,7 @@ export default function PromptDetail() {
       {lightboxImage && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
+          style={{ zIndex: Z.MODAL }}
           onClick={() => setLightboxImage(null)}
         >
           {/* Close button */}

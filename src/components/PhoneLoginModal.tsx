@@ -3,9 +3,14 @@ import { useAuth } from "./AuthContext";
 import { Phone, Key, X, Check, AlertCircle, User, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import GoogleLoginButton from "./GoogleLoginButton";
+import { Z } from "../lib/zIndex";
 
-export default function PhoneLoginModal() {
-  const { isPhoneModalOpen, setPhoneModalOpen, completePhoneRegistration } = useAuth();
+interface PhoneLoginModalProps {
+  contextMessage?: string;
+}
+
+export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps = {}) {
+  const { isPhoneModalOpen, setPhoneModalOpen, phoneModalContextMessage, completePhoneRegistration } = useAuth();
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -89,7 +94,7 @@ export default function PhoneLoginModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ zIndex: Z.MODAL }}>
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
@@ -106,7 +111,9 @@ export default function PhoneLoginModal() {
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
-          <h3 className="text-base font-bold text-slate-800">ورود با شماره موبایل</h3>
+          <h3 className="text-base font-bold text-slate-800">
+            {contextMessage || phoneModalContextMessage || "برای ذخیره و شخصی‌سازی پرامپت‌ها وارد شوید"}
+          </h3>
           <button 
             onClick={handleClose}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition"

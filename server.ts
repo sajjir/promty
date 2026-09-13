@@ -362,14 +362,16 @@ function writeDB(data: DB) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
 }
 
-async function seedDatabaseIfEmpty(prisma: PrismaClient | null) {
+async function syncTaxonomies(prisma: PrismaClient | null) {
   if (!prisma) return;
   try {
-    const count = await prisma.taxonomy.count();
-    if (count === 0) {
-      console.log("[DB] Taxonomy table is empty. Auto-seeding initial data...");
-      const { defaultTaxonomies } = await import("./src/lib/defaultTaxonomies.ts");
-      for (const item of defaultTaxonomies) {
+    const { defaultTaxonomies } = await import("./src/lib/defaultTaxonomies.ts");
+    let syncedCount = 0;
+    for (const item of defaultTaxonomies) {
+      const existing = await prisma.taxonomy.findFirst({
+        where: { type: item.type, slug: item.slug },
+      });
+      if (!existing) {
         await prisma.taxonomy.create({
           data: {
             type: item.type,
@@ -377,14 +379,17 @@ async function seedDatabaseIfEmpty(prisma: PrismaClient | null) {
             titleEn: item.titleEn,
             titleFa: item.titleFa,
             status: "active",
-            popularity: 0.5
-          }
+            popularity: 0.5,
+          },
         });
+        syncedCount++;
       }
-      console.log("[DB] Auto-seeding completed successfully.");
     }
-  } catch (error) {
-    console.error("[DB] Auto-seeding failed:", error);
+    if (syncedCount > 0) {
+      console.log(`[DB] Taxonomy sync: ${syncedCount} new item(s) added.`);
+    }
+  } catch (err) {
+    console.error("[DB] Taxonomy sync failed:", err);
   }
 }
 
@@ -612,7 +617,7 @@ async function startServer() {
     relationshipRepo = new JsonRelationshipRepository();
   }
 
-  await seedDatabaseIfEmpty(prisma);
+  await syncTaxonomies(prisma);
 
   // Clean and sanitize any potential negative/fake usage count values
   if (prisma) {

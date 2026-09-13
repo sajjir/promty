@@ -21,7 +21,8 @@ interface AuthContextType {
   completePhoneRegistration: (phone: string, name: string, email: string) => Promise<{ success: boolean; message?: string; user?: User }>;
   logout: () => Promise<void>;
   isPhoneModalOpen: boolean;
-  setPhoneModalOpen: (open: boolean) => void;
+  phoneModalContextMessage?: string;
+  setPhoneModalOpen: (open: boolean, message?: string) => void;
   refreshUser: () => Promise<void>;
   updateUser: (updatedUser: User) => void;
 }
@@ -41,7 +42,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [siteTitle, setSiteTitleState] = useState<string>("Promty.ir");
   const [googleClientId, setGoogleClientId] = useState<string>("");
-  const [isPhoneModalOpen, setPhoneModalOpen] = useState<boolean>(false);
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState<boolean>(false);
+  const [phoneModalContextMessage, setPhoneModalContextMessage] = useState<string | undefined>();
+
+  const setPhoneModalOpen = (open: boolean, message?: string) => {
+    setIsPhoneModalOpen(open);
+    setPhoneModalContextMessage(open ? message : undefined);
+  };
 
   const fetchSiteTitleAndConfig = async () => {
     try {
@@ -230,6 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         completePhoneRegistration,
         logout,
         isPhoneModalOpen,
+        phoneModalContextMessage,
         setPhoneModalOpen,
         refreshUser,
         updateUser,
