@@ -14,6 +14,46 @@ export interface CachedOtp {
   lastSentAt: number;
 }
 
+/**
+ * Sanitizes raw mobile input into strict 11-digit Iranian mobile format: 09xxxxxxxxx
+ * - Converts Persian and Arabic digits to English digits (۰-۹ and ٠-٩ -> 0-9)
+ * - Strips whitespace, dashes, parentheses, and prefixes (+98, 0098, 98)
+ * - Validates standard format /^09\d{9}$/
+ * - Throws an explicit error if format is invalid
+ */
+export function sanitizeIranianMobile(rawPhone: string): string {
+  if (!rawPhone || typeof rawPhone !== "string") {
+    throw new Error("شماره موبایل وارد نشده است.");
+  }
+
+  // 1. Convert Persian and Arabic digits to English digits (۰-۹ -> 0-9)
+  let cleaned = rawPhone
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632));
+
+  // 2. Strip spaces, dashes, parentheses, dots, and other non-digits except leading plus
+  cleaned = cleaned.replace(/[\s\-_().]/g, "").replace(/[^\d+]/g, "");
+
+  // 3. Strip country code prefixes (+98, 0098, 98)
+  if (cleaned.startsWith("+98")) {
+    cleaned = "0" + cleaned.slice(3);
+  } else if (cleaned.startsWith("0098")) {
+    cleaned = "0" + cleaned.slice(4);
+  } else if (cleaned.startsWith("98") && cleaned.length === 12) {
+    cleaned = "0" + cleaned.slice(2);
+  } else if (cleaned.startsWith("9") && cleaned.length === 10) {
+    cleaned = "0" + cleaned;
+  }
+
+  // 4. Ensure final output strictly matches /^09\d{9}$/
+  const iranMobileRegex = /^09\d{9}$/;
+  if (!iranMobileRegex.test(cleaned)) {
+    throw new Error("فرمت شماره موبایل نامعتبر است. شماره باید ۱۱ رقمی استاندارد و با ۰۹ آغاز شود (مثال: ۰۹۱۲۳۴۵۶۷۸۹).");
+  }
+
+  return cleaned;
+}
+
 class SmsService {
   private endpoint = "http://api.payamak-panel.com/post/send.asmx";
   // 120 seconds TTL and rate limit window (2 minutes)
@@ -24,41 +64,10 @@ class SmsService {
   private otpCache = new Map<string, CachedOtp>();
 
   /**
-   * Translates Persian and Arabic digits to English digits
-   */
-  private normalizeDigits(input: string): string {
-    return input
-      .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
-      .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632));
-  }
-
-  /**
    * Sanitizes and validates an Iranian mobile number into 11-digit format: 09xxxxxxxxx
    */
   public sanitizePhoneNumber(rawPhone: string): string {
-    if (!rawPhone) {
-      throw new Error("شماره موبایل وارد نشده است.");
-    }
-
-    let cleaned = this.normalizeDigits(rawPhone.trim());
-    cleaned = cleaned.replace(/[\s\-_()]/g, "");
-
-    if (cleaned.startsWith("+98")) {
-      cleaned = "0" + cleaned.slice(3);
-    } else if (cleaned.startsWith("0098")) {
-      cleaned = "0" + cleaned.slice(4);
-    } else if (cleaned.startsWith("98") && cleaned.length === 12) {
-      cleaned = "0" + cleaned.slice(2);
-    } else if (cleaned.startsWith("9") && cleaned.length === 10) {
-      cleaned = "0" + cleaned;
-    }
-
-    const iranMobileRegex = /^09\d{9}$/;
-    if (!iranMobileRegex.test(cleaned)) {
-      throw new Error("فرمت شماره موبایل نامعتبر است. شماره باید ۱۱ رقمی و با ۰۹ آغاز شود.");
-    }
-
-    return cleaned;
+    return sanitizeIranianMobile(rawPhone);
   }
 
   /**
@@ -98,22 +107,22 @@ class SmsService {
   /**
    * Formats error codes returned by MeliPayamak SendByBaseNumber
    */
-  private getMeliPayamakErrorMessage(code: string): string {
+  public getMeliPayamakErrorMessage(code: string): string {
     const map: Record<string, string> = {
-      "0": "نام کاربری یا کلمه عبور ملی‌پیامک اشتباه است.",
-      "-1": "دسترسی وب‌سرویس نامعتبر است یا نام کاربری/رمز عبور اشتباه است.",
-      "-2": "اعتبار پنل پیامکی کافی نیست.",
-      "-3": "شماره گیرنده در لیست سیاه (Blacklist) مخابرات است.",
-      "-4": "شماره گیرنده نامعتبر است.",
-      "-5": "کد متن (bodyId) متناظر با الگو یافت نشد یا تایید نشده است.",
-      "-6": "شماره گیرنده نامعتبر است یا خطا در سامانه پیامکی رخ داده است.",
-      "-7": "متن یا متغیر ارسالی خالی است یا ساختار متغیرها با الگو مطابقت ندارد.",
-      "-8": "خط ارسال‌کننده تعریف نشده است.",
-      "-9": "دسترسی وب‌سرویس موقتاً مسدود است.",
-      "-10": "ترافیک وب‌سرویس بیش از حد مجاز است.",
-      "-11": "قالب الگو حاوی کلمات مسدود است.",
+      "0": "نام کاربری یا کلمه عبور ملی‌پیامک اشتباه است (کد ۰).",
+      "-1": "دسترسی وب‌سرویس نامعتبر است یا نام کاربری/رمز عبور اشتباه است (کد -۱).",
+      "-2": "اعتبار پنل پیامکی کافی نیست (کد -۲).",
+      "-3": "شماره گیرنده در لیست سیاه (Blacklist) مخابرات است (کد -۳).",
+      "-4": "شماره گیرنده نامعتبر است (کد -۴).",
+      "-5": "کد متن (bodyId) متناظر با الگو یافت نشد یا تایید نشده است (کد -۵).",
+      "-6": "شماره گیرنده نامعتبر است یا خطا در سامانه پیامکی رخ داده است (کد -۶).",
+      "-7": "متن یا متغیر ارسالی خالی است یا ساختار متغیرها با الگو مطابقت ندارد (کد -۷).",
+      "-8": "خط ارسال‌کننده تعریف نشده است (کد -۸).",
+      "-9": "دسترسی وب‌سرویس موقتاً مسدود است (کد -۹).",
+      "-10": "ترافیک وب‌سرویس بیش از حد مجاز است (کد -۱۰).",
+      "-11": "قالب الگو حاوی کلمات مسدود است (کد -۱۱).",
     };
-    return map[code] || `خطای نامشخص در سامانه پیامکی (کد خطا: ${code})`;
+    return map[code] || `خطای نامشخص در سامانه پیامکی ملی‌پیامک (کد خطا یا شناسه نامعتبر: ${code})`;
   }
 
   /**
@@ -122,7 +131,7 @@ class SmsService {
   public async sendOtp(rawPhone: string, code: string): Promise<SendOtpResult> {
     const phone = this.sanitizePhoneNumber(rawPhone);
 
-    // Rate-limiting check
+    // Rate-limiting check (120 seconds cooldown)
     const rateCheck = this.checkRateLimit(phone);
     if (!rateCheck.allowed) {
       throw new Error(`لطفاً قبل از درخواست مجدد، ${rateCheck.remainingSeconds} ثانیه صبر کنید.`);
@@ -141,20 +150,21 @@ class SmsService {
         throw new Error("شناسه الگوی پیامک (MELIPAYAMAK_OTP_BODY_ID) نامعتبر است.");
       }
 
+      // Strictly pass text as an array of strings: [String(code)]
       recId = await this.invokeSendByBaseNumber({
         username,
         password,
         to: phone,
         bodyId,
-        text: code,
+        text: [String(code)],
       });
     } else {
-      // In development or when credentials are not yet supplied:
-      // Log clearly to console so testing is seamless
-      recId = "DEV_RECID_" + Date.now().toString() + "000000";
+      // In development or when credentials are not yet configured:
+      // Produce a numeric string > 15 digits and log to console
+      recId = "20261004" + Date.now().toString() + "000";
       console.log(`\n========================================`);
       console.log(`[SMS Service DEV] OTP Code for ${phone}: ${code}`);
-      console.log(`[SMS Service DEV] Mock recId: ${recId}`);
+      console.log(`[SMS Service DEV] Mock recId (>15 digits): ${recId}`);
       console.log(`========================================\n`);
     }
 
@@ -177,15 +187,24 @@ class SmsService {
 
   /**
    * Invokes MeliPayamak's SendByBaseNumber via SOAP envelope
+   * Expects text to strictly be an array of strings: string[]
    */
-  private async invokeSendByBaseNumber(params: {
+  public async invokeSendByBaseNumber(params: {
     username: string;
     password: string;
     to: string;
     bodyId: number;
-    text: string | string[];
+    text: string[];
   }): Promise<string> {
-    const textParam = Array.isArray(params.text) ? params.text.join(";") : params.text;
+    // Strictly validate that text is an array of strings
+    if (!Array.isArray(params.text)) {
+      throw new Error("پارامتر text باید منحصراً به صورت آرایه‌ای از رشته‌ها (Array of strings) ارسال شود.");
+    }
+
+    // Render ArrayOfString in XML schema
+    const textXmlItems = params.text
+      .map((item) => `<string>${this.escapeXml(String(item))}</string>`)
+      .join("");
 
     const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
@@ -193,7 +212,7 @@ class SmsService {
     <SendByBaseNumber xmlns="http://tempuri.org/">
       <username>${this.escapeXml(params.username)}</username>
       <password>${this.escapeXml(params.password)}</password>
-      <text>${this.escapeXml(textParam)}</text>
+      <text>${textXmlItems}</text>
       <to>${this.escapeXml(params.to)}</to>
       <bodyId>${params.bodyId}</bodyId>
     </SendByBaseNumber>
@@ -216,29 +235,29 @@ class SmsService {
     const xmlResponse = await response.text();
     const match = xmlResponse.match(/<SendByBaseNumberResult>(.*?)<\/SendByBaseNumberResult>/);
     if (!match || !match[1]) {
-      throw new Error("پاسخ وب‌سرویس ملی‌پیامک نامعتبر است.");
+      throw new Error("پاسخ وب‌سرویس ملی‌پیامک نامعتبر است یا تگ SendByBaseNumberResult یافت نشد.");
     }
 
     const rawResult = match[1].trim();
 
-    // Check if result is a negative number or known error
+    // Check if result is a negative number or non-positive value
     const numVal = Number(rawResult);
     if (!isNaN(numVal) && numVal <= 0) {
       throw new Error(this.getMeliPayamakErrorMessage(rawResult));
     }
 
-    // A return value of a numeric string > 15 digits indicates success (recId)
-    // Note: recId from MeliPayamak is typically an 18-20 digit integer
-    if (rawResult.length >= 10 && /^\d+$/.test(rawResult)) {
+    // A numeric string > 15 digits indicates success (recId)
+    if (/^\d+$/.test(rawResult) && rawResult.length > 15) {
       return rawResult;
     }
 
-    // If it's a numeric string but less than 15 digits or other string, verify if it was an error code
-    if (rawResult.startsWith("-") || numVal < 1000) {
+    // If it starts with a dash or is a small number (error code), throw explicit error
+    if (rawResult.startsWith("-") || (!isNaN(numVal) && numVal < 1000)) {
       throw new Error(this.getMeliPayamakErrorMessage(rawResult));
     }
 
-    return rawResult;
+    // Any other invalid return value
+    throw new Error(this.getMeliPayamakErrorMessage(rawResult));
   }
 
   /**

@@ -101,14 +101,10 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
     try {
       const res = await verifyOtp(phone, code);
       if (res.success) {
-        if (res.isNewUser && (!res.user?.name || res.user.name.startsWith("کاربر "))) {
-          setStep("name");
-        } else {
-          setSuccess(true);
-          setTimeout(() => {
-            handleClose();
-          }, 1200);
-        }
+        setSuccess(true);
+        setTimeout(() => {
+          handleClose();
+        }, 900);
       } else {
         setError(res.message || "کد تایید اشتباه است یا منقضی شده است.");
       }

@@ -19,7 +19,7 @@ import { JsonPromptRepository } from "./src/server/repositories/json/JsonPromptR
 import { JsonTaxonomyRepository } from "./src/server/repositories/json/JsonTaxonomyRepository.ts";
 import { JsonRelationshipRepository } from "./src/server/repositories/json/JsonRelationshipRepository.ts";
 import { SearchService } from "./src/server/services/SearchService";
-import { smsService } from "./src/server/services/smsService.ts";
+import { smsService, sanitizeIranianMobile } from "./src/server/services/smsService.ts";
 
 let JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -410,12 +410,26 @@ function resolveUserRole(
   identifier: { email?: string | null; phone?: string | null },
   currentRole?: string | null
 ): "SUPER_ADMIN" | "ADMIN" | "USER" {
-  const sPhone = process.env.SUPER_ADMIN_PHONE?.trim();
+  const rawSuperPhone = process.env.SUPER_ADMIN_PHONE?.trim();
+  let sPhone = rawSuperPhone;
+  if (rawSuperPhone) {
+    try {
+      sPhone = sanitizeIranianMobile(rawSuperPhone);
+    } catch (_) {
+      sPhone = rawSuperPhone;
+    }
+  }
+
   const sEmail = process.env.SUPER_ADMIN_EMAIL?.trim()?.toLowerCase();
   const aEmail = (process.env.ADMIN_EMAIL || "admin@promty.ir").trim().toLowerCase();
   const aPhone = process.env.ADMIN_PHONE?.trim();
 
-  const userPhone = identifier.phone ? identifier.phone.trim() : null;
+  let userPhone = identifier.phone ? identifier.phone.trim() : null;
+  if (userPhone) {
+    try {
+      userPhone = sanitizeIranianMobile(userPhone);
+    } catch (_) {}
+  }
   const userEmail = identifier.email ? identifier.email.trim().toLowerCase() : null;
 
   if (sPhone && userPhone === sPhone) {
@@ -998,7 +1012,13 @@ async function startServer() {
         return res.status(400).json({ success: false, message: "شماره موبایل الزامی است." });
       }
 
-      const sanitizedPhone = smsService.sanitizePhoneNumber(phone);
+      let sanitizedPhone: string;
+      try {
+        sanitizedPhone = sanitizeIranianMobile(phone);
+      } catch (err: any) {
+        return res.status(400).json({ success: false, message: err.message || "فرمت شماره موبایل نامعتبر است." });
+      }
+
       const rateCheck = smsService.checkRateLimit(sanitizedPhone);
       if (!rateCheck.allowed) {
         return res.status(429).json({
@@ -1052,9 +1072,9 @@ async function startServer() {
 
       let sanitizedPhone: string;
       try {
-        sanitizedPhone = smsService.sanitizePhoneNumber(phone);
+        sanitizedPhone = sanitizeIranianMobile(phone);
       } catch (e: any) {
-        return res.status(400).json({ success: false, message: e.message });
+        return res.status(400).json({ success: false, message: e.message || "فرمت شماره موبایل نامعتبر است." });
       }
 
       // Check verification via smsService memory cache
@@ -1090,12 +1110,24 @@ async function startServer() {
       let user: any = null;
       let isNewUser = false;
 
+      // Automatically link and grant role SUPER_ADMIN if phone matches SUPER_ADMIN_PHONE
+      let isSuperAdminMatch = false;
+      if (process.env.SUPER_ADMIN_PHONE) {
+        try {
+          isSuperAdminMatch = sanitizedPhone === sanitizeIranianMobile(process.env.SUPER_ADMIN_PHONE);
+        } catch (_) {
+          isSuperAdminMatch = sanitizedPhone === process.env.SUPER_ADMIN_PHONE.trim();
+        }
+      }
+
       if (prisma) {
         user = await prisma.user.findUnique({
           where: { phone: sanitizedPhone },
         });
 
-        const targetRole = resolveUserRole({ phone: sanitizedPhone, email: user?.email }, user?.role);
+        const targetRole: "SUPER_ADMIN" | "ADMIN" | "USER" = isSuperAdminMatch
+          ? "SUPER_ADMIN"
+          : resolveUserRole({ phone: sanitizedPhone, email: user?.email }, user?.role);
 
         if (!user) {
           isNewUser = true;
@@ -1105,6 +1137,11 @@ async function startServer() {
               role: targetRole,
               name: `کاربر ${sanitizedPhone.slice(-4)}`,
             },
+          });
+        } else if (isSuperAdminMatch && user.role !== "SUPER_ADMIN") {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { role: "SUPER_ADMIN" },
           });
         } else if (user.role !== targetRole && (targetRole === "SUPER_ADMIN" || targetRole === "ADMIN")) {
           user = await prisma.user.update({
@@ -1121,7 +1158,9 @@ async function startServer() {
         if (!db.users) db.users = [];
         user = db.users.find((u: any) => u.phone === sanitizedPhone);
 
-        const targetRole = resolveUserRole({ phone: sanitizedPhone, email: user?.email }, user?.role);
+        const targetRole: "SUPER_ADMIN" | "ADMIN" | "USER" = isSuperAdminMatch
+          ? "SUPER_ADMIN"
+          : resolveUserRole({ phone: sanitizedPhone, email: user?.email }, user?.role);
 
         if (!user) {
           isNewUser = true;
@@ -1134,6 +1173,9 @@ async function startServer() {
             createdAt: new Date().toISOString(),
           };
           db.users.push(user);
+          fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
+        } else if (isSuperAdminMatch && user.role !== "SUPER_ADMIN") {
+          user.role = "SUPER_ADMIN";
           fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
         } else if (user.role !== targetRole) {
           user.role = targetRole;
@@ -1215,10 +1257,12 @@ async function startServer() {
       return res.status(400).json({ success: false, message: "شماره و نام الزامی است." });
     }
     try {
-      let sanitizedPhone = phone;
+      let sanitizedPhone: string;
       try {
-        sanitizedPhone = smsService.sanitizePhoneNumber(phone);
-      } catch (_) {}
+        sanitizedPhone = sanitizeIranianMobile(phone);
+      } catch (err: any) {
+        return res.status(400).json({ success: false, message: err.message || "فرمت شماره موبایل نامعتبر است." });
+      }
 
       let user: any = null;
       if (prisma) {
@@ -1357,6 +1401,11 @@ async function startServer() {
       }
 
       const cleanId = String(targetIdentifier).trim();
+      let sanitizedCleanId: string | null = null;
+      try {
+        sanitizedCleanId = sanitizeIranianMobile(cleanId);
+      } catch (_) {}
+
       let user: any = null;
 
       if (prisma) {
@@ -1365,6 +1414,7 @@ async function startServer() {
             OR: [
               { id: cleanId },
               { phone: cleanId },
+              ...(sanitizedCleanId ? [{ phone: sanitizedCleanId }] : []),
               { email: cleanId },
             ],
           },
