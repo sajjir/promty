@@ -1,0 +1,11 @@
+{
+  "users": [
+    {
+      "id": "phone_mock_1791116366560",
+      "phone": "09191234567",
+      "name": "کاربر تست",
+      "email": null,
+      "role": "ADMIN"
+    }
+  ]
+}

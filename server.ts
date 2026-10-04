@@ -19,6 +19,7 @@ import { JsonPromptRepository } from "./src/server/repositories/json/JsonPromptR
 import { JsonTaxonomyRepository } from "./src/server/repositories/json/JsonTaxonomyRepository.ts";
 import { JsonRelationshipRepository } from "./src/server/repositories/json/JsonRelationshipRepository.ts";
 import { SearchService } from "./src/server/services/SearchService";
+import { smsService } from "./src/server/services/smsService.ts";
 
 let JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -393,9 +394,48 @@ async function syncTaxonomies(prisma: PrismaClient | null) {
   }
 }
 
-// Check admin credentials
+// Check admin and super admin credentials
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@promty.ir";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+const SUPER_ADMIN_PHONE = process.env.SUPER_ADMIN_PHONE || "";
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "";
+
+/**
+ * Resolves user role hierarchically:
+ * 1. Checks SUPER_ADMIN_PHONE and SUPER_ADMIN_EMAIL from environment
+ * 2. Checks ADMIN_EMAIL and ADMIN_PHONE from environment
+ * 3. Preserves database assigned roles (SUPER_ADMIN, ADMIN, USER)
+ */
+function resolveUserRole(
+  identifier: { email?: string | null; phone?: string | null },
+  currentRole?: string | null
+): "SUPER_ADMIN" | "ADMIN" | "USER" {
+  const sPhone = process.env.SUPER_ADMIN_PHONE?.trim();
+  const sEmail = process.env.SUPER_ADMIN_EMAIL?.trim()?.toLowerCase();
+  const aEmail = (process.env.ADMIN_EMAIL || "admin@promty.ir").trim().toLowerCase();
+  const aPhone = process.env.ADMIN_PHONE?.trim();
+
+  const userPhone = identifier.phone ? identifier.phone.trim() : null;
+  const userEmail = identifier.email ? identifier.email.trim().toLowerCase() : null;
+
+  if (sPhone && userPhone === sPhone) {
+    return "SUPER_ADMIN";
+  }
+  if (sEmail && userEmail === sEmail) {
+    return "SUPER_ADMIN";
+  }
+  if (aPhone && userPhone === aPhone) {
+    return "ADMIN";
+  }
+  if (aEmail && userEmail === aEmail) {
+    return "ADMIN";
+  }
+
+  const normalized = currentRole ? String(currentRole).toUpperCase() : "";
+  if (normalized === "SUPER_ADMIN") return "SUPER_ADMIN";
+  if (normalized === "ADMIN") return "ADMIN";
+  return "USER";
+}
 
 async function getPageMetadata(urlPath: string) {
   let title = "پرامپتی | مرجع و شخصی‌سازی پرامپت‌های آماده هوش مصنوعی";
@@ -745,12 +785,14 @@ async function startServer() {
     }
   });
 
-  // API - Auth Login
+  // API - Auth Login (Static Admin)
   app.post("/api/auth/login", (req, res) => {
     const { email, password } = req.body;
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      const isSuper = (SUPER_ADMIN_EMAIL && ADMIN_EMAIL.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase());
+      const role = isSuper ? "super_admin" : "admin";
       const token = jwt.sign(
-        { id: "admin_static", email: ADMIN_EMAIL, role: "admin" },
+        { id: "admin_static", email: ADMIN_EMAIL, role },
         JWT_SECRET,
         { expiresIn: "7d" }
       );
@@ -764,8 +806,8 @@ async function startServer() {
 
       return res.json({
         success: true,
-        token, // Backwards compatibility for old clients if any
-        user: { email: ADMIN_EMAIL, role: "admin" }
+        token,
+        user: { email: ADMIN_EMAIL, role }
       });
     }
     return res.status(401).json({ success: false, message: "ایمیل یا رمز عبور اشتباه است." });
@@ -798,36 +840,52 @@ async function startServer() {
       }
 
       const { email, name, picture } = payload;
+      let user: any = null;
 
-      let user = null;
       if (prisma) {
         user = await prisma.user.findUnique({
           where: { email: email },
         });
 
+        const targetRole = resolveUserRole({ email: email }, user?.role);
+
         if (!user) {
-          const role = email === ADMIN_EMAIL ? "ADMIN" : "USER";
           user = await prisma.user.create({
             data: {
               email,
               name,
               avatar: picture,
-              role,
+              role: targetRole,
             },
           });
+        } else {
+          // If super admin override or info updated
+          const shouldUpdateRole = user.role !== targetRole && (targetRole === "SUPER_ADMIN" || targetRole === "ADMIN");
+          const shouldUpdateAvatar = picture && user.avatar !== picture;
+          if (shouldUpdateRole || shouldUpdateAvatar) {
+            user = await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                ...(shouldUpdateRole ? { role: targetRole } : {}),
+                ...(shouldUpdateAvatar ? { avatar: picture } : {}),
+              },
+            });
+          }
         }
       } else {
+        const targetRole = resolveUserRole({ email: email });
         user = {
           id: "google_mock_" + Date.now(),
           email,
           name,
           avatar: picture,
-          role: email === ADMIN_EMAIL ? "ADMIN" : "USER",
+          role: targetRole,
         };
       }
 
+      const userRoleLower = String(user.role).toLowerCase();
       const token = jwt.sign(
-        { id: user.id, email: user.email, role: user.role === "ADMIN" ? "admin" : "user" },
+        { id: user.id, email: user.email, phone: user.phone, role: userRoleLower },
         JWT_SECRET,
         { expiresIn: "7d" }
       );
@@ -841,7 +899,15 @@ async function startServer() {
 
       return res.json({
         success: true,
-        user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, role: user.role.toLowerCase() },
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          name: user.name,
+          avatar: user.avatar,
+          role: userRoleLower,
+        },
       });
     } catch (err: any) {
       if (err.code === "P2002") {
@@ -868,32 +934,48 @@ async function startServer() {
         return res.json({ success: false, user: null });
       }
 
-      let user = null;
-      if (prisma && decoded.id && !decoded.id.startsWith("google_mock") && !decoded.id.startsWith("mock")) {
+      let user: any = null;
+      if (prisma && decoded.id && !decoded.id.startsWith("google_mock") && !decoded.id.startsWith("mock") && !decoded.id.startsWith("admin_static")) {
         user = await prisma.user.findUnique({
           where: { id: decoded.id },
         });
       }
 
       if (!user) {
+        // Fallback for static admin or unmigrated mock sessions
+        const isSuper = (SUPER_ADMIN_EMAIL && decoded.email === SUPER_ADMIN_EMAIL) ||
+                        (SUPER_ADMIN_PHONE && decoded.phone === SUPER_ADMIN_PHONE);
+        const resolvedRole = isSuper ? "SUPER_ADMIN" : resolveUserRole({ email: decoded.email, phone: decoded.phone }, decoded.role);
         user = {
           id: decoded.id || "admin",
           email: decoded.email,
-          name: decoded.role === "admin" ? "مدیر سیستم" : "کاربر",
+          phone: decoded.phone,
+          name: decoded.role === "admin" || decoded.role === "super_admin" ? "مدیر سیستم" : "کاربر",
           avatar: null,
-          role: decoded.role === "admin" ? "ADMIN" : "USER",
+          role: resolvedRole,
         };
+      } else {
+        // Ensure role stays strictly up-to-date with SUPER_ADMIN overrides
+        const accurateRole = resolveUserRole({ email: user.email, phone: user.phone }, user.role);
+        if (user.role !== accurateRole && (accurateRole === "SUPER_ADMIN" || accurateRole === "ADMIN")) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { role: accurateRole },
+          });
+        }
       }
+
+      const roleLower = String(user.role).toLowerCase();
 
       return res.json({
         success: true,
         user: {
           id: user.id,
           email: user.email,
-          phone: (user as any).phone,
+          phone: user.phone,
           name: user.name,
           avatar: user.avatar,
-          role: user.role.toLowerCase(),
+          role: roleLower,
         },
       });
     } catch (err) {
@@ -908,7 +990,196 @@ async function startServer() {
     });
   });
 
-  // API - Mock OTP Login for user verification
+  // API - Send OTP Code via MeliPayamak SOAP Pattern Service
+  app.post("/api/auth/otp/send", async (req, res) => {
+    try {
+      const { phone } = req.body;
+      if (!phone) {
+        return res.status(400).json({ success: false, message: "شماره موبایل الزامی است." });
+      }
+
+      const sanitizedPhone = smsService.sanitizePhoneNumber(phone);
+      const rateCheck = smsService.checkRateLimit(sanitizedPhone);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({
+          success: false,
+          message: `لطفاً ${rateCheck.remainingSeconds} ثانیه دیگر جهت درخواست مجدد کد تایید صبر کنید.`,
+          remainingSeconds: rateCheck.remainingSeconds,
+        });
+      }
+
+      const code = smsService.generateOtpCode();
+      const result = await smsService.sendOtp(sanitizedPhone, code);
+
+      // Save to database OtpVerification if prisma is active
+      if (prisma) {
+        try {
+          const hashedCode = smsService.hashCode(code);
+          const expiresAt = new Date(Date.now() + 120 * 1000); // 2 minutes TTL
+          await prisma.otpVerification.create({
+            data: {
+              phone: sanitizedPhone,
+              code: hashedCode,
+              expiresAt,
+            },
+          });
+        } catch (dbErr) {
+          console.warn("[OTP] Database storage note:", dbErr);
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: "کد تایید با موفقیت ارسال شد.",
+        cooldownSeconds: result.cooldownSeconds || 120,
+      });
+    } catch (err: any) {
+      console.error("[OTP Send Error]:", err);
+      return res.status(400).json({
+        success: false,
+        message: err.message || "خطا در ارسال پیامک کد تایید.",
+      });
+    }
+  });
+
+  // API - Verify OTP Code and Login / Register User
+  app.post("/api/auth/otp/verify", async (req, res) => {
+    try {
+      const { phone, code } = req.body;
+      if (!phone || !code) {
+        return res.status(400).json({ success: false, message: "شماره موبایل و کد تایید الزامی است." });
+      }
+
+      let sanitizedPhone: string;
+      try {
+        sanitizedPhone = smsService.sanitizePhoneNumber(phone);
+      } catch (e: any) {
+        return res.status(400).json({ success: false, message: e.message });
+      }
+
+      // Check verification via smsService memory cache
+      let isValid = smsService.verifyOtp(sanitizedPhone, code);
+
+      // Fallback check against database OtpVerification
+      if (!isValid && prisma) {
+        const hashedCode = smsService.hashCode(code);
+        const record = await prisma.otpVerification.findFirst({
+          where: {
+            phone: sanitizedPhone,
+            code: hashedCode,
+            expiresAt: { gt: new Date() },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+        if (record) {
+          isValid = true;
+          // Delete to prevent replay attacks
+          await prisma.otpVerification.delete({ where: { id: record.id } }).catch(() => {});
+        }
+      }
+
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          message: "کد تایید اشتباه است یا منقضی شده است (اعتبار کد ۲ دقیقه است).",
+        });
+      }
+
+      // Find or create User
+      let user: any = null;
+      let isNewUser = false;
+
+      if (prisma) {
+        user = await prisma.user.findUnique({
+          where: { phone: sanitizedPhone },
+        });
+
+        const targetRole = resolveUserRole({ phone: sanitizedPhone, email: user?.email }, user?.role);
+
+        if (!user) {
+          isNewUser = true;
+          user = await prisma.user.create({
+            data: {
+              phone: sanitizedPhone,
+              role: targetRole,
+              name: `کاربر ${sanitizedPhone.slice(-4)}`,
+            },
+          });
+        } else if (user.role !== targetRole && (targetRole === "SUPER_ADMIN" || targetRole === "ADMIN")) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { role: targetRole },
+          });
+        }
+      } else {
+        const dbPath = path.join(process.cwd(), "db.json");
+        let db: any = {};
+        if (fs.existsSync(dbPath)) {
+          db = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
+        }
+        if (!db.users) db.users = [];
+        user = db.users.find((u: any) => u.phone === sanitizedPhone);
+
+        const targetRole = resolveUserRole({ phone: sanitizedPhone, email: user?.email }, user?.role);
+
+        if (!user) {
+          isNewUser = true;
+          user = {
+            id: "user_" + Date.now(),
+            phone: sanitizedPhone,
+            name: `کاربر ${sanitizedPhone.slice(-4)}`,
+            email: null,
+            role: targetRole,
+            createdAt: new Date().toISOString(),
+          };
+          db.users.push(user);
+          fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
+        } else if (user.role !== targetRole) {
+          user.role = targetRole;
+          fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
+        }
+      }
+
+      const roleLower = String(user.role).toLowerCase();
+      const token = jwt.sign(
+        {
+          id: user.id,
+          phone: user.phone,
+          email: user.email,
+          role: roleLower,
+        },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      res.cookie("promty_session", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.json({
+        success: true,
+        token,
+        isNewUser,
+        user: {
+          id: user.id,
+          phone: user.phone,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+          role: roleLower,
+        },
+      });
+    } catch (err: any) {
+      console.error("[OTP Verify Error]:", err);
+      return res.status(500).json({ success: false, message: "خطا در تایید کد و ورود." });
+    }
+  });
+
+  // API - Mock OTP Login for backwards compatibility
   app.post("/api/auth/otp-mock", (req, res) => {
     const { phone, code } = req.body;
     if (!phone) {
@@ -937,24 +1208,30 @@ async function startServer() {
     return res.status(400).json({ success: false, message: "کد تایید اشتباه است. (کد پیش‌فرض ۱۲۳۴ است)" });
   });
 
-  // API - Complete registration / Phone registration
+  // API - Complete registration / Phone profile update
   app.post("/api/auth/phone-register", async (req, res) => {
     const { phone, name, email } = req.body;
-    if (!phone || !name || !email) {
-      return res.status(400).json({ success: false, message: "شماره، نام و ایمیل الزامی است." });
+    if (!phone || !name) {
+      return res.status(400).json({ success: false, message: "شماره و نام الزامی است." });
     }
     try {
-      let user = null;
+      let sanitizedPhone = phone;
+      try {
+        sanitizedPhone = smsService.sanitizePhoneNumber(phone);
+      } catch (_) {}
+
+      let user: any = null;
       if (prisma) {
-        user = await prisma.user.findUnique({ where: { phone } });
+        user = await prisma.user.findUnique({ where: { phone: sanitizedPhone } });
         if (!user) {
+          const targetRole = resolveUserRole({ phone: sanitizedPhone, email: email || null });
           user = await prisma.user.create({
-            data: { phone, name, email, role: "USER" },
+            data: { phone: sanitizedPhone, name, email: email || null, role: targetRole },
           });
-        } else if (!user.name || !user.email) {
+        } else {
           user = await prisma.user.update({
             where: { id: user.id },
-            data: { name, email },
+            data: { name, ...(email ? { email } : {}) },
           });
         }
       } else {
@@ -964,26 +1241,28 @@ async function startServer() {
           db = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
         }
         if (!db.users) db.users = [];
-        user = db.users.find((u: any) => u.phone === phone);
+        user = db.users.find((u: any) => u.phone === sanitizedPhone);
         if (!user) {
+          const targetRole = resolveUserRole({ phone: sanitizedPhone, email: email || null });
           user = {
             id: "phone_mock_" + Date.now(),
-            phone,
+            phone: sanitizedPhone,
             name,
-            email,
-            role: "USER"
+            email: email || null,
+            role: targetRole
           };
           db.users.push(user);
           fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
         } else {
           user.name = name;
-          user.email = email;
+          if (email) user.email = email;
           fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
         }
       }
 
+      const roleLower = String(user.role).toLowerCase();
       const token = jwt.sign(
-        { id: user.id, email: user.email, phone: user.phone, role: "user" },
+        { id: user.id, email: user.email, phone: user.phone, role: roleLower },
         JWT_SECRET,
         { expiresIn: "7d" }
       );
@@ -997,7 +1276,7 @@ async function startServer() {
 
       return res.json({
         success: true,
-        user: { id: user.id, phone: user.phone, name: user.name, email: user.email, role: String(user.role).toLowerCase() },
+        user: { id: user.id, phone: user.phone, name: user.name, email: user.email, role: roleLower },
       });
     } catch (err: any) {
       if (err.code === "P2002") {
@@ -1008,11 +1287,11 @@ async function startServer() {
         });
       }
       console.error("Phone register error:", err);
-      return res.status(500).json({ success: false, message: "خطایی در ثبتنام رخ داد. دوباره تلاش کنید." });
+      return res.status(500).json({ success: false, message: "خطایی در ثبت‌نام رخ داد. دوباره تلاش کنید." });
     }
   });
 
-  // Admin middleware
+  // Admin middleware: allows users with role "admin" or "super_admin"
   const adminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const token = req.cookies.promty_session;
     if (!token) {
@@ -1020,16 +1299,173 @@ async function startServer() {
     }
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      if (decoded && decoded.role === "admin") {
+      const role = decoded?.role?.toLowerCase();
+      const isSuperAdminEnv = 
+        (SUPER_ADMIN_PHONE && decoded.phone === SUPER_ADMIN_PHONE) ||
+        (SUPER_ADMIN_EMAIL && decoded.email === SUPER_ADMIN_EMAIL);
+
+      if (decoded && (role === "admin" || role === "super_admin" || isSuperAdminEnv)) {
         (req as any).user = decoded;
         next();
       } else {
-        res.status(403).json({ success: false, message: "دسترسی غیرمجاز" });
+        res.status(403).json({ success: false, message: "دسترسی غیرمجاز (نیاز به سطح دسترسی ادمین)" });
       }
     } catch (err) {
       res.status(403).json({ success: false, message: "توکن نامعتبر است" });
     }
   };
+
+  // Super Admin middleware: strictly allows only SUPER_ADMIN
+  const superAdminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const token = req.cookies.promty_session;
+    if (!token) {
+      return res.status(403).json({ success: false, message: "دسترسی غیرمجاز (کوکی یافت نشد)" });
+    }
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const role = decoded?.role?.toLowerCase();
+      const isSuperAdminEnv = 
+        (SUPER_ADMIN_PHONE && decoded.phone === SUPER_ADMIN_PHONE) ||
+        (SUPER_ADMIN_EMAIL && decoded.email === SUPER_ADMIN_EMAIL);
+
+      if (decoded && (role === "super_admin" || isSuperAdminEnv)) {
+        (req as any).user = decoded;
+        next();
+      } else {
+        res.status(403).json({
+          success: false,
+          message: "دسترسی غیرمجاز. این قابلیت منحصراً در اختیار مدیر ارشد (SUPER_ADMIN) است.",
+        });
+      }
+    } catch (err) {
+      res.status(403).json({ success: false, message: "توکن نامعتبر است" });
+    }
+  };
+
+  // API - Role Assignment (SUPER_ADMIN only)
+  app.post("/api/admin/roles/assign", superAdminAuth, async (req, res) => {
+    try {
+      const { targetIdentifier, newRole } = req.body;
+      if (!targetIdentifier || !newRole) {
+        return res.status(400).json({ success: false, message: "شناسه کاربر و نقش الزامی است." });
+      }
+
+      const validRoles = ["SUPER_ADMIN", "ADMIN", "USER"];
+      const normalizedRole = String(newRole).toUpperCase();
+      if (!validRoles.includes(normalizedRole)) {
+        return res.status(400).json({ success: false, message: "نقش نامعتبر است. مجاز: SUPER_ADMIN, ADMIN, USER" });
+      }
+
+      const cleanId = String(targetIdentifier).trim();
+      let user: any = null;
+
+      if (prisma) {
+        user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { id: cleanId },
+              { phone: cleanId },
+              { email: cleanId },
+            ],
+          },
+        });
+
+        if (!user) {
+          return res.status(404).json({ success: false, message: "کاربر مورد نظر یافت نشد." });
+        }
+
+        // Prevent demoting protected Super Admin configured in environment
+        if (
+          normalizedRole !== "SUPER_ADMIN" &&
+          ((SUPER_ADMIN_PHONE && user.phone === SUPER_ADMIN_PHONE) ||
+           (SUPER_ADMIN_EMAIL && user.email === SUPER_ADMIN_EMAIL))
+        ) {
+          return res.status(403).json({ success: false, message: "امکان تغییر نقش مدیر ارشد سیستم (تنظیم‌شده در متغیرهای سرور) وجود ندارد." });
+        }
+
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { role: normalizedRole as any },
+        });
+      } else {
+        const dbPath = path.join(process.cwd(), "db.json");
+        let db: any = {};
+        if (fs.existsSync(dbPath)) {
+          db = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
+        }
+        if (!db.users) db.users = [];
+        user = db.users.find((u: any) => u.id === cleanId || u.phone === cleanId || u.email === cleanId);
+
+        if (!user) {
+          return res.status(404).json({ success: false, message: "کاربر مورد نظر یافت نشد." });
+        }
+
+        user.role = normalizedRole;
+        fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
+      }
+
+      return res.json({
+        success: true,
+        message: `نقش کاربر با موفقیت به ${normalizedRole} تغییر یافت.`,
+        user: {
+          id: user.id,
+          phone: user.phone,
+          email: user.email,
+          name: user.name,
+          role: String(user.role).toLowerCase(),
+        },
+      });
+    } catch (err: any) {
+      console.error("[Assign Role Error]:", err);
+      return res.status(500).json({ success: false, message: "خطا در تغییر سطح دسترسی کاربر." });
+    }
+  });
+
+  // API - Get Users List for Administrative Delegation
+  app.get("/api/admin/users", adminAuth, async (req, res) => {
+    try {
+      let usersList: any[] = [];
+      if (prisma) {
+        usersList = await prisma.user.findMany({
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            phone: true,
+            email: true,
+            name: true,
+            avatar: true,
+            role: true,
+            createdAt: true,
+          },
+        });
+      } else {
+        const dbPath = path.join(process.cwd(), "db.json");
+        if (fs.existsSync(dbPath)) {
+          const db = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
+          usersList = (db.users || []).map((u: any) => ({
+            id: u.id,
+            phone: u.phone,
+            email: u.email,
+            name: u.name,
+            avatar: u.avatar || null,
+            role: u.role || "USER",
+            createdAt: u.createdAt || new Date().toISOString(),
+          }));
+        }
+      }
+
+      return res.json({
+        success: true,
+        users: usersList.map((u) => ({
+          ...u,
+          role: String(u.role).toLowerCase(),
+        })),
+      });
+    } catch (err: any) {
+      console.error("[Get Users Error]:", err);
+      return res.status(500).json({ success: false, message: "خطا در دریافت لیست کاربران." });
+    }
+  });
 
   // User middleware for authenticated routes
   const userAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {

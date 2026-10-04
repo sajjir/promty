@@ -2,23 +2,28 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 export interface User {
   id: string;
-  email: string;
-  phone?: string;
-  name: string;
-  avatar?: string;
-  role: "admin" | "user";
+  email?: string | null;
+  phone?: string | null;
+  name?: string | null;
+  avatar?: string | null;
+  role: "super_admin" | "admin" | "user";
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
   siteTitle: string;
   googleClientId: string;
   setSiteTitle: (title: string) => void;
+  sendOtp: (phone: string) => Promise<{ success: boolean; message?: string; cooldownSeconds?: number }>;
+  verifyOtp: (phone: string, code: string) => Promise<{ success: boolean; message?: string; isNewUser?: boolean; user?: User }>;
   loginAsAdmin: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: (credential: string) => Promise<boolean>;
   loginWithPhoneMock: (phone: string, code: string) => Promise<boolean>;
-  completePhoneRegistration: (phone: string, name: string, email: string) => Promise<{ success: boolean; message?: string; user?: User }>;
+  completePhoneRegistration: (phone: string, name: string, email?: string) => Promise<{ success: boolean; message?: string; user?: User }>;
+  assignUserRole: (targetIdentifier: string, newRole: "SUPER_ADMIN" | "ADMIN" | "USER") => Promise<{ success: boolean; message?: string; user?: any }>;
   logout: () => Promise<void>;
   isPhoneModalOpen: boolean;
   phoneModalContextMessage?: string;
@@ -44,6 +49,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [googleClientId, setGoogleClientId] = useState<string>("");
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState<boolean>(false);
   const [phoneModalContextMessage, setPhoneModalContextMessage] = useState<string | undefined>();
+
+  const isAdmin = !!user && (user.role === "admin" || user.role === "super_admin");
+  const isSuperAdmin = !!user && user.role === "super_admin";
 
   const setPhoneModalOpen = (open: boolean, message?: string) => {
     setIsPhoneModalOpen(open);
@@ -79,8 +87,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = await res.json();
         if (data.success && data.user) {
           setUser(data.user);
-          // Sync with legacy admin token if role is admin
-          if (data.user.role === "admin") {
+          // Sync with legacy admin token if role is admin or super_admin
+          if (data.user.role === "admin" || data.user.role === "super_admin") {
             localStorage.setItem("promty_admin_token", "active_jwt_session");
           } else {
             localStorage.removeItem("promty_admin_token");
@@ -107,6 +115,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshUser();
   }, []);
 
+  const sendOtp = async (phone: string): Promise<{ success: boolean; message?: string; cooldownSeconds?: number }> => {
+    try {
+      const res = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message, cooldownSeconds: data.cooldownSeconds || 120 };
+      }
+      return {
+        success: false,
+        message: data.message || "خطا در ارسال کد تایید.",
+        cooldownSeconds: data.remainingSeconds,
+      };
+    } catch (e: any) {
+      console.error("sendOtp error:", e);
+      return { success: false, message: "ارتباط با سرور پیامک برقرار نشد." };
+    }
+  };
+
+  const verifyOtp = async (phone: string, code: string): Promise<{ success: boolean; message?: string; isNewUser?: boolean; user?: User }> => {
+    try {
+      const res = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, code }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        setUser(data.user);
+        if (data.user.role === "admin" || data.user.role === "super_admin") {
+          localStorage.setItem("promty_admin_token", "active_jwt_session");
+        } else {
+          localStorage.removeItem("promty_admin_token");
+        }
+        return { success: true, isNewUser: data.isNewUser, user: data.user };
+      }
+      return { success: false, message: data.message || "کد تایید اشتباه است یا منقضی شده است." };
+    } catch (e: any) {
+      console.error("verifyOtp error:", e);
+      return { success: false, message: "ارتباط با سرور برقرار نشد." };
+    }
+  };
+
   const loginAsAdmin = async (email: string, password: string): Promise<boolean> => {
     try {
       const res = await fetch("/api/auth/login", {
@@ -116,13 +170,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.success) {
-          setUser({
-            id: "admin_static",
-            email: email,
-            name: "مدیر سیستم",
-            role: "admin",
-          });
+        if (data.success && data.user) {
+          setUser(data.user);
           localStorage.setItem("promty_admin_token", "active_jwt_session");
           return true;
         }
@@ -145,7 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = await res.json();
         if (data.success && data.user) {
           setUser(data.user);
-          if (data.user.role === "admin") {
+          if (data.user.role === "admin" || data.user.role === "super_admin") {
             localStorage.setItem("promty_admin_token", "active_jwt_session");
           }
           return true;
@@ -169,7 +218,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = await res.json();
         if (data.success && data.user) {
           setUser(data.user);
-          if (data.user.role === "admin") {
+          if (data.user.role === "admin" || data.user.role === "super_admin") {
             localStorage.setItem("promty_admin_token", "active_jwt_session");
           }
           return true;
@@ -182,17 +231,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const completePhoneRegistration = async (phone: string, name: string, email: string): Promise<{ success: boolean; message?: string; user?: User }> => {
+  const completePhoneRegistration = async (phone: string, name: string, email?: string): Promise<{ success: boolean; message?: string; user?: User }> => {
     try {
       const res = await fetch("/api/auth/phone-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, name, email }),
+        body: JSON.stringify({ phone, name, email: email || "" }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setUser(data.user);
-        if (data.user.role === "admin") {
+        if (data.user.role === "admin" || data.user.role === "super_admin") {
           localStorage.setItem("promty_admin_token", "active_jwt_session");
         }
         return { success: true, user: data.user };
@@ -200,6 +249,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, message: data.message || "خطایی در ثبت‌نام رخ داد." };
     } catch (e) {
       console.error("Phone register failed:", e);
+      return { success: false, message: "ارتباط با سرور برقرار نشد." };
+    }
+  };
+
+  const assignUserRole = async (
+    targetIdentifier: string,
+    newRole: "SUPER_ADMIN" | "ADMIN" | "USER"
+  ): Promise<{ success: boolean; message?: string; user?: any }> => {
+    try {
+      const res = await fetch("/api/admin/roles/assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetIdentifier, newRole }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return { success: true, message: data.message, user: data.user };
+      }
+      return { success: false, message: data.message || "خطا در تغییر دسترسی کاربر." };
+    } catch (e) {
       return { success: false, message: "ارتباط با سرور برقرار نشد." };
     }
   };
@@ -228,13 +297,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         loading,
+        isAdmin,
+        isSuperAdmin,
         siteTitle,
         googleClientId,
         setSiteTitle,
+        sendOtp,
+        verifyOtp,
         loginAsAdmin,
         loginWithGoogle,
         loginWithPhoneMock,
         completePhoneRegistration,
+        assignUserRole,
         logout,
         isPhoneModalOpen,
         phoneModalContextMessage,

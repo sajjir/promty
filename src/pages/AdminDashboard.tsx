@@ -7,7 +7,7 @@ import {
   LogOut, CheckCircle, Loader2, Sparkles, Settings, Network, 
   Tag, Layers, Sliders, Database, Key, Search, RefreshCw, X, 
   ChevronRight, AlertCircle, HeartCrack, HelpCircle as HelpIcon,
-  Check
+  Check, Users, Shield, ShieldCheck, ShieldAlert, UserPlus, ArrowUpDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -35,13 +35,32 @@ interface Relationship {
   weight: number;
 }
 
+interface AdminUserItem {
+  id: string;
+  phone?: string | null;
+  email?: string | null;
+  name?: string | null;
+  avatar?: string | null;
+  role: string;
+  createdAt: string;
+}
+
 export default function AdminDashboard() {
-  const { setSiteTitle } = useAuth();
+  const { setSiteTitle, user, isSuperAdmin, assignUserRole } = useAuth();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"prompts" | "taxonomies" | "graph" | "ai">("prompts");
+  const [activeTab, setActiveTab] = useState<"prompts" | "taxonomies" | "graph" | "ai" | "roles">("prompts");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Users & Role Delegation states
+  const [usersList, setUsersList] = useState<AdminUserItem[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [roleActionLoading, setRoleActionLoading] = useState<string | null>(null);
+  const [roleStatusMessage, setRoleStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [directIdentifier, setDirectIdentifier] = useState("");
+  const [directRole, setDirectRole] = useState<"ADMIN" | "USER" | "SUPER_ADMIN">("ADMIN");
   
   // Settings Integration state
   const [siteTitleLocal, setSiteTitleLocal] = useState("");
@@ -154,11 +173,71 @@ export default function AdminDashboard() {
         setRelationships(relData.relationships || []);
       }
 
+      // Fetch users list for RBAC
+      await fetchUsers();
+
     } catch (err) {
       console.error("Error loading admin dashboard data:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const res = await fetch("/api/admin/users", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setUsersList(data.users || []);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load users:", err);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (targetIdentifier: string, newRole: "SUPER_ADMIN" | "ADMIN" | "USER") => {
+    if (!isSuperAdmin) {
+      alert("تنها مدیر ارشد سیستم (SUPER_ADMIN) مجاز به تغییر سطح دسترسی کاربران است.");
+      return;
+    }
+    setRoleActionLoading(targetIdentifier);
+    setRoleStatusMessage(null);
+    try {
+      const res = await assignUserRole(targetIdentifier, newRole);
+      if (res.success) {
+        setRoleStatusMessage({ type: "success", text: res.message || "نقش کاربر با موفقیت به روز شد." });
+        setUsersList((prev) =>
+          prev.map((u) =>
+            u.id === targetIdentifier || u.phone === targetIdentifier || u.email === targetIdentifier
+              ? { ...u, role: newRole.toLowerCase() }
+              : u
+          )
+        );
+      } else {
+        setRoleStatusMessage({ type: "error", text: res.message || "خطا در تغییر نقش کاربر." });
+      }
+    } catch (e) {
+      setRoleStatusMessage({ type: "error", text: "ارتباط با سرور برقرار نشد." });
+    } finally {
+      setRoleActionLoading(null);
+    }
+  };
+
+  const handleDirectRoleAssign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!directIdentifier.trim()) {
+      setRoleStatusMessage({ type: "error", text: "لطفاً شماره موبایل، ایمیل یا شناسه کاربر را وارد کنید." });
+      return;
+    }
+    await handleRoleChange(directIdentifier.trim(), directRole);
+    setDirectIdentifier("");
   };
 
   useEffect(() => {
@@ -554,6 +633,26 @@ export default function AdminDashboard() {
         >
           <Settings className="w-4 h-4" />
           <span>۴. موتور هوش مصنوعی و بهینه‌سازی</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab("roles");
+            fetchUsers();
+          }}
+          className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold transition-all border-b-2 rounded-t-xl shrink-0 cursor-pointer ${
+            activeTab === "roles"
+              ? "border-[#6C47FF] text-[#6C47FF] bg-[#6C47FF]/5"
+              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>۵. مدیریت دسترسی‌ها (RBAC)</span>
+          {isSuperAdmin && (
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-amber-500/15 text-amber-800 border border-amber-300 font-black">
+              مدیر کل
+            </span>
+          )}
         </button>
       </div>
 
@@ -1267,6 +1366,290 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </form>
+            </motion.div>
+          )}
+
+          {/* TAB 5: Role-Based Access Control (RBAC) & User Management */}
+          {activeTab === "roles" && (
+            <motion.div
+              key="roles-tab"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              {/* Header banner */}
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-violet-500/10 via-[#6C47FF]/5 to-amber-500/10 border border-[#6C47FF]/15">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="p-2 rounded-xl bg-[#6C47FF] text-white">
+                      <Users className="w-5 h-5" />
+                    </span>
+                    <h3 className="text-base font-black text-slate-800">مدیریت دسترسی‌ها و سلسله‌مراتب کاربری (RBAC)</h3>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    سیستم کنترل دسترسی نقش‌محور شامل سه سطح دسترسی: <strong className="text-amber-700">مدیر کل (SUPER_ADMIN)</strong>، <strong className="text-[#6C47FF]">مدیر (ADMIN)</strong>، و <strong className="text-slate-600">کاربر عادی (USER)</strong>.
+                  </p>
+                </div>
+                {isSuperAdmin ? (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-300 text-amber-800 text-xs font-bold shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-amber-600" />
+                    <span>شما با سطح دسترسی مدیر کل (Super Admin) وارد شده‌اید.</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium shrink-0">
+                    <ShieldAlert className="w-4 h-4 text-slate-400" />
+                    <span>تعیین و تغییر نقش‌ها منحصراً در اختیار مدیر ارشد (Super Admin) است.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Status Message */}
+              {roleStatusMessage && (
+                <div
+                  className={`p-4 rounded-2xl text-xs font-bold flex items-center justify-between ${
+                    roleStatusMessage.type === "success"
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      : "bg-rose-50 text-rose-700 border border-rose-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {roleStatusMessage.type === "success" ? (
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-rose-600" />
+                    )}
+                    <span>{roleStatusMessage.text}</span>
+                  </div>
+                  <button
+                    onClick={() => setRoleStatusMessage(null)}
+                    className="p-1 hover:bg-black/5 rounded-lg cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Quick Role Delegation Form (Super Admin only) */}
+              {isSuperAdmin && (
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+                  <h4 className="text-xs font-black text-slate-700 flex items-center gap-1.5">
+                    <UserPlus className="w-4 h-4 text-[#6C47FF]" />
+                    <span>انتساب سریع نقش به کاربر</span>
+                  </h4>
+                  <form onSubmit={handleDirectRoleAssign} className="flex flex-col sm:flex-row items-center gap-3">
+                    <input
+                      type="text"
+                      value={directIdentifier}
+                      onChange={(e) => setDirectIdentifier(e.target.value)}
+                      placeholder="شماره موبایل (مثلاً ۰۹۱۲۳۴۵۶۷۸۹) یا ایمیل کاربر"
+                      className="flex-1 w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-[#6C47FF] focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/10 text-right"
+                      required
+                    />
+                    <select
+                      value={directRole}
+                      onChange={(e) => setDirectRole(e.target.value as any)}
+                      className="w-full sm:w-48 px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 focus:border-[#6C47FF] focus:outline-none bg-white"
+                    >
+                      <option value="ADMIN">مدیر سیستم (ADMIN)</option>
+                      <option value="USER">کاربر عادی (USER)</option>
+                      <option value="SUPER_ADMIN">مدیر ارشد (SUPER_ADMIN)</option>
+                    </select>
+                    <button
+                      type="submit"
+                      disabled={roleActionLoading === directIdentifier.trim()}
+                      className="w-full sm:w-auto px-5 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                    >
+                      {roleActionLoading === directIdentifier.trim() ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <span>اعمال نقش</span>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* Users List & Search */}
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="relative w-full sm:w-72">
+                    <Search className="absolute right-3 top-3 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      placeholder="جستجوی کاربر بر اساس نام، موبایل یا ایمیل..."
+                      className="w-full pr-9 pl-4 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:border-[#6C47FF] focus:outline-none text-right"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <button
+                      onClick={fetchUsers}
+                      className="flex items-center gap-1 px-3 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl font-bold transition cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${usersLoading ? "animate-spin" : ""}`} />
+                      <span>به‌روزرسانی لیست</span>
+                    </button>
+                    <span className="bg-slate-100 px-3 py-2 rounded-xl font-bold font-mono">
+                      {usersList.length} کاربر
+                    </span>
+                  </div>
+                </div>
+
+                {/* Table of Users */}
+                <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-xs">
+                  <table className="w-full text-right text-xs text-slate-600 font-sans">
+                    <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                      <tr>
+                        <th className="px-5 py-3.5">کاربر</th>
+                        <th className="px-5 py-3.5">اطلاعات تماس</th>
+                        <th className="px-5 py-3.5">نقش فعلی</th>
+                        <th className="px-5 py-3.5">تاریخ عضویت</th>
+                        {isSuperAdmin && <th className="px-5 py-3.5 text-left">تفویض اختیار و تغییر نقش</th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {usersList
+                        .filter((u) => {
+                          if (!userSearchQuery.trim()) return true;
+                          const q = userSearchQuery.toLowerCase();
+                          return (
+                            (u.name && u.name.toLowerCase().includes(q)) ||
+                            (u.phone && u.phone.includes(q)) ||
+                            (u.email && u.email.toLowerCase().includes(q))
+                          );
+                        })
+                        .map((u) => {
+                          const roleLower = u.role.toLowerCase();
+                          const isSuper = roleLower === "super_admin";
+                          const isAdminRole = roleLower === "admin";
+                          const isActionTarget = roleActionLoading === u.id || roleActionLoading === u.phone;
+
+                          return (
+                            <tr key={u.id} className="hover:bg-slate-50/60 transition">
+                              <td className="px-5 py-4">
+                                <div className="flex items-center gap-2.5">
+                                  {u.avatar ? (
+                                    <img
+                                      src={u.avatar}
+                                      alt={u.name || "کاربر"}
+                                      className="w-8 h-8 rounded-xl object-cover border border-slate-200"
+                                    />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-xl bg-[#6C47FF]/10 text-[#6C47FF] flex items-center justify-center font-bold text-xs">
+                                      {(u.name || u.phone || "ک").charAt(0)}
+                                    </div>
+                                  )}
+                                  <div>
+                                    <span className="font-bold text-slate-800 block">
+                                      {u.name || (u.phone ? `کاربر ${u.phone.slice(-4)}` : "بدون نام")}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-mono block">
+                                      شناسه: {u.id.slice(0, 8)}...
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="px-5 py-4">
+                                <div className="space-y-0.5">
+                                  {u.phone && (
+                                    <span className="font-mono text-slate-700 block font-semibold" dir="ltr">
+                                      {u.phone}
+                                    </span>
+                                  )}
+                                  {u.email && (
+                                    <span className="font-mono text-slate-400 text-[11px] block" dir="ltr">
+                                      {u.email}
+                                    </span>
+                                  )}
+                                  {!u.phone && !u.email && (
+                                    <span className="text-slate-400 text-[10px]">-</span>
+                                  )}
+                                </div>
+                              </td>
+
+                              <td className="px-5 py-4">
+                                {isSuper ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-indigo-500/15 text-amber-800 border border-amber-300">
+                                    <ShieldCheck className="w-3 h-3 text-amber-600" />
+                                    <span>مدیر کل (Super Admin)</span>
+                                  </span>
+                                ) : isAdminRole ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#6C47FF]/10 text-[#6C47FF] border border-[#6C47FF]/20">
+                                    <Shield className="w-3 h-3 text-[#6C47FF]" />
+                                    <span>مدیر (ADMIN)</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                    کاربر عادی (USER)
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="px-5 py-4 text-slate-400 font-mono text-[11px]">
+                                {new Date(u.createdAt).toLocaleDateString("fa-IR")}
+                              </td>
+
+                              {isSuperAdmin && (
+                                <td className="px-5 py-4 text-left">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    {isActionTarget ? (
+                                      <Loader2 className="w-4 h-4 animate-spin text-[#6C47FF]" />
+                                    ) : (
+                                      <>
+                                        {!isSuper && (
+                                          isAdminRole ? (
+                                            <button
+                                              onClick={() => handleRoleChange(u.id, "USER")}
+                                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg transition cursor-pointer"
+                                            >
+                                              تنزل به کاربر عادی
+                                            </button>
+                                          ) : (
+                                            <button
+                                              onClick={() => handleRoleChange(u.id, "ADMIN")}
+                                              className="px-2.5 py-1 bg-[#6C47FF]/10 hover:bg-[#6C47FF]/20 text-[#6C47FF] text-[11px] font-bold rounded-lg transition cursor-pointer"
+                                            >
+                                              ارتقا به مدیر
+                                            </button>
+                                          )
+                                        )}
+                                        {!isSuper && (
+                                          <button
+                                            onClick={() => {
+                                              if (window.confirm(`آیا مایل به ارتقای این کاربر به سطح مدیر ارشد (Super Admin) هستید؟`)) {
+                                                handleRoleChange(u.id, "SUPER_ADMIN");
+                                              }
+                                            }}
+                                            className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 text-[10px] font-bold rounded-lg border border-amber-200 transition cursor-pointer"
+                                            title="ارتقا به Super Admin"
+                                          >
+                                            👑 ارتقا به مدیر کل
+                                          </button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              )}
+                            </tr>
+                          );
+                        })}
+
+                      {usersList.length === 0 && !usersLoading && (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-slate-400">
+                            هیچ کاربری در سیستم ثبت نشده است.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </motion.div>
           )}
 
