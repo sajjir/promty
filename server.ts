@@ -92,6 +92,13 @@ interface DBSettings {
   geminiApiKey: string;      // کلید مستقیم جمینای (Fallback)
   openaiApiKey: string;      // کلید مستقیم اوپنای‌آی (برای آینده)
   siteTitle?: string;        // عنوان سراسری سایت
+  siteSubtitle?: string;     // شعار هدر
+  heroTitle?: string;        // عنوان اصلی هیرو
+  heroDescription?: string;  // متن توضیحی هیرو
+  footerAbout?: string;      // متن درباره ما در فوتر
+  footerCopyright?: string;  // متن کپی رایت
+  siteLogo?: string;         // آدرس لوگو
+  aiTimeoutSeconds?: number; // مدت زمان تایم اوت هوش مصنوعی (پیش‌فرض 60 ثانیه)
 }
 
 interface DB {
@@ -194,7 +201,14 @@ function readDB(): DB {
       n8nRefineWebhook: "",
       geminiApiKey: "",
       openaiApiKey: "",
-      siteTitle: "Promty.ir"
+      siteTitle: "پرامپتی | Promty",
+      siteSubtitle: "موتور شخصی‌سازی و پرامپت مهندسی",
+      heroTitle: "قلب تپنده نوآوری با پرامپتی",
+      heroDescription: "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.",
+      footerAbout: "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
+      footerCopyright: "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
+      siteLogo: "",
+      aiTimeoutSeconds: 60
     },
     categories: [
       { id: "1", name: "تبلیغات", slug: "advertising", icon: "Megaphone" },
@@ -1335,11 +1349,22 @@ async function startServer() {
     }
   });
 
+  // Helper to extract JWT token from cookies or Authorization header
+  const extractAuthToken = (req: express.Request): string | null => {
+    if (req.cookies?.promty_session) return req.cookies.promty_session;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const val = authHeader.slice(7).trim();
+      if (val && val !== "active_jwt_session") return val;
+    }
+    return null;
+  };
+
   // Admin middleware: allows users with role "admin" or "super_admin"
   const adminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const token = req.cookies.promty_session;
+    const token = extractAuthToken(req);
     if (!token) {
-      return res.status(403).json({ success: false, message: "دسترسی غیرمجاز (کوکی یافت نشد)" });
+      return res.status(403).json({ success: false, message: "دسترسی غیرمجاز (توکن یا کوکی یافت نشد)" });
     }
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -1361,9 +1386,9 @@ async function startServer() {
 
   // Super Admin middleware: strictly allows only SUPER_ADMIN
   const superAdminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const token = req.cookies.promty_session;
+    const token = extractAuthToken(req);
     if (!token) {
-      return res.status(403).json({ success: false, message: "دسترسی غیرمجاز (کوکی یافت نشد)" });
+      return res.status(403).json({ success: false, message: "دسترسی غیرمجاز (توکن یا کوکی یافت نشد)" });
     }
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -1517,9 +1542,192 @@ async function startServer() {
     }
   });
 
+  // API - Delete Single User (admin/super_admin)
+  app.delete("/api/admin/users/:id", adminAuth, async (req, res) => {
+    try {
+      const targetId = req.params.id;
+      const actingUser = (req as any).user;
+      if (actingUser?.id === targetId) {
+        return res.status(400).json({ success: false, message: "امکان حذف حساب کاربری جاری خود وجود ندارد." });
+      }
+
+      if (prisma && !targetId.startsWith("mock") && !targetId.startsWith("user_")) {
+        try {
+          await (prisma as any).promptPreset?.deleteMany({ where: { userId: targetId } }).catch(() => {});
+          await prisma.savedPrompt.deleteMany({ where: { userId: targetId } }).catch(() => {});
+          await prisma.user.delete({ where: { id: targetId } });
+        } catch (e: any) {
+          console.warn("[Prisma user delete warning]:", e);
+        }
+      }
+
+      const db = readDB();
+      if (db.users) {
+        db.users = db.users.filter((u: any) => u.id !== targetId);
+        writeDB(db);
+      }
+
+      return res.json({ success: true, message: "کاربر با موفقیت از سیستم حذف شد." });
+    } catch (err: any) {
+      console.error("[Delete User Error]:", err);
+      return res.status(500).json({ success: false, message: "خطا در حذف کاربر: " + err.message });
+    }
+  });
+
+  // API - Edit User (Name, Email, Phone, Role) (admin/super_admin)
+  app.put("/api/admin/users/:id", adminAuth, async (req, res) => {
+    try {
+      const targetId = req.params.id;
+      const { name, email, phone, role } = req.body;
+      const actingUser = (req as any).user;
+      const actingRole = actingUser?.role?.toLowerCase();
+
+      // Only SUPER_ADMIN can grant or revoke SUPER_ADMIN role
+      if (role && String(role).toUpperCase() === "SUPER_ADMIN" && actingRole !== "super_admin") {
+        return res.status(403).json({ success: false, message: "فقط مدیر ارشد مجاز به اعطای نقش SUPER_ADMIN است." });
+      }
+
+      let sanitizedPhone: string | null = null;
+      if (phone) {
+        try {
+          sanitizedPhone = sanitizeIranianMobile(phone);
+        } catch (pe: any) {
+          return res.status(400).json({ success: false, message: pe.message || "فرمت شماره موبایل نامعتبر است." });
+        }
+      }
+
+      let updatedUser: any = null;
+      const targetRoleEnum = role ? (String(role).toUpperCase() as "SUPER_ADMIN" | "ADMIN" | "USER") : undefined;
+
+      if (prisma && !targetId.startsWith("mock") && !targetId.startsWith("user_")) {
+        try {
+          updatedUser = await prisma.user.update({
+            where: { id: targetId },
+            data: {
+              ...(name !== undefined ? { name: name ? String(name).trim() : null } : {}),
+              ...(email !== undefined ? { email: email ? String(email).trim().toLowerCase() : null } : {}),
+              ...(sanitizedPhone !== null ? { phone: sanitizedPhone } : {}),
+              ...(targetRoleEnum ? { role: targetRoleEnum } : {}),
+            },
+          });
+        } catch (e: any) {
+          console.warn("[Prisma user update note]:", e);
+        }
+      }
+
+      const db = readDB();
+      if (!db.users) db.users = [];
+      const userIdx = db.users.findIndex((u: any) => u.id === targetId);
+      if (userIdx !== -1) {
+        if (name !== undefined) db.users[userIdx].name = name ? String(name).trim() : null;
+        if (email !== undefined) db.users[userIdx].email = email ? String(email).trim().toLowerCase() : null;
+        if (sanitizedPhone !== null) db.users[userIdx].phone = sanitizedPhone;
+        if (targetRoleEnum) db.users[userIdx].role = targetRoleEnum;
+        writeDB(db);
+        if (!updatedUser) updatedUser = db.users[userIdx];
+      }
+
+      if (!updatedUser) {
+        return res.status(404).json({ success: false, message: "کاربر مورد نظر یافت نشد." });
+      }
+
+      return res.json({
+        success: true,
+        message: "اطلاعات کاربر با موفقیت ویرایش شد.",
+        user: {
+          id: updatedUser.id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          phone: updatedUser.phone,
+          role: String(updatedUser.role).toLowerCase(),
+        },
+      });
+    } catch (err: any) {
+      console.error("[Edit User Error]:", err);
+      return res.status(500).json({ success: false, message: "خطا در ویرایش اطلاعات کاربر: " + err.message });
+    }
+  });
+
+  // API - Bulk Delete Users
+  app.post("/api/admin/users/bulk-delete", adminAuth, async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ success: false, message: "هیچ کاربری برای حذف انتخاب نشده است." });
+      }
+
+      const actingUser = (req as any).user;
+      const targetIds = ids.filter((id: string) => id !== actingUser?.id);
+
+      if (prisma) {
+        await (prisma as any).promptPreset?.deleteMany({ where: { userId: { in: targetIds } } }).catch(() => {});
+        await prisma.savedPrompt.deleteMany({ where: { userId: { in: targetIds } } }).catch(() => {});
+        await prisma.user.deleteMany({ where: { id: { in: targetIds } } }).catch(() => {});
+      }
+
+      const db = readDB();
+      if (db.users) {
+        db.users = db.users.filter((u: any) => !targetIds.includes(u.id));
+        writeDB(db);
+      }
+
+      return res.json({
+        success: true,
+        message: `${targetIds.length} کاربر با موفقیت حذف شدند.`,
+        deletedCount: targetIds.length,
+      });
+    } catch (err: any) {
+      console.error("[Bulk Delete Users Error]:", err);
+      return res.status(500).json({ success: false, message: "خطا در حذف دسته‌جمعی کاربران." });
+    }
+  });
+
+  // API - Bulk Role Change
+  app.post("/api/admin/users/bulk-role", adminAuth, async (req, res) => {
+    try {
+      const { ids, role } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0 || !role) {
+        return res.status(400).json({ success: false, message: "اطلاعات انتخاب کاربران یا نقش نامعتبر است." });
+      }
+
+      const targetRole = String(role).toUpperCase() as "SUPER_ADMIN" | "ADMIN" | "USER";
+      const actingUser = (req as any).user;
+      const actingRole = actingUser?.role?.toLowerCase();
+
+      if (targetRole === "SUPER_ADMIN" && actingRole !== "super_admin") {
+        return res.status(403).json({ success: false, message: "تنها مدیر ارشد مجاز به اعطای نقش SUPER_ADMIN است." });
+      }
+
+      if (prisma) {
+        await prisma.user.updateMany({
+          where: { id: { in: ids } },
+          data: { role: targetRole },
+        }).catch(() => {});
+      }
+
+      const db = readDB();
+      if (db.users) {
+        db.users.forEach((u: any) => {
+          if (ids.includes(u.id)) {
+            u.role = targetRole;
+          }
+        });
+        writeDB(db);
+      }
+
+      return res.json({
+        success: true,
+        message: `نقش ${ids.length} کاربر با موفقیت به ${targetRole} تغییر یافت.`,
+      });
+    } catch (err: any) {
+      console.error("[Bulk Role Change Error]:", err);
+      return res.status(500).json({ success: false, message: "خطا در تغییر دسته‌جمعی نقش‌ها." });
+    }
+  });
+
   // User middleware for authenticated routes
   const userAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const token = req.cookies.promty_session;
+    const token = extractAuthToken(req);
     if (!token) {
       return res.status(401).json({ success: false, message: "لطفاً ابتدا وارد حساب کاربری خود شوید." });
     }
@@ -1918,20 +2126,29 @@ async function startServer() {
   // API - Update User Profile
   app.put("/api/user/profile", userAuth, async (req, res) => {
     const userId = (req as any).user.id;
-    const { name } = req.body;
+    const { name, email } = req.body;
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return res.status(400).json({ success: false, message: "نام نامعتبر است." });
+      return res.status(400).json({ success: false, message: "نام و نام خانوادگی الزامی است." });
     }
 
     try {
       let updatedUser: any = null;
+      const cleanName = name.trim();
+      const cleanEmail = email && typeof email === "string" && email.trim().length > 0 ? email.trim().toLowerCase() : null;
 
       if (prisma && !userId.startsWith("google_mock") && !userId.startsWith("mock")) {
-        updatedUser = await prisma.user.update({
-          where: { id: userId },
-          data: { name: name.trim() },
-        });
+        try {
+          updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+              name: cleanName,
+              ...(cleanEmail ? { email: cleanEmail } : {}),
+            },
+          });
+        } catch (dbErr: any) {
+          console.warn("[Prisma user profile update]:", dbErr);
+        }
       }
 
       // Update in JSON DB as well or as fallback
@@ -1939,23 +2156,46 @@ async function startServer() {
       if (!db.users) db.users = [];
       const userIdx = db.users.findIndex((u: any) => u.id === userId);
       if (userIdx !== -1) {
-        db.users[userIdx].name = name.trim();
+        db.users[userIdx].name = cleanName;
+        if (cleanEmail) db.users[userIdx].email = cleanEmail;
         writeDB(db);
         if (!updatedUser) {
           updatedUser = db.users[userIdx];
         }
       }
 
+      const finalUser = {
+        id: userId,
+        name: cleanName,
+        email: cleanEmail || updatedUser?.email || (req as any).user.email || null,
+        phone: updatedUser?.phone || (req as any).user.phone || null,
+        role: updatedUser?.role?.toLowerCase() || (req as any).user.role?.toLowerCase() || "user",
+      };
+
+      // Refresh cookie session token with updated info
+      const token = jwt.sign(
+        {
+          id: finalUser.id,
+          phone: finalUser.phone,
+          email: finalUser.email,
+          role: finalUser.role,
+        },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      res.cookie("promty_session", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
       return res.json({ 
         success: true, 
         message: "پروفایل با موفقیت بروزرسانی شد.",
-        user: {
-          id: userId,
-          name: name.trim(),
-          email: updatedUser?.email || (req as any).user.email,
-          phone: updatedUser?.phone || (req as any).user.phone,
-          role: updatedUser?.role?.toLowerCase() || (req as any).user.role?.toLowerCase() || "user",
-        }
+        token,
+        user: finalUser,
       });
     } catch (err: any) {
       return res.status(500).json({ success: false, message: err.message });
@@ -2302,31 +2542,121 @@ async function startServer() {
   // API - Get Settings (admin only)
   app.get("/api/settings", adminAuth, (req, res) => {
     const db = readDB();
-    res.json({ settings: db.settings });
+    const s: DBSettings = (db.settings || {}) as DBSettings;
+    res.json({
+      settings: {
+        ...s,
+        siteTitle: s.siteTitle || "پرامپتی | Promty",
+        siteSubtitle: s.siteSubtitle || "موتور شخصی‌سازی و پرامپت مهندسی",
+        heroTitle: s.heroTitle || "قلب تپنده نوآوری با پرامپتی",
+        heroDescription: s.heroDescription || "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.",
+        footerAbout: s.footerAbout || "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
+        footerCopyright: s.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
+        siteLogo: s.siteLogo || "",
+        aiTimeoutSeconds: typeof s.aiTimeoutSeconds === "number" ? s.aiTimeoutSeconds : 60,
+      }
+    });
   });
 
   // API - Update Settings (admin only)
   app.post("/api/settings", adminAuth, (req, res) => {
-    const { n8nAnalyzeWebhook, n8nRefineWebhook, geminiApiKey, openaiApiKey, siteTitle } = req.body;
+    const {
+      n8nAnalyzeWebhook,
+      n8nRefineWebhook,
+      geminiApiKey,
+      openaiApiKey,
+      siteTitle,
+      siteSubtitle,
+      heroTitle,
+      heroDescription,
+      footerAbout,
+      footerCopyright,
+      siteLogo,
+      aiTimeoutSeconds,
+    } = req.body;
+
     const db = readDB();
+    const prev: DBSettings = (db.settings || {}) as DBSettings;
+
+    const timeoutParsed = Number(aiTimeoutSeconds);
+    const cleanTimeout = !isNaN(timeoutParsed) ? Math.max(10, Math.min(300, timeoutParsed)) : (prev.aiTimeoutSeconds || 60);
+
     db.settings = {
-      n8nWebhookUrl: n8nRefineWebhook || "",
-      n8nAnalyzeWebhook: n8nAnalyzeWebhook || "",
-      n8nRefineWebhook: n8nRefineWebhook || "",
-      geminiApiKey: geminiApiKey || "",
-      openaiApiKey: openaiApiKey || "",
-      siteTitle: siteTitle || "Promty.ir"
+      ...prev,
+      n8nWebhookUrl: n8nRefineWebhook !== undefined ? (n8nRefineWebhook || "") : (prev.n8nRefineWebhook || prev.n8nWebhookUrl || ""),
+      n8nAnalyzeWebhook: n8nAnalyzeWebhook !== undefined ? (n8nAnalyzeWebhook || "") : (prev.n8nAnalyzeWebhook || ""),
+      n8nRefineWebhook: n8nRefineWebhook !== undefined ? (n8nRefineWebhook || "") : (prev.n8nRefineWebhook || ""),
+      geminiApiKey: geminiApiKey !== undefined ? (geminiApiKey || "") : (prev.geminiApiKey || ""),
+      openaiApiKey: openaiApiKey !== undefined ? (openaiApiKey || "") : (prev.openaiApiKey || ""),
+      siteTitle: siteTitle !== undefined ? (siteTitle || "پرامپتی | Promty") : (prev.siteTitle || "پرامپتی | Promty"),
+      siteSubtitle: siteSubtitle !== undefined ? (siteSubtitle || "") : (prev.siteSubtitle || "موتور شخصی‌سازی و پرامپت مهندسی"),
+      heroTitle: heroTitle !== undefined ? (heroTitle || "") : (prev.heroTitle || "قلب تپنده نوآوری با پرامپتی"),
+      heroDescription: heroDescription !== undefined ? (heroDescription || "") : (prev.heroDescription || "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید."),
+      footerAbout: footerAbout !== undefined ? (footerAbout || "") : (prev.footerAbout || "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید."),
+      footerCopyright: footerCopyright !== undefined ? (footerCopyright || "") : (prev.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است."),
+      siteLogo: siteLogo !== undefined ? siteLogo : (prev.siteLogo || ""),
+      aiTimeoutSeconds: cleanTimeout,
     };
     writeDB(db);
     res.json({ success: true, settings: db.settings });
   });
 
-  // API - Get Public settings to know if n8n is configured
+  // API - Upload Logo for Platform Branding (admin only)
+  app.post("/api/admin/settings/logo", adminAuth, upload.single("logo"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: "فایل لوگو ارسال نشده است." });
+      }
+
+      const brandDir = path.join(process.cwd(), "dl", "brand");
+      if (!fs.existsSync(brandDir)) {
+        fs.mkdirSync(brandDir, { recursive: true });
+      }
+
+      const isSvg = req.file.mimetype === "image/svg+xml" || req.file.originalname.toLowerCase().endsWith(".svg");
+      let logoUrl = "";
+
+      if (isSvg) {
+        const svgPath = path.join(brandDir, "logo.svg");
+        fs.writeFileSync(svgPath, req.file.buffer);
+        logoUrl = "/dl/brand/logo.svg?v=" + Date.now();
+      } else {
+        const webpPath = path.join(brandDir, "logo.webp");
+        try {
+          await sharp(req.file.buffer).webp({ quality: 90 }).toFile(webpPath);
+        } catch (sharpErr) {
+          // Fallback write directly
+          fs.writeFileSync(webpPath, req.file.buffer);
+        }
+        logoUrl = "/dl/brand/logo.webp?v=" + Date.now();
+      }
+
+      const db = readDB();
+      if (!db.settings) db.settings = {} as any;
+      db.settings.siteLogo = logoUrl;
+      writeDB(db);
+
+      return res.json({ success: true, siteLogo: logoUrl, message: "لوگوی پلتفرم با موفقیت ذخیره شد." });
+    } catch (err: any) {
+      console.error("[Logo Upload Error]:", err);
+      return res.status(500).json({ success: false, message: "خطا در آپلود لوگو: " + err.message });
+    }
+  });
+
+  // API - Get Public settings to know branding and configuration
   app.get("/api/settings/public", (req, res) => {
     const db = readDB();
+    const s: DBSettings = (db.settings || {}) as DBSettings;
     res.json({
-      isWebhookConfigured: !!(db.settings && (db.settings.n8nRefineWebhook || db.settings.n8nWebhookUrl)),
-      siteTitle: db.settings?.siteTitle || "Promty.ir"
+      isWebhookConfigured: !!(s.n8nRefineWebhook || s.n8nWebhookUrl),
+      siteTitle: s.siteTitle || "پرامپتی | Promty",
+      siteSubtitle: s.siteSubtitle || "موتور شخصی‌سازی و پرامپت مهندسی",
+      heroTitle: s.heroTitle || "قلب تپنده نوآوری با پرامپتی",
+      heroDescription: s.heroDescription || "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.",
+      footerAbout: s.footerAbout || "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
+      footerCopyright: s.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
+      siteLogo: s.siteLogo || "",
+      aiTimeoutSeconds: typeof s.aiTimeoutSeconds === "number" ? s.aiTimeoutSeconds : 60,
     });
   });
 
@@ -2389,26 +2719,41 @@ async function startServer() {
         const tOutputFormats = activeTaxonomies.filter(t => t.type?.toLowerCase() === "outputformat").map(t => t.slug);
         const outputFormatsStr = tOutputFormats.length > 0 ? tOutputFormats.join(", ") : OUTPUT_FORMAT_OPTIONS.join(", ");
 
-        // Send raw text and allowed taxonomies to n8n Webhook
-        const response = await fetch(analyzeUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            sourceText,
-            allowedTaxonomies: {
-              intents: intentsStr,
-              domains: domainsStr,
-              tools: toolsStr,
-              languages: languagesStr,
-              difficulties: difficultiesStr,
-              outputFormats: outputFormatsStr
+        // Send raw text and allowed taxonomies to n8n Webhook with configurable timeout
+        const timeoutSeconds = Math.max(10, Math.min(300, Number(settings?.aiTimeoutSeconds) || 60));
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), timeoutSeconds * 1000);
+
+        let response: Response;
+        try {
+          response = await fetch(analyzeUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
             },
-            action: "analyze_source",
-            timestamp: new Date().toISOString()
-          })
-        });
+            body: JSON.stringify({
+              sourceText,
+              allowedTaxonomies: {
+                intents: intentsStr,
+                domains: domainsStr,
+                tools: toolsStr,
+                languages: languagesStr,
+                difficulties: difficultiesStr,
+                outputFormats: outputFormatsStr
+              },
+              action: "analyze_source",
+              timestamp: new Date().toISOString()
+            }),
+            signal: abortController.signal
+          });
+        } catch (fetchErr: any) {
+          if (fetchErr.name === "AbortError" || fetchErr.message?.includes("aborted")) {
+            throw new Error(`زمان پاسخگویی ایجنت هوش مصنوعی بیش از ${timeoutSeconds} ثانیه به طول انجامید (Timeout). لطفاً وب‌هوک n8n را بررسی نمایید.`);
+          }
+          throw fetchErr;
+        } finally {
+          clearTimeout(timeoutId);
+        }
 
         if (!response.ok) {
           throw new Error(`خطا در ارتباط با سرویس n8n: وضعیت ${response.status}`);
@@ -2580,6 +2925,10 @@ ${sourceText}
       });
     }
 
+    const timeoutSeconds = Math.max(10, Math.min(300, Number(db.settings?.aiTimeoutSeconds) || 60));
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), timeoutSeconds * 1000);
+
     try {
       const response = await fetch(n8nUrl, {
         method: "POST",
@@ -2591,8 +2940,10 @@ ${sourceText}
           originalPrompt,
           action: "refine_prompt",
           timestamp: new Date().toISOString()
-        })
+        }),
+        signal: abortController.signal
       });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`مشکل در اتصال به منبع وب‌هوک کلاس n8n: وضعیت ${response.status}`);
@@ -2621,12 +2972,17 @@ ${sourceText}
       });
 
     } catch (err: any) {
+      clearTimeout(timeoutId);
+      const isTimeout = err.name === "AbortError" || err.message?.includes("aborted");
+      const errMsg = isTimeout
+        ? `زمان پاسخگویی ایجنت هوش مصنوعی بیش از ${timeoutSeconds} ثانیه به طول انجامید (Timeout).`
+        : err.message;
       console.warn("n8n call failed, falling back gracefully:", err);
       return res.json({
         success: true,
         refinedPrompt: mockRefine(originalPrompt),
         fallbackUsed: true,
-        message: `خطا در فراخوانی وب‌هوک n8n (${err.message}). از الگوی بهبود محلی سیستم استفاده شد.`
+        message: `خطا در فراخوانی وب‌هوک n8n (${errMsg}). از الگوی بهبود محلی سیستم استفاده شد.`
       });
     }
   });

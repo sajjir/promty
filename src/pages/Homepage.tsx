@@ -15,7 +15,7 @@ export default function Homepage() {
   const navigate = useNavigate();
   const { toolSlug, domainSlug } = useParams<{ toolSlug?: string; domainSlug?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, branding, siteTitle } = useAuth();
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -491,7 +491,7 @@ export default function Homepage() {
     <div className="space-y-8 pb-20 animate-fade-in relative text-right" dir="rtl">
       
       {/* Search & Hero Engine Section */}
-      <section className="relative overflow-hidden bg-white border border-slate-100 rounded-3xl shadow-sm p-6 md:p-12 text-center">
+      <section className="relative bg-white border border-slate-100 rounded-3xl shadow-sm p-6 md:p-12 text-center z-20">
         {/* Background visual accents */}
         <div className="absolute top-0 right-1/4 w-80 h-80 bg-[#6C47FF]/5 blur-3xl rounded-full pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-cyan-500/5 blur-3xl rounded-full pointer-events-none" />
@@ -503,15 +503,21 @@ export default function Homepage() {
           </div>
 
           <h1 className="text-3xl md:text-5xl font-black text-slate-800 tracking-tight leading-tight md:leading-normal">
-            قلب تپنده نوآوری با <span className="text-[#6C47FF] bg-gradient-to-r from-[#6C47FF] to-indigo-600 bg-clip-text text-transparent">پرامپتی</span>
+            {branding.heroTitle ? (
+              <span>{branding.heroTitle}</span>
+            ) : (
+              <>
+                قلب تپنده نوآوری با <span className="text-[#6C47FF] bg-gradient-to-r from-[#6C47FF] to-indigo-600 bg-clip-text text-transparent">{siteTitle}</span>
+              </>
+            )}
           </h1>
 
           <p className="text-slate-500 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
-            اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.
+            {branding.heroDescription || "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید."}
           </p>
 
           {/* Core Search Input Container */}
-          <div ref={suggestionRef} className="pt-6 max-w-2xl mx-auto relative z-30">
+          <div ref={suggestionRef} className="pt-6 max-w-2xl mx-auto relative z-40">
             <div className="relative">
               <input
                 type="text"
@@ -542,7 +548,7 @@ export default function Homepage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden text-right z-50 max-h-[420px] overflow-y-auto"
+                  className="absolute top-full right-0 left-0 z-50 shadow-2xl bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-2xl mt-2 overflow-hidden text-right max-h-[420px] overflow-y-auto"
                 >
                   {/* Real-time Intent & Tool Parser Matching Indicator */}
                   {searchQuery.trim() && searchResults && (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
-import { Phone, Key, X, Check, AlertCircle, User, ArrowRight, RotateCw } from "lucide-react";
+import { Phone, Key, X, Check, AlertCircle, User, ArrowRight, RotateCw, Mail, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 import GoogleLoginButton from "./GoogleLoginButton";
 import { Z } from "../lib/zIndex";
@@ -17,12 +17,14 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
     sendOtp,
     verifyOtp,
     completePhoneRegistration,
+    updateProfile,
   } = useAuth();
 
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [step, setStep] = useState<"phone" | "otp" | "name">("phone");
+  const [email, setEmail] = useState("");
+  const [step, setStep] = useState<"phone" | "otp" | "profile">("phone");
   const [countdown, setCountdown] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,10 +103,15 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
     try {
       const res = await verifyOtp(phone, code);
       if (res.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          handleClose();
-        }, 900);
+        const needsProfile = res.isNewUser || !res.user?.name || res.user.name.startsWith("کاربر ");
+        if (needsProfile) {
+          setStep("profile");
+        } else {
+          setSuccess(true);
+          setTimeout(() => {
+            handleClose();
+          }, 900);
+        }
       } else {
         setError(res.message || "کد تایید اشتباه است یا منقضی شده است.");
       }
@@ -115,27 +122,32 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
     }
   };
 
-  const handleSaveName = async (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      // Allow skipping name if empty
-      setSuccess(true);
-      setTimeout(() => {
-        handleClose();
-      }, 800);
+      setError("لطفاً نام و نام خانوادگی خود را وارد کنید.");
       return;
     }
 
     setLoading(true);
     setError(null);
     try {
-      await completePhoneRegistration(phone, name.trim());
-      setSuccess(true);
-      setTimeout(() => {
-        handleClose();
-      }, 1000);
+      const cleanEmail = email.trim() || undefined;
+      let res = await updateProfile(name.trim(), cleanEmail);
+      if (!res.success) {
+        // Fallback
+        res = await completePhoneRegistration(phone, name.trim(), cleanEmail);
+      }
+      if (res.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          handleClose();
+        }, 1000);
+      } else {
+        setError(res.message || "خطا در ذخیره اطلاعات.");
+      }
     } catch (err) {
-      setError("خطا در ذخیره نام.");
+      setError("خطا در ذخیره اطلاعات حساب کاربری.");
     } finally {
       setLoading(false);
     }
@@ -148,6 +160,7 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
     setPhone("");
     setCode("");
     setName("");
+    setEmail("");
     setSuccess(false);
     setLoading(false);
   };
@@ -333,48 +346,66 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                   </button>
                 </form>
               ) : (
-                /* Step 3: Complete user profile name */
-                <form onSubmit={handleSaveName} className="space-y-4">
+                /* Step 3: Complete user profile name and email */
+                <form onSubmit={handleSaveProfile} className="space-y-4">
+                  <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl flex items-center gap-2.5 text-xs text-indigo-900">
+                    <Sparkles className="w-4 h-4 text-[#6C47FF] shrink-0" />
+                    <span className="font-bold">تکمیل اطلاعات حساب کاربری شما در پرامپتی</span>
+                  </div>
+
                   <div className="space-y-1.5 text-right">
-                    <label className="text-xs font-bold text-slate-700">نام و نام خانوادگی (اختیاری)</label>
+                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                      <span>نام و نام خانوادگی</span>
+                      <span className="text-[10px] text-rose-500 font-bold">الزامی</span>
+                    </label>
                     <div className="relative">
                       <User className="absolute right-3.5 top-3.5 w-4 h-4 text-slate-400" />
                       <input 
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="مثال: علی احمدی"
+                        placeholder="مثال: علی رضایی"
                         autoFocus
+                        required
                         className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 text-sm focus:border-[#6C47FF] focus:outline-none focus:ring-4 focus:ring-[#6C47FF]/10 text-right font-medium transition"
                         disabled={loading}
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-1.5 text-right">
+                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                      <span>ایمیل</span>
+                      <span className="text-[10px] text-slate-400 font-medium">اختیاری</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute right-3.5 top-3.5 w-4 h-4 text-slate-400" />
+                      <input 
+                        type="email"
+                        dir="ltr"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@example.com"
+                        className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 text-sm focus:border-[#6C47FF] focus:outline-none focus:ring-4 focus:ring-[#6C47FF]/10 font-mono text-left transition"
+                        disabled={loading}
+                      />
+                    </div>
                     <p className="text-[10px] text-slate-400 leading-relaxed">
-                      نام شما در بالای سایت و برای پرامپت‌های ذخیره‌شده نمایش داده می‌شود.
+                      از ایمیل برای ارسال اعلان‌های مهم و بازیابی اطلاعات استفاده می‌شود.
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2 pt-2">
                     <button
                       type="submit"
-                      disabled={loading}
-                      className="flex-1 bg-[#6C47FF] hover:bg-[#5B3CE0] text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md shadow-[#6C47FF]/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      disabled={loading || !name.trim()}
+                      className="w-full bg-[#6C47FF] hover:bg-[#5B3CE0] text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md shadow-[#6C47FF]/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {loading ? (
                         <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       ) : (
-                        <span>ذخیره و ورود به سایت</span>
+                        <span>تکمیل حساب و ورود به پلتفرم</span>
                       )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSuccess(true);
-                        setTimeout(() => handleClose(), 800);
-                      }}
-                      className="px-4 py-3.5 border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs font-bold rounded-xl transition cursor-pointer"
-                    >
-                      رد شدن
                     </button>
                   </div>
                 </form>

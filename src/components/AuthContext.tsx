@@ -9,12 +9,25 @@ export interface User {
   role: "super_admin" | "admin" | "user";
 }
 
+export interface PublicSettings {
+  siteTitle: string;
+  siteSubtitle: string;
+  heroTitle: string;
+  heroDescription: string;
+  footerAbout: string;
+  footerCopyright: string;
+  siteLogo: string;
+  aiTimeoutSeconds: number;
+  isWebhookConfigured: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
   siteTitle: string;
+  branding: PublicSettings;
   googleClientId: string;
   setSiteTitle: (title: string) => void;
   sendOtp: (phone: string) => Promise<{ success: boolean; message?: string; cooldownSeconds?: number }>;
@@ -23,6 +36,7 @@ interface AuthContextType {
   loginWithGoogle: (credential: string) => Promise<boolean>;
   loginWithPhoneMock: (phone: string, code: string) => Promise<boolean>;
   completePhoneRegistration: (phone: string, name: string, email?: string) => Promise<{ success: boolean; message?: string; user?: User }>;
+  updateProfile: (name: string, email?: string) => Promise<{ success: boolean; message?: string; user?: User }>;
   assignUserRole: (targetIdentifier: string, newRole: "SUPER_ADMIN" | "ADMIN" | "USER") => Promise<{ success: boolean; message?: string; user?: any }>;
   logout: () => Promise<void>;
   isPhoneModalOpen: boolean;
@@ -30,6 +44,7 @@ interface AuthContextType {
   setPhoneModalOpen: (open: boolean, message?: string) => void;
   refreshUser: () => Promise<void>;
   updateUser: (updatedUser: User) => void;
+  refetchBranding: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,10 +60,21 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [siteTitle, setSiteTitleState] = useState<string>("Promty.ir");
+  const [siteTitle, setSiteTitleState] = useState<string>("پرامپتی | Promty");
   const [googleClientId, setGoogleClientId] = useState<string>("");
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState<boolean>(false);
   const [phoneModalContextMessage, setPhoneModalContextMessage] = useState<string | undefined>();
+  const [branding, setBranding] = useState<PublicSettings>({
+    siteTitle: "پرامپتی | Promty",
+    siteSubtitle: "موتور شخصی‌سازی و پرامپت مهندسی",
+    heroTitle: "قلب تپنده نوآوری با پرامپتی",
+    heroDescription: "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.",
+    footerAbout: "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
+    footerCopyright: "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
+    siteLogo: "",
+    aiTimeoutSeconds: 60,
+    isWebhookConfigured: false,
+  });
 
   const isAdmin = !!user && (user.role === "admin" || user.role === "super_admin");
   const isSuperAdmin = !!user && user.role === "super_admin";
@@ -63,6 +89,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const resPub = await fetch("/api/settings/public");
       if (resPub.ok) {
         const data = await resPub.json();
+        setBranding({
+          siteTitle: data.siteTitle || "پرامپتی | Promty",
+          siteSubtitle: data.siteSubtitle || "موتور شخصی‌سازی و پرامپت مهندسی",
+          heroTitle: data.heroTitle || "قلب تپنده نوآوری با پرامپتی",
+          heroDescription: data.heroDescription || "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.",
+          footerAbout: data.footerAbout || "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
+          footerCopyright: data.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
+          siteLogo: data.siteLogo || "",
+          aiTimeoutSeconds: typeof data.aiTimeoutSeconds === "number" ? data.aiTimeoutSeconds : 60,
+          isWebhookConfigured: !!data.isWebhookConfigured,
+        });
         if (data.siteTitle) {
           setSiteTitleState(data.siteTitle);
           document.title = data.siteTitle;
@@ -78,6 +115,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.error("Failed to fetch public settings:", e);
     }
+  };
+
+  const refetchBranding = async () => {
+    await fetchSiteTitleAndConfig();
   };
 
   const refreshUser = async () => {
@@ -288,6 +329,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.title = title;
   };
 
+  const updateProfile = async (name: string, email?: string): Promise<{ success: boolean; message?: string; user?: User }> => {
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        setUser(data.user);
+        return { success: true, message: data.message, user: data.user };
+      }
+      return { success: false, message: data.message || "خطا در ویرایش پروفایل." };
+    } catch (e) {
+      console.error("updateProfile error:", e);
+      return { success: false, message: "ارتباط با سرور برقرار نشد." };
+    }
+  };
+
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
   };
@@ -300,6 +360,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin,
         isSuperAdmin,
         siteTitle,
+        branding,
         googleClientId,
         setSiteTitle,
         sendOtp,
@@ -308,6 +369,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithGoogle,
         loginWithPhoneMock,
         completePhoneRegistration,
+        updateProfile,
         assignUserRole,
         logout,
         isPhoneModalOpen,
@@ -315,6 +377,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setPhoneModalOpen,
         refreshUser,
         updateUser,
+        refetchBranding,
       }}
     >
       {children}

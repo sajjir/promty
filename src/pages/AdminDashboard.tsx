@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Prompt, Stats } from "../types";
 import { useAuth } from "../components/AuthContext";
@@ -7,7 +7,8 @@ import {
   LogOut, CheckCircle, Loader2, Sparkles, Settings, Network, 
   Tag, Layers, Sliders, Database, Key, Search, RefreshCw, X, 
   ChevronRight, AlertCircle, HeartCrack, HelpCircle as HelpIcon,
-  Check, Users, Shield, ShieldCheck, ShieldAlert, UserPlus, ArrowUpDown
+  Check, Users, Shield, ShieldCheck, ShieldAlert, UserPlus, ArrowUpDown,
+  Upload, Image as ImageIcon, FileText, CheckSquare, Square, Pencil, Trash
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -46,11 +47,11 @@ interface AdminUserItem {
 }
 
 export default function AdminDashboard() {
-  const { setSiteTitle, user, isSuperAdmin, assignUserRole } = useAuth();
+  const { setSiteTitle, user, isSuperAdmin, assignUserRole, refetchBranding } = useAuth();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"prompts" | "taxonomies" | "graph" | "ai" | "roles">("prompts");
+  const [activeTab, setActiveTab] = useState<"prompts" | "taxonomies" | "graph" | "branding" | "ai" | "roles">("prompts");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Users & Role Delegation states
@@ -61,16 +62,42 @@ export default function AdminDashboard() {
   const [roleStatusMessage, setRoleStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [directIdentifier, setDirectIdentifier] = useState("");
   const [directRole, setDirectRole] = useState<"ADMIN" | "USER" | "SUPER_ADMIN">("ADMIN");
+
+  // Selection & Modal states for RBAC Overhaul
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [editingUser, setEditingUser] = useState<AdminUserItem | null>(null);
+  const [editUserName, setEditUserName] = useState("");
+  const [editUserEmail, setEditUserEmail] = useState("");
+  const [editUserPhone, setEditUserPhone] = useState("");
+  const [editUserRole, setEditUserRole] = useState<"SUPER_ADMIN" | "ADMIN" | "USER">("USER");
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState<AdminUserItem | null>(null);
+  const [bulkRoleModalOpen, setBulkRoleModalOpen] = useState(false);
+  const [bulkTargetRole, setBulkTargetRole] = useState<"SUPER_ADMIN" | "ADMIN" | "USER">("USER");
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
   
-  // Settings Integration state
+  // Dedicated Branding state
   const [siteTitleLocal, setSiteTitleLocal] = useState("");
+  const [siteSubtitleLocal, setSiteSubtitleLocal] = useState("");
+  const [heroTitleLocal, setHeroTitleLocal] = useState("");
+  const [heroDescriptionLocal, setHeroDescriptionLocal] = useState("");
+  const [footerAboutLocal, setFooterAboutLocal] = useState("");
+  const [footerCopyrightLocal, setFooterCopyrightLocal] = useState("");
+  const [siteLogoLocal, setSiteLogoLocal] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [brandingLoading, setBrandingLoading] = useState(false);
+  const [brandingSuccess, setBrandingSuccess] = useState<string | null>(null);
+  const [brandingError, setBrandingError] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  // Dedicated AI & Automation state
   const [n8nAnalyzeWebhook, setN8nAnalyzeWebhook] = useState("");
   const [n8nRefineWebhook, setN8nRefineWebhook] = useState("");
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [openaiApiKey, setOpenaiApiKey] = useState("");
-  const [settingsLoading, setSettingsLoading] = useState(false);
-  const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
-  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [aiTimeoutSecondsLocal, setAiTimeoutSecondsLocal] = useState<number>(60);
+  const [aiSettingsLoading, setAiSettingsLoading] = useState(false);
+  const [aiSettingsSuccess, setAiSettingsSuccess] = useState<string | null>(null);
+  const [aiSettingsError, setAiSettingsError] = useState<string | null>(null);
 
   // Taxonomy Tab States
   const [taxonomies, setTaxonomies] = useState<TaxonomyTerm[]>([]);
@@ -152,7 +179,15 @@ export default function AdminDashboard() {
         setN8nRefineWebhook(s.n8nRefineWebhook || s.n8nWebhookUrl || "");
         setGeminiApiKey(s.geminiApiKey || "");
         setOpenaiApiKey(s.openaiApiKey || "");
-        setSiteTitleLocal(s.siteTitle || "Promty.ir");
+        setAiTimeoutSecondsLocal(typeof s.aiTimeoutSeconds === "number" ? s.aiTimeoutSeconds : 60);
+
+        setSiteTitleLocal(s.siteTitle || "پرامپتی | Promty");
+        setSiteSubtitleLocal(s.siteSubtitle || "موتور شخصی‌سازی و پرامپت مهندسی");
+        setHeroTitleLocal(s.heroTitle || "قلب تپنده نوآوری با پرامپتی");
+        setHeroDescriptionLocal(s.heroDescription || "");
+        setFooterAboutLocal(s.footerAbout || "");
+        setFooterCopyrightLocal(s.footerCopyright || "");
+        setSiteLogoLocal(s.siteLogo || "");
       }
 
       // Fetch Taxonomy Terms
@@ -240,6 +275,151 @@ export default function AdminDashboard() {
     setDirectIdentifier("");
   };
 
+  // User Row Actions & Modals
+  const handleOpenEditUser = (u: AdminUserItem) => {
+    setEditingUser(u);
+    setEditUserName(u.name || "");
+    setEditUserEmail(u.email || "");
+    setEditUserPhone(u.phone || "");
+    const r = u.role.toUpperCase();
+    setEditUserRole(r === "SUPER_ADMIN" ? "SUPER_ADMIN" : r === "ADMIN" ? "ADMIN" : "USER");
+  };
+
+  const handleSaveEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    try {
+      setBulkActionLoading(true);
+      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: editUserName.trim(),
+          email: editUserEmail.trim() || null,
+          phone: editUserPhone.trim() || undefined,
+          role: editUserRole,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoleStatusMessage({ type: "success", text: data.message || "اطلاعات کاربر با موفقیت ویرایش شد." });
+        setUsersList((prev) =>
+          prev.map((u) => (u.id === editingUser.id ? { ...u, ...data.user } : u))
+        );
+        setEditingUser(null);
+      } else {
+        alert(data.message || "خطا در ویرایش اطلاعات کاربر.");
+      }
+    } catch (err) {
+      alert("خطا در برقراری ارتباط با سرور.");
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleConfirmDeleteUser = async () => {
+    if (!deleteConfirmUser) return;
+    try {
+      setBulkActionLoading(true);
+      const res = await fetch(`/api/admin/users/${deleteConfirmUser.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoleStatusMessage({ type: "success", text: data.message || "کاربر با موفقیت حذف شد." });
+        setUsersList((prev) => prev.filter((u) => u.id !== deleteConfirmUser.id));
+        setSelectedUserIds((prev) => prev.filter((id) => id !== deleteConfirmUser.id));
+        setDeleteConfirmUser(null);
+      } else {
+        alert(data.message || "خطا در حذف کاربر.");
+      }
+    } catch (err) {
+      alert("خطا در برقراری ارتباط با سرور.");
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleToggleSelectAll = (filteredIds: string[]) => {
+    if (selectedUserIds.length === filteredIds.length && filteredIds.length > 0) {
+      setSelectedUserIds([]);
+    } else {
+      setSelectedUserIds(filteredIds);
+    }
+  };
+
+  const handleToggleSelectUser = (id: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUserIds.length === 0) return;
+    if (!window.confirm(`آیا از حذف دسته‌جمعی ${selectedUserIds.length} کاربر انتخاب‌شده اطمینان دارید؟ این عمل غیرقابل بازگشت است.`)) {
+      return;
+    }
+    try {
+      setBulkActionLoading(true);
+      const res = await fetch("/api/admin/users/bulk-delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ids: selectedUserIds }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoleStatusMessage({ type: "success", text: data.message || "کاربران با موفقیت حذف شدند." });
+        setUsersList((prev) => prev.filter((u) => !selectedUserIds.includes(u.id)));
+        setSelectedUserIds([]);
+      } else {
+        alert(data.message || "خطا در حذف کاربران.");
+      }
+    } catch (err) {
+      alert("خطا در ارتباط با سرور.");
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkRoleChange = async () => {
+    if (selectedUserIds.length === 0) return;
+    try {
+      setBulkActionLoading(true);
+      const res = await fetch("/api/admin/users/bulk-role", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ids: selectedUserIds, role: bulkTargetRole }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoleStatusMessage({ type: "success", text: data.message || "نقش کاربران با موفقیت تغییر یافت." });
+        setUsersList((prev) =>
+          prev.map((u) =>
+            selectedUserIds.includes(u.id) ? { ...u, role: bulkTargetRole.toLowerCase() } : u
+          )
+        );
+        setSelectedUserIds([]);
+        setBulkRoleModalOpen(false);
+      } else {
+        alert(data.message || "خطا در تغییر نقش دسته‌جمعی.");
+      }
+    } catch (err) {
+      alert("خطا در ارتباط با سرور.");
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (token) {
       fetchDashboardData();
@@ -303,15 +483,88 @@ export default function AdminDashboard() {
     }
   };
 
-  // Save AI Settings
-  const handleSaveSettings = async (e: React.FormEvent) => {
+  // Save Branding Settings
+  const handleSaveBranding = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
     try {
-      setSettingsLoading(true);
-      setSettingsSuccess(null);
-      setSettingsError(null);
-      
+      setBrandingLoading(true);
+      setBrandingSuccess(null);
+      setBrandingError(null);
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          siteTitle: siteTitleLocal,
+          siteSubtitle: siteSubtitleLocal,
+          heroTitle: heroTitleLocal,
+          heroDescription: heroDescriptionLocal,
+          footerAbout: footerAboutLocal,
+          footerCopyright: footerCopyrightLocal,
+          siteLogo: siteLogoLocal,
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setBrandingSuccess("تنظیمات هویت بصری و برندینگ با موفقیت ذخیره شد.");
+        setSiteTitle(siteTitleLocal);
+        await refetchBranding();
+      } else {
+        setBrandingError(data.message || "خطا در ذخیره تنظیمات برندینگ.");
+      }
+    } catch (err: any) {
+      setBrandingError("خطا در برقراری ارتباط با سرور: " + err.message);
+    } finally {
+      setBrandingLoading(false);
+    }
+  };
+
+  // Upload Logo
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+
+    const formData = new FormData();
+    formData.append("logo", file);
+
+    try {
+      setLogoUploading(true);
+      setBrandingSuccess(null);
+      setBrandingError(null);
+
+      const res = await fetch("/api/admin/settings/logo", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSiteLogoLocal(data.siteLogo);
+        setBrandingSuccess("لوگوی اختصاصی پلتفرم با موفقیت آپلود و ذخیره شد.");
+        await refetchBranding();
+      } else {
+        setBrandingError(data.message || "خطا در بارگذاری لوگو.");
+      }
+    } catch (err: any) {
+      setBrandingError("خطا در ارسال فایل لوگو: " + err.message);
+    } finally {
+      setLogoUploading(false);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  };
+
+  // Save AI Settings
+  const handleSaveAiSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    try {
+      setAiSettingsLoading(true);
+      setAiSettingsSuccess(null);
+      setAiSettingsError(null);
+
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: {
@@ -323,21 +576,19 @@ export default function AdminDashboard() {
           n8nRefineWebhook,
           geminiApiKey,
           openaiApiKey,
-          siteTitle: siteTitleLocal
+          aiTimeoutSeconds: aiTimeoutSecondsLocal,
         })
       });
-      
-      if (res.ok) {
-        setSettingsSuccess("تنظیمات مرکز کنترل هوش مصنوعی و نام سایت با موفقیت به‌روزرسانی شد.");
-        setSiteTitle(siteTitleLocal);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setAiSettingsSuccess("تنظیمات وب‌هوک و هوش مصنوعی با موفقیت به‌روزرسانی شد.");
       } else {
-        const errData = await res.json();
-        setSettingsError(errData.message || "خطا در تنظیم و ذخیره اطلاعات.");
+        setAiSettingsError(data.message || "خطا در ذخیره تنظیمات هوش مصنوعی.");
       }
     } catch (err) {
-      setSettingsError("برقراری ارتباط با سرویس‌دهنده ادمین شکست خورد.");
+      setAiSettingsError("ارتباط با سرویس هوش مصنوعی برقرار نشد.");
     } finally {
-      setSettingsLoading(false);
+      setAiSettingsLoading(false);
     }
   };
 
@@ -624,6 +875,18 @@ export default function AdminDashboard() {
         </button>
 
         <button
+          onClick={() => setActiveTab("branding")}
+          className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold transition-all border-b-2 rounded-t-xl shrink-0 cursor-pointer ${
+            activeTab === "branding"
+              ? "border-[#6C47FF] text-[#6C47FF] bg-[#6C47FF]/5"
+              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+          }`}
+        >
+          <ImageIcon className="w-4 h-4" />
+          <span>۴. برندینگ و ظاهر سایت</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab("ai")}
           className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold transition-all border-b-2 rounded-t-xl shrink-0 cursor-pointer ${
             activeTab === "ai"
@@ -632,7 +895,7 @@ export default function AdminDashboard() {
           }`}
         >
           <Settings className="w-4 h-4" />
-          <span>۴. موتور هوش مصنوعی و بهینه‌سازی</span>
+          <span>۵. موتور هوش مصنوعی و اتوماسیون</span>
         </button>
 
         <button
@@ -647,7 +910,7 @@ export default function AdminDashboard() {
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>۵. مدیریت دسترسی‌ها (RBAC)</span>
+          <span>۶. مدیریت کاربران و دسترسی‌ها (RBAC)</span>
           {isSuperAdmin && (
             <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-amber-500/15 text-amber-800 border border-amber-300 font-black">
               مدیر کل
@@ -1189,7 +1452,201 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* TAB 4: AI Settings */}
+          {/* TAB 4: Dedicated Branding & Site Appearance */}
+          {activeTab === "branding" && (
+            <motion.div
+              key="branding-tab"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
+                <ImageIcon className="w-5 h-5 text-[#6C47FF]" />
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">برندینگ، لوگو و ظاهر سایت</h3>
+                  <p className="text-[11px] text-slate-400">شخصی‌سازی نام پلتفرم، شعار، عناوین هیرو، متن‌های فوتر و تصویر لوگوی سراسری Promty</p>
+                </div>
+              </div>
+
+              {/* Logo Upload & Preview Card */}
+              <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-4">
+                <h4 className="text-xs font-black text-slate-700 flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-[#6C47FF]" />
+                  <span>لوگوی اختصاصی پلتفرم</span>
+                </h4>
+
+                <div className="flex flex-col sm:flex-row items-center gap-5">
+                  <div className="w-20 h-20 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                    {siteLogoLocal ? (
+                      <img src={siteLogoLocal} alt="لوگوی سایت" className="w-full h-full object-contain p-2" />
+                    ) : (
+                      <div className="w-full h-full bg-[#6C47FF]/10 text-[#6C47FF] flex flex-col items-center justify-center p-2 text-center">
+                        <Sparkles className="w-6 h-6 mb-1" />
+                        <span className="text-[9px] font-bold">بدون لوگو</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 flex-1 text-center sm:text-right">
+                    <p className="text-xs text-slate-600 font-medium">
+                      فرمت‌های مجاز: <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-[11px]">WEBP</code>، <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-[11px]">PNG</code>، <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-[11px]">SVG</code>
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      لوگو به صورت خودکار در ابعاد متناسب بهینه‌سازی شده و در <code className="bg-white px-1 py-0.5 rounded font-mono text-[10px]">/dl/brand/logo.webp</code> (یا SVG) ذخیره می‌گردد.
+                    </p>
+                    <div>
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/png,image/webp,image/svg+xml,image/jpeg"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        id="logo-upload-input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={logoUploading}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-xs transition cursor-pointer disabled:opacity-50"
+                      >
+                        {logoUploading ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6C47FF]" />
+                            <span>در حال آپلود و بهینه‌سازی...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3.5 h-3.5 text-[#6C47FF]" />
+                            <span>انتخاب و بارگذاری فایل لوگو</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Branding Text Fields */}
+              <form onSubmit={handleSaveBranding} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-600 block">
+                      نام برند و عنوان پلتفرم (Site Title)
+                    </label>
+                    <input
+                      type="text"
+                      value={siteTitleLocal}
+                      onChange={(e) => setSiteTitleLocal(e.target.value)}
+                      placeholder="پرامپتی | Promty"
+                      className="w-full text-slate-700 bg-slate-50 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition font-bold"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-600 block">
+                      شعار هدر و زیرعنوان (Site Subtitle)
+                    </label>
+                    <input
+                      type="text"
+                      value={siteSubtitleLocal}
+                      onChange={(e) => setSiteSubtitleLocal(e.target.value)}
+                      placeholder="موتور شخصی‌سازی و پرامپت مهندسی"
+                      className="w-full text-slate-700 bg-slate-50 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-600 block">
+                    عنوان اصلی بخش هیرو (Hero Title)
+                  </label>
+                  <input
+                    type="text"
+                    value={heroTitleLocal}
+                    onChange={(e) => setHeroTitleLocal(e.target.value)}
+                    placeholder="قلب تپنده نوآوری با پرامپتی"
+                    className="w-full text-slate-700 bg-slate-50 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition font-bold"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-600 block">
+                    توضیحات و پاراگراف اصلی هیرو (Hero Description)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={heroDescriptionLocal}
+                    onChange={(e) => setHeroDescriptionLocal(e.target.value)}
+                    placeholder="اولین پلتفرم گرافِ دانش پرامپت در ایران..."
+                    className="w-full text-slate-700 bg-slate-50 rounded-xl p-3 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition leading-relaxed font-sans"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-600 block">
+                    متن «درباره ما» در فوتر (Footer About)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={footerAboutLocal}
+                    onChange={(e) => setFooterAboutLocal(e.target.value)}
+                    placeholder="پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است..."
+                    className="w-full text-slate-700 bg-slate-50 rounded-xl p-3 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition leading-relaxed font-sans"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-600 block">
+                    متن کپی‌رایت فوتر (Footer Copyright)
+                  </label>
+                  <input
+                    type="text"
+                    value={footerCopyrightLocal}
+                    onChange={(e) => setFooterCopyrightLocal(e.target.value)}
+                    placeholder="تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است."
+                    className="w-full text-slate-700 bg-slate-50 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                  <p className="text-[11px] text-slate-400">
+                    💡 تغییرات برندینگ فوراً در هدر، فوتر و صفحه اصلی کاربران منعکس می‌شود.
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={brandingLoading}
+                    className="w-full sm:w-auto px-6 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition cursor-pointer"
+                  >
+                    {brandingLoading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>در حال ذخیره برندینگ...</span>
+                      </>
+                    ) : (
+                      <span>ذخیره تغییرات برندینگ و ظاهر 🎨</span>
+                    )}
+                  </button>
+                </div>
+
+                {brandingSuccess && (
+                  <div className="p-3 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    <span>{brandingSuccess}</span>
+                  </div>
+                )}
+                {brandingError && (
+                  <div className="p-3 bg-rose-50 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600" />
+                    <span>{brandingError}</span>
+                  </div>
+                )}
+              </form>
+            </motion.div>
+          )}
+
+          {/* TAB 5: AI & Automation Engine */}
           {activeTab === "ai" && (
             <motion.div
               key="ai-tab"
@@ -1201,35 +1658,12 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
                 <Settings className="w-5 h-5 text-[#6C47FF]" />
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">مرکز کنترل هوش مصنوعی و بهینه‌سازی</h3>
-                  <p className="text-[11px] text-slate-400">مسیر وب‌هوک‌های n8n و کلیدهای مستقیم جمینای / اوپنای‌آی جهت بهبود و طبقه‌بندی هوشمند پرامپت‌ها</p>
+                  <h3 className="text-sm font-bold text-slate-800">موتور هوش مصنوعی و اتوماسیون</h3>
+                  <p className="text-[11px] text-slate-400">مسیر وب‌هوک‌های n8n، کلیدهای مدل‌های هوش مصنوعی و تنظیم مهلت زمانی پاسخگویی (Timeout)</p>
                 </div>
               </div>
 
-              <form onSubmit={handleSaveSettings} className="space-y-6">
-                
-                {/* Global Brand Settings */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
-                    🌐 تنظیمات عمومی برند و وب‌سایت
-                  </h4>
-                  
-                  <div className="space-y-1.5">
-                    <label htmlFor="site_title_input_tab" className="text-xs font-bold text-slate-500 block">
-                      عنوان وب‌سایت و برند پلتفرم (Site Title)
-                    </label>
-                    <input
-                      id="site_title_input_tab"
-                      type="text"
-                      value={siteTitleLocal}
-                      onChange={(e) => setSiteTitleLocal(e.target.value)}
-                      placeholder="Promty.ir"
-                      className="w-full text-slate-700 bg-slate-50 placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition text-right font-bold"
-                      required
-                    />
-                  </div>
-                </div>
-
+              <form onSubmit={handleSaveAiSettings} className="space-y-6">
                 {/* Webhook block */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
@@ -1308,6 +1742,35 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
+                {/* AI Timeout Configuration */}
+                <div className="space-y-3 pt-4 border-t border-slate-50">
+                  <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
+                    ⏱️ تنظیم مهلت زمانی پاسخگویی هوش مصنوعی (Timeout)
+                  </h4>
+                  
+                  <div className="max-w-md space-y-1.5">
+                    <label htmlFor="ai_timeout_input" className="text-xs font-bold text-slate-500 block">
+                      حداکثر مدت زمان انتظار پاسخ (ثانیه)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="ai_timeout_input"
+                        type="number"
+                        min={10}
+                        max={300}
+                        value={aiTimeoutSecondsLocal}
+                        onChange={(e) => setAiTimeoutSecondsLocal(Number(e.target.value))}
+                        className="w-28 text-slate-700 bg-slate-50 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition font-mono font-bold text-center"
+                        required
+                      />
+                      <span className="text-xs text-slate-500 font-medium">ثانیه (پیش‌فرض: ۶۰، حداقل: ۱۰، حداکثر: ۳۰۰)</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      در صورتی که ایجنت‌های تحلیل یا بهینه‌سازی n8n پس از این مدت پاسخی ارسال نکنند، درخواست لغو شده و خطای صریح به کاربر نمایش داده می‌شود.
+                    </p>
+                  </div>
+                </div>
+
                 {/* Search Boosting / Search Rules Configuration */}
                 <div className="space-y-3 pt-4 border-t border-slate-50">
                   <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
@@ -1334,42 +1797,43 @@ export default function AdminDashboard() {
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
                   <p className="text-[10px] text-slate-400">
-                    💡 تمام تنظیمات ثبت شده در این صفحه، به صورت بلادرنگ در پرونده دیتابیس بومی سامانه ذخیره شده و از تغییر فایل‌های سرور شما را بی‌نیاز می‌کند.
+                    💡 تمام تنظیمات وب‌هوک و هوش مصنوعی بلادرنگ در سیستم اعمال می‌شوند.
                   </p>
                   
                   <button
                     type="submit"
-                    disabled={settingsLoading}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition"
+                    disabled={aiSettingsLoading}
+                    className="w-full sm:w-auto px-6 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition cursor-pointer"
                   >
-                    {settingsLoading ? (
+                    {aiSettingsLoading ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         <span>در حال ذخیره‌سازی...</span>
                       </>
                     ) : (
-                      <span>ذخیره تنظیمات ادمین 💾</span>
+                      <span>ذخیره تنظیمات هوش مصنوعی 💾</span>
                     )}
                   </button>
                 </div>
 
-                {settingsSuccess && (
-                  <div className="p-3 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-xl border border-emerald-100 flex items-center gap-1.5">
-                    <CheckCircle className="w-4 h-4 text-emerald-500" />
-                    <span>{settingsSuccess}</span>
+                {aiSettingsSuccess && (
+                  <div className="p-3 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 flex items-center gap-1.5">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    <span>{aiSettingsSuccess}</span>
                   </div>
                 )}
 
-                {settingsError && (
-                  <div className="p-3 bg-rose-50 text-rose-600 text-xs font-bold rounded-xl border border-rose-100">
-                    <span>⚠️ {settingsError}</span>
+                {aiSettingsError && (
+                  <div className="p-3 bg-rose-50 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 text-rose-600" />
+                    <span>⚠️ {aiSettingsError}</span>
                   </div>
                 )}
               </form>
             </motion.div>
           )}
 
-          {/* TAB 5: Role-Based Access Control (RBAC) & User Management */}
+          {/* TAB 6: Role-Based Access Control (RBAC) & User Management */}
           {activeTab === "roles" && (
             <motion.div
               key="roles-tab"
@@ -1385,10 +1849,10 @@ export default function AdminDashboard() {
                     <span className="p-2 rounded-xl bg-[#6C47FF] text-white">
                       <Users className="w-5 h-5" />
                     </span>
-                    <h3 className="text-base font-black text-slate-800">مدیریت دسترسی‌ها و سلسله‌مراتب کاربری (RBAC)</h3>
+                    <h3 className="text-base font-black text-slate-800">مدیریت دسترسی‌ها و کاربران (RBAC)</h3>
                   </div>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                    سیستم کنترل دسترسی نقش‌محور شامل سه سطح دسترسی: <strong className="text-amber-700">مدیر کل (SUPER_ADMIN)</strong>، <strong className="text-[#6C47FF]">مدیر (ADMIN)</strong>، و <strong className="text-slate-600">کاربر عادی (USER)</strong>.
+                    سیستم کنترل دسترسی نقش‌محور شامل سه سطح دسترسی: <strong className="text-amber-700">مدیر ارشد (SUPER_ADMIN)</strong>، <strong className="text-[#6C47FF]">مدیر (ADMIN)</strong>، و <strong className="text-slate-600">کاربر عادی (USER)</strong>.
                   </p>
                 </div>
                 {isSuperAdmin ? (
@@ -1470,7 +1934,7 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* Users List & Search */}
+              {/* Users List, Search & Multi-Selection Toolbar */}
               <div className="space-y-3">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="relative w-full sm:w-72">
@@ -1498,163 +1962,431 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
+                {/* Bulk Actions Toolbar */}
+                {selectedUserIds.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-wrap items-center justify-between gap-2 p-3 bg-[#6C47FF]/10 border border-[#6C47FF]/20 rounded-2xl"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 bg-[#6C47FF] text-white text-[11px] font-black rounded-lg">
+                        {selectedUserIds.length} کاربر انتخاب‌شده
+                      </span>
+                      <button
+                        onClick={() => setSelectedUserIds([])}
+                        className="text-[11px] text-slate-500 hover:text-slate-700 underline cursor-pointer"
+                      >
+                        لغو انتخاب
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {isSuperAdmin && (
+                        <button
+                          onClick={() => setBulkRoleModalOpen(true)}
+                          disabled={bulkActionLoading}
+                          className="px-3 py-1.5 bg-white hover:bg-slate-50 text-[#6C47FF] border border-[#6C47FF]/30 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          <Shield className="w-3.5 h-3.5" />
+                          <span>تغییر نقش دسته‌جمعی</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={handleBulkDelete}
+                        disabled={bulkActionLoading}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        {bulkActionLoading ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                        <span>حذف کاربران انتخاب‌شده</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
                 {/* Table of Users */}
-                <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-xs">
-                  <table className="w-full text-right text-xs text-slate-600 font-sans">
-                    <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
-                      <tr>
-                        <th className="px-5 py-3.5">کاربر</th>
-                        <th className="px-5 py-3.5">اطلاعات تماس</th>
-                        <th className="px-5 py-3.5">نقش فعلی</th>
-                        <th className="px-5 py-3.5">تاریخ عضویت</th>
-                        {isSuperAdmin && <th className="px-5 py-3.5 text-left">تفویض اختیار و تغییر نقش</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {usersList
-                        .filter((u) => {
-                          if (!userSearchQuery.trim()) return true;
-                          const q = userSearchQuery.toLowerCase();
-                          return (
-                            (u.name && u.name.toLowerCase().includes(q)) ||
-                            (u.phone && u.phone.includes(q)) ||
-                            (u.email && u.email.toLowerCase().includes(q))
-                          );
-                        })
-                        .map((u) => {
-                          const roleLower = u.role.toLowerCase();
-                          const isSuper = roleLower === "super_admin";
-                          const isAdminRole = roleLower === "admin";
-                          const isActionTarget = roleActionLoading === u.id || roleActionLoading === u.phone;
+                {(() => {
+                  const filteredUsers = usersList.filter((u) => {
+                    if (!userSearchQuery.trim()) return true;
+                    const q = userSearchQuery.toLowerCase();
+                    return (
+                      (u.name && u.name.toLowerCase().includes(q)) ||
+                      (u.phone && u.phone.includes(q)) ||
+                      (u.email && u.email.toLowerCase().includes(q))
+                    );
+                  });
 
-                          return (
-                            <tr key={u.id} className="hover:bg-slate-50/60 transition">
-                              <td className="px-5 py-4">
-                                <div className="flex items-center gap-2.5">
-                                  {u.avatar ? (
-                                    <img
-                                      src={u.avatar}
-                                      alt={u.name || "کاربر"}
-                                      className="w-8 h-8 rounded-xl object-cover border border-slate-200"
-                                    />
-                                  ) : (
-                                    <div className="w-8 h-8 rounded-xl bg-[#6C47FF]/10 text-[#6C47FF] flex items-center justify-center font-bold text-xs">
-                                      {(u.name || u.phone || "ک").charAt(0)}
+                  const allFilteredSelected =
+                    filteredUsers.length > 0 &&
+                    filteredUsers.every((u) => selectedUserIds.includes(u.id));
+
+                  return (
+                    <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-xs">
+                      <table className="w-full text-right text-xs text-slate-600 font-sans">
+                        <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                          <tr>
+                            <th className="px-4 py-3.5 w-10 text-center">
+                              <input
+                                type="checkbox"
+                                checked={allFilteredSelected}
+                                onChange={() => handleToggleSelectAll(filteredUsers.map((u) => u.id))}
+                                className="rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] cursor-pointer"
+                                title="انتخاب همه"
+                              />
+                            </th>
+                            <th className="px-5 py-3.5">کاربر</th>
+                            <th className="px-5 py-3.5">اطلاعات تماس</th>
+                            <th className="px-5 py-3.5">نقش فعلی</th>
+                            <th className="px-5 py-3.5">تاریخ عضویت</th>
+                            <th className="px-5 py-3.5 text-left">عملیات و نقش</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {filteredUsers.map((u) => {
+                            const roleLower = u.role.toLowerCase();
+                            const isSuper = roleLower === "super_admin";
+                            const isAdminRole = roleLower === "admin";
+                            const isSelected = selectedUserIds.includes(u.id);
+                            const isActionTarget = roleActionLoading === u.id;
+
+                            return (
+                              <tr
+                                key={u.id}
+                                className={`transition ${isSelected ? "bg-[#6C47FF]/5" : "hover:bg-slate-50/60"}`}
+                              >
+                                <td className="px-4 py-4 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => handleToggleSelectUser(u.id)}
+                                    className="rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] cursor-pointer"
+                                  />
+                                </td>
+
+                                <td className="px-5 py-4">
+                                  <div className="flex items-center gap-2.5">
+                                    {u.avatar ? (
+                                      <img
+                                        src={u.avatar}
+                                        alt={u.name || "کاربر"}
+                                        className="w-8 h-8 rounded-xl object-cover border border-slate-200"
+                                      />
+                                    ) : (
+                                      <div className="w-8 h-8 rounded-xl bg-[#6C47FF]/10 text-[#6C47FF] flex items-center justify-center font-bold text-xs">
+                                        {(u.name || u.phone || "ک").charAt(0)}
+                                      </div>
+                                    )}
+                                    <div>
+                                      <span className="font-bold text-slate-800 block">
+                                        {u.name || (u.phone ? `کاربر ${u.phone.slice(-4)}` : "بدون نام")}
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 font-mono block">
+                                        شناسه: {u.id.slice(0, 8)}...
+                                      </span>
                                     </div>
-                                  )}
-                                  <div>
-                                    <span className="font-bold text-slate-800 block">
-                                      {u.name || (u.phone ? `کاربر ${u.phone.slice(-4)}` : "بدون نام")}
-                                    </span>
-                                    <span className="text-[10px] text-slate-400 font-mono block">
-                                      شناسه: {u.id.slice(0, 8)}...
-                                    </span>
                                   </div>
-                                </div>
-                              </td>
+                                </td>
 
-                              <td className="px-5 py-4">
-                                <div className="space-y-0.5">
-                                  {u.phone && (
-                                    <span className="font-mono text-slate-700 block font-semibold" dir="ltr">
-                                      {u.phone}
+                                <td className="px-5 py-4">
+                                  <div className="space-y-0.5">
+                                    {u.phone && (
+                                      <span className="font-mono text-slate-700 block font-semibold" dir="ltr">
+                                        {u.phone}
+                                      </span>
+                                    )}
+                                    {u.email && (
+                                      <span className="font-mono text-slate-400 text-[11px] block" dir="ltr">
+                                        {u.email}
+                                      </span>
+                                    )}
+                                    {!u.phone && !u.email && (
+                                      <span className="text-slate-400 text-[10px]">-</span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                <td className="px-5 py-4">
+                                  {isSuper ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-indigo-500/15 text-amber-800 border border-amber-300">
+                                      <ShieldCheck className="w-3 h-3 text-amber-600" />
+                                      <span>مدیر کل (Super Admin)</span>
+                                    </span>
+                                  ) : isAdminRole ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#6C47FF]/10 text-[#6C47FF] border border-[#6C47FF]/20">
+                                      <Shield className="w-3 h-3 text-[#6C47FF]" />
+                                      <span>مدیر (ADMIN)</span>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                      کاربر عادی (USER)
                                     </span>
                                   )}
-                                  {u.email && (
-                                    <span className="font-mono text-slate-400 text-[11px] block" dir="ltr">
-                                      {u.email}
-                                    </span>
-                                  )}
-                                  {!u.phone && !u.email && (
-                                    <span className="text-slate-400 text-[10px]">-</span>
-                                  )}
-                                </div>
-                              </td>
+                                </td>
 
-                              <td className="px-5 py-4">
-                                {isSuper ? (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-indigo-500/15 text-amber-800 border border-amber-300">
-                                    <ShieldCheck className="w-3 h-3 text-amber-600" />
-                                    <span>مدیر کل (Super Admin)</span>
-                                  </span>
-                                ) : isAdminRole ? (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#6C47FF]/10 text-[#6C47FF] border border-[#6C47FF]/20">
-                                    <Shield className="w-3 h-3 text-[#6C47FF]" />
-                                    <span>مدیر (ADMIN)</span>
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                    کاربر عادی (USER)
-                                  </span>
-                                )}
-                              </td>
+                                <td className="px-5 py-4 text-slate-400 font-mono text-[11px]">
+                                  {new Date(u.createdAt).toLocaleDateString("fa-IR")}
+                                </td>
 
-                              <td className="px-5 py-4 text-slate-400 font-mono text-[11px]">
-                                {new Date(u.createdAt).toLocaleDateString("fa-IR")}
-                              </td>
-
-                              {isSuperAdmin && (
                                 <td className="px-5 py-4 text-left">
-                                  <div className="flex items-center justify-end gap-1.5">
+                                  <div className="flex items-center justify-end gap-2">
                                     {isActionTarget ? (
                                       <Loader2 className="w-4 h-4 animate-spin text-[#6C47FF]" />
                                     ) : (
                                       <>
-                                        {!isSuper && (
-                                          isAdminRole ? (
-                                            <button
-                                              onClick={() => handleRoleChange(u.id, "USER")}
-                                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg transition cursor-pointer"
-                                            >
-                                              تنزل به کاربر عادی
-                                            </button>
-                                          ) : (
-                                            <button
-                                              onClick={() => handleRoleChange(u.id, "ADMIN")}
-                                              className="px-2.5 py-1 bg-[#6C47FF]/10 hover:bg-[#6C47FF]/20 text-[#6C47FF] text-[11px] font-bold rounded-lg transition cursor-pointer"
-                                            >
-                                              ارتقا به مدیر
-                                            </button>
-                                          )
-                                        )}
-                                        {!isSuper && (
-                                          <button
-                                            onClick={() => {
-                                              if (window.confirm(`آیا مایل به ارتقای این کاربر به سطح مدیر ارشد (Super Admin) هستید؟`)) {
-                                                handleRoleChange(u.id, "SUPER_ADMIN");
-                                              }
-                                            }}
-                                            className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 text-[10px] font-bold rounded-lg border border-amber-200 transition cursor-pointer"
-                                            title="ارتقا به Super Admin"
-                                          >
-                                            👑 ارتقا به مدیر کل
-                                          </button>
-                                        )}
+                                        {/* Direct Role Change Selector */}
+                                        <select
+                                          value={u.role.toUpperCase()}
+                                          onChange={(e) => handleRoleChange(u.id, e.target.value as any)}
+                                          disabled={!isSuperAdmin}
+                                          className="text-[11px] font-bold py-1 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-[#6C47FF] disabled:opacity-50 cursor-pointer"
+                                          title={isSuperAdmin ? "تغییر مستقیم نقش" : "فقط مدیر ارشد مجاز است"}
+                                        >
+                                          <option value="USER">کاربر عادی</option>
+                                          <option value="ADMIN">مدیر</option>
+                                          {isSuperAdmin && <option value="SUPER_ADMIN">مدیر کل</option>}
+                                        </select>
+
+                                        {/* Edit Button */}
+                                        <button
+                                          onClick={() => handleOpenEditUser(u)}
+                                          className="p-1.5 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-lg transition cursor-pointer"
+                                          title="ویرایش کاربر"
+                                        >
+                                          <Pencil className="w-3.5 h-3.5" />
+                                        </button>
+
+                                        {/* Delete Button */}
+                                        <button
+                                          onClick={() => setDeleteConfirmUser(u)}
+                                          disabled={u.id === user?.id}
+                                          className="p-1.5 hover:bg-rose-50 text-rose-500 hover:text-rose-700 rounded-lg transition cursor-pointer disabled:opacity-30"
+                                          title={u.id === user?.id ? "حذف حساب جاری غیرمجاز است" : "حذف کاربر"}
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
                                       </>
                                     )}
                                   </div>
                                 </td>
-                              )}
-                            </tr>
-                          );
-                        })}
+                              </tr>
+                            );
+                          })}
 
-                      {usersList.length === 0 && !usersLoading && (
-                        <tr>
-                          <td colSpan={5} className="py-8 text-center text-slate-400">
-                            هیچ کاربری در سیستم ثبت نشده است.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                          {filteredUsers.length === 0 && !usersLoading && (
+                            <tr>
+                              <td colSpan={6} className="py-8 text-center text-slate-400">
+                                هیچ کاربری با مشخصات جستجوشده یافت نشد.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
               </div>
             </motion.div>
           )}
 
         </AnimatePresence>
       </div>
+
+      {/* MODAL 1: Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 space-y-4 font-sans text-right"
+            dir="rtl"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-[#6C47FF]/10 text-[#6C47FF] rounded-xl">
+                  <Pencil className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-black text-slate-800">ویرایش اطلاعات کاربر</h3>
+              </div>
+              <button
+                onClick={() => setEditingUser(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditUser} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-600 block">نام و نام خانوادگی</label>
+                <input
+                  type="text"
+                  value={editUserName}
+                  onChange={(e) => setEditUserName(e.target.value)}
+                  placeholder="نام کاربر..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-medium focus:border-[#6C47FF] focus:outline-none text-right"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-600 block">ایمیل</label>
+                <input
+                  type="email"
+                  dir="ltr"
+                  value={editUserEmail}
+                  onChange={(e) => setEditUserEmail(e.target.value)}
+                  placeholder="user@example.com"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-medium focus:border-[#6C47FF] focus:outline-none text-left font-mono"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-600 block">شماره موبایل</label>
+                <input
+                  type="text"
+                  dir="ltr"
+                  value={editUserPhone}
+                  onChange={(e) => setEditUserPhone(e.target.value)}
+                  placeholder="09xxxxxxxxx"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-medium focus:border-[#6C47FF] focus:outline-none text-left font-mono"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-600 block">نقش کاربر</label>
+                <select
+                  value={editUserRole}
+                  onChange={(e) => setEditUserRole(e.target.value as any)}
+                  disabled={!isSuperAdmin && editUserRole === "SUPER_ADMIN"}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-bold focus:border-[#6C47FF] focus:outline-none bg-white text-right"
+                >
+                  <option value="USER">کاربر عادی (USER)</option>
+                  <option value="ADMIN">مدیر سیستم (ADMIN)</option>
+                  {isSuperAdmin && <option value="SUPER_ADMIN">مدیر کل (SUPER_ADMIN)</option>}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition cursor-pointer"
+                >
+                  انصراف
+                </button>
+                <button
+                  type="submit"
+                  disabled={bulkActionLoading}
+                  className="px-5 py-2 bg-[#6C47FF] hover:bg-[#5935e6] text-white font-bold rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {bulkActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  <span>ذخیره تغییرات</span>
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* MODAL 2: Delete Confirm Modal */}
+      {deleteConfirmUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 space-y-4 font-sans text-right"
+            dir="rtl"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl shrink-0">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-800">تایید حذف کاربر</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">عملیات غیرقابل بازگشت</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              آیا از حذف حساب کاربری <strong className="text-slate-900 font-black">{deleteConfirmUser.name || deleteConfirmUser.phone || deleteConfirmUser.id}</strong> اطمینان دارید؟ تمامی اطلاعات، پیش‌تنظیم‌ها و نشان‌شده‌های کاربر پاک خواهد شد.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setDeleteConfirmUser(null)}
+                className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition cursor-pointer"
+              >
+                انصراف
+              </button>
+              <button
+                onClick={handleConfirmDeleteUser}
+                disabled={bulkActionLoading}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {bulkActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                <span>تایید و حذف کاربر</span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* MODAL 3: Bulk Role Change Modal */}
+      {bulkRoleModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 space-y-4 font-sans text-right"
+            dir="rtl"
+          >
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+              <Shield className="w-5 h-5 text-[#6C47FF]" />
+              <h3 className="text-sm font-black text-slate-800">
+                تغییر نقش {selectedUserIds.length} کاربر
+              </h3>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <label className="font-bold text-slate-600 block">نقش جدید برای کاربران انتخاب‌شده:</label>
+              <select
+                value={bulkTargetRole}
+                onChange={(e) => setBulkTargetRole(e.target.value as any)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-bold focus:border-[#6C47FF] focus:outline-none bg-white text-right"
+              >
+                <option value="USER">کاربر عادی (USER)</option>
+                <option value="ADMIN">مدیر سیستم (ADMIN)</option>
+                {isSuperAdmin && <option value="SUPER_ADMIN">مدیر کل (SUPER_ADMIN)</option>}
+              </select>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => setBulkRoleModalOpen(false)}
+                className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition cursor-pointer"
+              >
+                انصراف
+              </button>
+              <button
+                onClick={handleBulkRoleChange}
+                disabled={bulkActionLoading}
+                className="px-5 py-2 bg-[#6C47FF] hover:bg-[#5935e6] text-white text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {bulkActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                <span>اعمال نقش بر کاربران</span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
     </div>
   );

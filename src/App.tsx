@@ -8,7 +8,7 @@ import AdminPromptAddEdit from "./pages/AdminPromptAddEdit";
 import UserDashboard from "./pages/UserDashboard";
 import { 
   Sparkles, LayoutDashboard, Home, Check, Bookmark, 
-  ShieldCheck, Shield, ChevronDown, LogOut, User as UserIcon
+  ShieldCheck, Shield, ChevronDown, LogOut, User as UserIcon, LogIn
 } from "lucide-react";
 import { AuthProvider, useAuth } from "./components/AuthContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -16,6 +16,7 @@ import PhoneLoginModal from "./components/PhoneLoginModal";
 import { Z } from "./lib/zIndex";
 
 function SeoFooter() {
+  const { branding, siteTitle } = useAuth();
   const [popularTools, setPopularTools] = useState<{ slug: string; titleFa: string }[]>([]);
   const [popularDomains, setPopularDomains] = useState<{ slug: string; titleFa: string }[]>([]);
 
@@ -37,13 +38,17 @@ function SeoFooter() {
         {/* ستون ۱: برند */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#6C47FF] to-violet-500 flex items-center justify-center text-white">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <span className="text-sm font-black text-slate-800">Promty.ir</span>
+            {branding.siteLogo ? (
+              <img src={branding.siteLogo} alt={siteTitle} className="w-8 h-8 rounded-lg object-contain" />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#6C47FF] to-violet-500 flex items-center justify-center text-white shadow-sm shadow-[#6C47FF]/20">
+                <Sparkles className="w-4 h-4" />
+              </div>
+            )}
+            <span className="text-sm font-black text-slate-800">{siteTitle}</span>
           </div>
           <p className="leading-relaxed text-slate-400 max-w-xs">
-            همه‌چیز، با یک پرامپت آغاز می‌شود. آرشیو و شخصی‌سازی پرامپت‌های آماده‌ی هوش مصنوعی.
+            {branding.footerAbout || "همه‌چیز، با یک پرامپت آغاز می‌شود. آرشیو و شخصی‌سازی پرامپت‌های آماده‌ی هوش مصنوعی."}
           </p>
         </div>
 
@@ -68,13 +73,13 @@ function SeoFooter() {
                 پرامپت‌های {d.titleFa}
               </Link>
             ))}
-            <Link to="/dashboard" className="hover:text-[#6C47FF] transition">داشبورد من</Link>
+            <Link to="/dashboard" className="hover:text-[#6C47FF] transition">داشبورد</Link>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 mt-10 pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-slate-400">
-        <span>کلیه حقوق برای Promty.ir محفوظ است. © ۲۰۲۶</span>
+        <span>{branding.footerCopyright || `کلیه حقوق برای ${siteTitle} محفوظ است.`}</span>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
             <Check className="w-3.5 h-3.5 text-emerald-500" />
@@ -87,7 +92,7 @@ function SeoFooter() {
 }
 
 function AppContent() {
-  const { user, logout, siteTitle, setPhoneModalOpen, isAdmin, isSuperAdmin } = useAuth();
+  const { user, logout, siteTitle, branding, setPhoneModalOpen, isAdmin, isSuperAdmin } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -115,7 +120,7 @@ function AppContent() {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#6C47FF]/10 text-[#6C47FF] border border-[#6C47FF]/20 shadow-xs">
           <Shield className="w-3 h-3 text-[#6C47FF]" />
-          <span>مدیر سیستم</span>
+          <span>مدیر</span>
         </span>
       );
     }
@@ -132,15 +137,21 @@ function AppContent() {
     <div id="app-shell" className="min-h-screen bg-[#FAFAF9] text-[#1C1C1C] font-sans antialiased flex flex-col selection:bg-[#6C47FF]/20 selection:text-[#6C47FF]">
       {/* Navigation Bar */}
       <header id="main-nav-bar" className="sticky top-0 bg-white/85 backdrop-blur-md border-b border-slate-100 shadow-xs" style={{ zIndex: Z.HEADER }}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
+          {/* Logo & Platform Name */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#6C47FF] to-violet-500 flex items-center justify-center text-white shadow-md shadow-[#6C47FF]/20 transition-all group-hover:scale-105">
-              <Sparkles className="w-5 h-5" />
-            </div>
+            {branding.siteLogo ? (
+              <img src={branding.siteLogo} alt={siteTitle} className="w-9 h-9 rounded-xl object-contain shadow-xs" />
+            ) : (
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#6C47FF] to-violet-500 flex items-center justify-center text-white shadow-md shadow-[#6C47FF]/20 transition-all group-hover:scale-105">
+                <Sparkles className="w-5 h-5" />
+              </div>
+            )}
             <div className="text-right">
-              <span className="text-base font-black tracking-tight text-slate-800 block">{siteTitle}</span>
-              <span className="text-[10px] text-[#6C47FF] font-bold block">موتور شخصی‌سازی و پرامپت مهندسی</span>
+              <span className="text-sm md:text-base font-black tracking-tight text-slate-800 block">{siteTitle}</span>
+              <span className="text-[10px] text-[#6C47FF] font-bold hidden sm:block">
+                {branding.siteSubtitle || "موتور شخصی‌سازی و پرامپت مهندسی"}
+              </span>
             </div>
           </Link>
 
@@ -149,7 +160,7 @@ function AppContent() {
             <nav className="flex items-center gap-1">
               <Link
                 to="/"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition"
               >
                 <Home className="w-4 h-4" />
                 <span className="hidden sm:inline">خانه</span>
@@ -158,20 +169,20 @@ function AppContent() {
               {user && (
                 <Link
                   to="/dashboard"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#6C47FF] hover:bg-[#6C47FF]/5 transition"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#6C47FF] hover:bg-[#6C47FF]/5 transition"
                 >
                   <Bookmark className="w-4 h-4 text-[#6C47FF]" />
-                  <span>داشبورد من</span>
+                  <span>داشبورد</span>
                 </Link>
               )}
 
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition"
                 >
                   <LayoutDashboard className="w-4 h-4 text-[#6C47FF]" />
-                  <span>پنل ادمین</span>
+                  <span className="hidden sm:inline">پنل ادمین</span>
                 </Link>
               )}
             </nav>
@@ -181,17 +192,17 @@ function AppContent() {
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen((prev) => !prev)}
-                    className="flex items-center gap-2 p-1.5 rounded-2xl hover:bg-slate-50 border border-slate-100 hover:border-slate-200 transition cursor-pointer"
+                    className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 rounded-2xl hover:bg-slate-50 border border-slate-100 hover:border-slate-200 transition cursor-pointer"
                   >
                     {user.avatar ? (
                       <img
                         src={user.avatar}
                         referrerPolicy="no-referrer"
                         alt={displayName}
-                        className="w-8 h-8 rounded-xl object-cover border border-slate-200"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl object-cover border border-slate-200"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-xl bg-[#6C47FF]/10 text-[#6C47FF] flex items-center justify-center text-xs font-bold shadow-inner">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#6C47FF]/10 text-[#6C47FF] flex items-center justify-center text-xs font-black shadow-inner">
                         {displayName.charAt(0)}
                       </div>
                     )}
@@ -232,7 +243,7 @@ function AppContent() {
                           className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-[#6C47FF] hover:bg-[#6C47FF]/5 transition"
                         >
                           <Bookmark className="w-4 h-4 text-[#6C47FF]" />
-                          <span>پرامپت‌های ذخیره‌شده و نسخه‌ها</span>
+                          <span>داشبورد و ذخیره‌شده‌ها</span>
                         </Link>
 
                         {isAdmin && (
@@ -242,7 +253,7 @@ function AppContent() {
                             className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition"
                           >
                             <LayoutDashboard className="w-4 h-4 text-indigo-500" />
-                            <span>پنل مدیریت و تاکسونومی</span>
+                            <span>پنل مدیریت و تنظیمات</span>
                           </Link>
                         )}
                       </div>
@@ -267,10 +278,11 @@ function AppContent() {
                 <button
                   id="open-auth-modal-btn"
                   onClick={() => setPhoneModalOpen(true)}
-                  className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black rounded-xl transition shadow-md shadow-slate-900/10 cursor-pointer flex items-center gap-1.5"
+                  className="flex items-center justify-center gap-1.5 p-2 sm:px-3.5 sm:py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition shadow-sm cursor-pointer text-xs font-bold"
+                  title="ورود / ثبت‌نام"
                 >
-                  <UserIcon className="w-3.5 h-3.5" />
-                  <span>ورود / ثبت‌نام</span>
+                  <LogIn className="w-4 h-4" />
+                  <span className="hidden sm:inline">ورود / ثبت‌نام</span>
                 </button>
               )}
             </div>

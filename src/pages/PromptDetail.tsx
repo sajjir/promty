@@ -1420,20 +1420,42 @@ export default function PromptDetail() {
         </div>
       )}
 
-      {/* Mobile Floating Copy Button */}
-      <div className="fixed bottom-4 inset-x-4 z-30 lg:hidden">
-        <button
-          onClick={async () => {
-            await navigator.clipboard.writeText(renderedBody);
-            handleTrackCopy?.();
-            setMobileCopied(true);
-            setTimeout(() => setMobileCopied(false), 2000);
-          }}
-          className="w-full flex items-center justify-center gap-2 py-4 bg-[#6C47FF] hover:bg-[#5935e6] text-white text-sm font-black rounded-2xl shadow-2xl shadow-[#6C47FF]/30 cursor-pointer transition-all"
-        >
-          <Copy className="w-4 h-4" />
-          <span>{mobileCopied ? "پرامپت کپی شد! 🎉" : "کپی سریع پرامپت"}</span>
-        </button>
+      {/* Mobile Floating Sticky Bar (1:3 Ratio) */}
+      <div className="fixed bottom-4 inset-x-4 z-40 lg:hidden">
+        <div className="flex items-center gap-2 w-full p-2 bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/10">
+          {/* Bookmark Button (25% width) */}
+          <button
+            onClick={handleBookmarkToggle}
+            className="w-1/4 flex flex-col sm:flex-row items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 active:scale-95 transition-all text-xs font-bold cursor-pointer"
+            title={isBookmarked ? "نشان شده" : "افزودن به نشان‌شده‌ها"}
+          >
+            <Bookmark className={`w-4 h-4 transition-colors ${isBookmarked ? "fill-amber-400 text-amber-400" : "text-slate-300"}`} />
+            <span className="text-[11px] truncate">{isBookmarked ? "نشان‌شده" : "نشان"}</span>
+          </button>
+
+          {/* Copy Button (75% width) */}
+          <button
+            onClick={async () => {
+              await navigator.clipboard.writeText(renderedBody);
+              handleTrackCopy?.();
+              setMobileCopied(true);
+              setTimeout(() => setMobileCopied(false), 2000);
+            }}
+            className="w-3/4 flex items-center justify-center gap-2 py-3 bg-[#6C47FF] hover:bg-[#5b38ea] text-white rounded-xl shadow-lg shadow-[#6C47FF]/30 active:scale-95 transition-all text-sm font-black cursor-pointer"
+          >
+            {mobileCopied ? (
+              <>
+                <Check className="w-4 h-4 text-white" />
+                <span>پرامپت کپی شد! 🎉</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4 text-white" />
+                <span>کپی سریع پرامپت</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
     </div>
