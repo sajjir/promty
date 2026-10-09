@@ -1,3 +1,4 @@
+import PromptBackdrop from '../components/PromptBackdrop';
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Prompt } from "../types";
@@ -492,6 +493,7 @@ export default function Homepage() {
 
       {/* Search & Hero Engine Section */}
       <section className="home-hero relative bg-surface border border-line rounded-3xl shadow-sm p-6 md:p-12 text-center z-20">
+        <PromptBackdrop />
         {/* Background visual accents */}
         <div className="absolute top-0 right-1/4 w-1/2 max-w-80 h-80 bg-brand-solid/5 blur-3xl rounded-full pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-1/2 max-w-80 h-80 bg-cyan-500/5 blur-3xl rounded-full pointer-events-none" />

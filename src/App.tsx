@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Homepage from "./pages/Homepage";
 import PromptDetail from "./pages/PromptDetail";
 import AdminLogin from "./pages/AdminLogin";
@@ -15,26 +15,14 @@ import { ThemeProvider } from "./components/ThemeProvider";
 
 function SeoFooter() {
   const { branding, siteTitle } = useAuth();
-  const [popularTools, setPopularTools] = useState<{ slug: string; titleFa: string }[]>([]);
-  const [popularDomains, setPopularDomains] = useState<{ slug: string; titleFa: string }[]>([]);
-
-  useEffect(() => {
-    fetch("/api/taxonomies")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!data?.success) return;
-        const list = data.terms || data.taxonomies || [];
-        setPopularTools(list.filter((t: any) => t.type === "tool").slice(0, 6));
-        setPopularDomains(list.filter((t: any) => t.type === "domain").slice(0, 6));
-      })
-      .catch(() => {});
-  }, []);
+  const trending = ['ساخت تصویر سینمایی', 'سناریوی ویدیوی کوتاه', 'برنامه بازاریابی کسب‌وکار', 'تقویم محتوای شبکه‌های اجتماعی', 'برنامه‌ریزی یادگیری', 'خلاصه‌سازی و تحلیل متن'];
+  const lessons = ['پرامپت چیست و چگونه کار می‌کند؟', 'نوشتن اولین پرامپت مؤثر', 'نقش، زمینه و هدف در پرامپت', 'ساخت تصویر با هوش مصنوعی', 'پرامپت‌نویسی برای کسب‌وکار', 'ارزیابی و بهبود پاسخ‌های AI'];
 
   return (
     <footer className="bg-surface border-t border-line pt-12 pb-8 mt-12 text-xs text-muted font-sans" dir="rtl">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-right">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 grid grid-cols-2 md:grid-cols-3 gap-8 text-right">
         {/* ستون ۱: برند */}
-        <div className="space-y-3">
+        <div className="space-y-3 col-span-2 md:col-span-1">
           <div className="flex items-center gap-2">
             {branding.siteLogo ? (
               <img src={branding.siteLogo} alt={siteTitle} className="w-8 h-8 rounded-lg object-contain" />
@@ -50,30 +38,11 @@ function SeoFooter() {
           </p>
         </div>
 
-        {/* ستون ۲: دسته‌بندی‌ها */}
-        <div className="space-y-2">
-          <h4 className="text-primary font-bold mb-2">پرامپت‌ها بر اساس ابزار</h4>
-          <div className="flex flex-col gap-1.5">
-            {popularTools.map((t) => (
-              <Link key={t.slug} to={`/tool/${t.slug}`} className="hover:text-brand transition">
-                پرامپت‌های {t.titleFa}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* ستون ۳: لینک‌های مفید */}
-        <div className="space-y-2">
-          <h4 className="text-primary font-bold mb-2">دسته‌بندی‌های پرکاربرد</h4>
-          <div className="flex flex-col gap-1.5">
-            {popularDomains.map((d) => (
-              <Link key={d.slug} to={`/domain/${d.slug}`} className="hover:text-brand transition">
-                پرامپت‌های {d.titleFa}
-              </Link>
-            ))}
-            <Link to="/dashboard" className="hover:text-brand transition">داشبورد</Link>
-          </div>
-        </div>
+        {[{title:'پرامپت‌های ترند', items:trending}, {title:'آکادمی پرامپتی', items:lessons}].map(({title,items}) => <div key={title} className="min-w-0 space-y-3">
+          <h4 className="text-primary font-bold">{title}</h4>
+          <ul className="space-y-2.5 leading-relaxed">{items.map(item => <li key={item}><span aria-disabled="true" className="text-muted">{item}</span></li>)}</ul>
+          <p className="text-[10px] text-muted">به‌زودی</p>
+        </div>)}
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 mt-10 pt-6 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-muted">

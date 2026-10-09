@@ -3,15 +3,9 @@ import { useTheme, type ThemePreference } from './ThemeProvider';
 
 export default function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
-  const Icon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
-  return (
-    <label className="theme-switcher flex items-center gap-1.5 rounded-xl border border-line bg-surface-soft px-2.5 py-2 text-muted">
-      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-      <select aria-label="حالت نمایش" value={theme} onChange={event => setTheme(event.target.value as ThemePreference)} className="w-[64px] bg-transparent text-xs font-medium text-primary cursor-pointer">
-        <option value="system">سیستم</option>
-        <option value="light">روشن</option>
-        <option value="dark">تاریک</option>
-      </select>
-    </label>
-  );
+  return <div className="flex gap-2" role="group" aria-label="حالت نمایش">
+    {([{value:'system', label:'هماهنگ با سیستم', Icon:Monitor}, {value:'light', label:'حالت روشن', Icon:Sun}, {value:'dark', label:'حالت تاریک', Icon:Moon}] as const).map(({value,label,Icon}) =>
+      <button key={value} title={label} aria-label={label} aria-pressed={theme === value} onClick={() => setTheme(value as ThemePreference)} className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${theme === value ? 'border-brand bg-brand/10 text-brand' : 'border-line text-muted hover:bg-surface-soft'}`}><Icon className="h-5 w-5" aria-hidden="true" /></button>
+    )}
+  </div>;
 }

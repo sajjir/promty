@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Bookmark, ChevronDown, Home, LayoutDashboard, LogIn, LogOut, Menu, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { BookOpen, TrendingUp, FileText, WandSparkles, Bot, Bookmark, ChevronDown, Home, LayoutDashboard, LogIn, LogOut, Menu, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import ThemeSwitcher from './ThemeSwitcher';
 import { Z } from '../lib/zIndex';
@@ -55,7 +55,7 @@ export default function SiteHeader() {
         </Link>
         <div className="hidden md:block">{navigation()}</div>
         <div className="flex shrink-0 items-center gap-2">
-          <ThemeSwitcher />
+          <NavLink to="/" end aria-label="صفحه اصلی" title="صفحه اصلی" className="flex h-11 w-11 items-center justify-center rounded-xl text-secondary hover:bg-surface-soft"><Home className="h-5 w-5" aria-hidden="true" /></NavLink>
           {user ? (
             <div className="relative" ref={accountRef} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setAccountOpen(false); }}>
               <button ref={accountButtonRef} aria-label="حساب کاربری" aria-expanded={accountOpen} aria-controls="account-panel" onClick={() => { setAccountOpen(!accountOpen); setMobileOpen(false); }} className="flex items-center gap-2 rounded-xl border border-line p-1.5 text-primary hover:bg-surface-soft">
@@ -70,10 +70,12 @@ export default function SiteHeader() {
               </div>}
             </div>
           ) : <button id="open-auth-modal-btn" title="ورود / ثبت‌نام" onClick={() => setPhoneModalOpen(true)} className="flex items-center gap-2 rounded-xl bg-brand-solid px-3 py-2.5 text-sm font-semibold text-white hover:bg-brand-hover"><LogIn className="h-4 w-4" /><span className="hidden sm:inline">ورود / ثبت‌نام</span></button>}
-          <button ref={mobileButtonRef} aria-label={mobileOpen ? 'بستن منوی اصلی' : 'باز کردن منوی اصلی'} aria-expanded={mobileOpen} aria-controls="mobile-navigation" className="rounded-xl p-2 text-secondary hover:bg-surface-soft md:hidden" onClick={() => { setMobileOpen(!mobileOpen); setAccountOpen(false); }}>{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+          <button ref={mobileButtonRef} aria-label={mobileOpen ? 'بستن منوی اصلی' : 'باز کردن منوی اصلی'} aria-expanded={mobileOpen} aria-controls="mobile-navigation" className="rounded-xl p-2 text-secondary hover:bg-surface-soft" onClick={() => { setMobileOpen(!mobileOpen); setAccountOpen(false); }}>{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
         </div>
       </div>
-      {mobileOpen && <div id="mobile-navigation" className="border-t border-line bg-surface px-4 py-3 md:hidden">{navigation(true)}</div>}
+      {mobileOpen && <div id="mobile-navigation" className="border-t border-line bg-surface px-4 py-3 max-h-[calc(100dvh-72px)] overflow-y-auto"><div className="max-w-7xl mx-auto grid gap-4 md:grid-cols-2">{navigation(true)}<nav aria-label="بخش‌های آینده" className="grid gap-1">{[
+            {label:'آموزش پرامپت‌ها', Icon:BookOpen}, {label:'ترندها', Icon:TrendingUp}, {label:'پرامپت‌ها', Icon:FileText}, {label:'مهارت‌ها (Skills)', Icon:WandSparkles}, {label:'AGENTS.md', Icon:Bot},
+          ].map(({label,Icon}) => <span key={label} aria-disabled="true" className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-secondary"><Icon className="h-4 w-4 shrink-0" aria-hidden="true" />{label}<span className="mr-auto text-[10px] text-muted">به‌زودی</span></span>)}</nav><div className="border-t border-line pt-3 md:col-span-2"><p className="mb-2 text-xs text-muted">حالت نمایش</p><ThemeSwitcher /></div></div></div>}
     </header>
   );
 }
