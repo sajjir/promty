@@ -3,7 +3,10 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "./AuthContext";
 
 export default function GoogleLoginButton() {
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, googleClientId } = useAuth();
+
+  // App only mounts GoogleOAuthProvider when this configuration exists.
+  if (!googleClientId) return null;
 
   const handleSuccess = async (credentialResponse: any) => {
     if (credentialResponse.credential) {

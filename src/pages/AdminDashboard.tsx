@@ -759,8 +759,8 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 gap-3 text-slate-400">
-        <Loader2 className="w-8 h-8 animate-spin text-[#6C47FF]" />
+      <div className="flex flex-col items-center justify-center py-32 gap-3 text-muted">
+        <Loader2 className="w-8 h-8 animate-spin text-brand" />
         <p className="text-xs font-semibold">در حال بارگذاری ایمن مرکز کنترل ادمین...</p>
       </div>
     );
@@ -770,19 +770,19 @@ export default function AdminDashboard() {
     <div className="space-y-8 pb-16 animate-fade-in text-right" dir="rtl">
       
       {/* Top Banner Control Panel */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-6 border border-slate-100 rounded-2xl shadow-sm">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-surface p-6 border border-line rounded-2xl shadow-sm">
         <div className="space-y-1">
-          <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
+          <h1 className="text-xl font-black text-primary flex items-center gap-2">
             <span>🛡️</span>
             <span>مرکز کنترل و مدیریت Promty.ir</span>
           </h1>
-          <p className="text-xs text-slate-400">سیستم مدیریت متمرکز پرامپت‌ها، تاکسونومی‌های پویا و گراف دانش پلتفرم بدون نیاز به تغییر کد</p>
+          <p className="text-xs text-muted">سیستم مدیریت متمرکز پرامپت‌ها، تاکسونومی‌های پویا و گراف دانش پلتفرم بدون نیاز به تغییر کد</p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-2 border border-rose-100 hover:bg-rose-50 text-rose-600 rounded-xl text-xs font-bold transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 border border-danger-text hover:bg-danger-soft text-danger-text rounded-xl text-xs font-bold transition cursor-pointer"
           >
             <LogOut className="w-4.5 h-4.5" />
             <span>خروج از ادمین</span>
@@ -791,7 +791,7 @@ export default function AdminDashboard() {
           <Link
             id="create-new-prompt-btn"
             to="/admin/prompts/new"
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] text-white rounded-xl text-xs font-bold shadow-md shadow-[#6C47FF]/10 transition"
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-brand-solid hover:bg-brand-solid text-white rounded-xl text-xs font-bold shadow-md shadow-brand/10 transition"
           >
             <Plus className="w-4 h-4" />
             <span>افزودن پرامپت جدید</span>
@@ -802,33 +802,33 @@ export default function AdminDashboard() {
       {/* Stats Board Dashboard */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 border border-slate-100 rounded-2xl shadow-sm flex items-center gap-4">
-            <div className="p-4 bg-[#6C47FF]/10 text-[#6C47FF] rounded-xl">
+          <div className="bg-surface p-6 border border-line rounded-2xl shadow-sm flex items-center gap-4">
+            <div className="p-4 bg-brand-solid/10 text-brand rounded-xl">
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-xs font-bold text-slate-400 block mb-1">تعداد کل پرامپت‌ها</span>
-              <span className="text-2xl font-black text-slate-800 font-mono">{stats.totalPrompts}</span>
+              <span className="text-xs font-bold text-muted block mb-1">تعداد کل پرامپت‌ها</span>
+              <span className="text-2xl font-black text-primary font-mono">{stats.totalPrompts}</span>
             </div>
           </div>
 
-          <div className="bg-white p-6 border border-slate-100 rounded-2xl shadow-sm flex items-center gap-4">
-            <div className="p-4 bg-emerald-500/10 text-emerald-600 rounded-xl">
+          <div className="bg-surface p-6 border border-line rounded-2xl shadow-sm flex items-center gap-4">
+            <div className="p-4 bg-emerald-500/10 text-success-text rounded-xl">
               <CheckCircle className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-xs font-bold text-slate-400 block mb-1">دفعات کپی و استفاده</span>
-              <span className="text-2xl font-black text-slate-800 font-mono">{stats.totalUsages}</span>
+              <span className="text-xs font-bold text-muted block mb-1">دفعات کپی و استفاده</span>
+              <span className="text-2xl font-black text-primary font-mono">{stats.totalUsages}</span>
             </div>
           </div>
 
-          <div className="bg-white p-6 border border-slate-100 rounded-2xl shadow-sm flex items-center gap-4">
-            <div className="p-4 bg-amber-500/10 text-amber-600 rounded-xl">
+          <div className="bg-surface p-6 border border-line rounded-2xl shadow-sm flex items-center gap-4">
+            <div className="p-4 bg-amber-500/10 text-caution-text rounded-xl">
               <BarChart3 className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-xs font-bold text-slate-400 block mb-1">برترین پرامپت آرشیو</span>
-              <span className="text-xs font-black text-slate-700 block truncate max-w-[200px]" title={stats.mostPopular}>
+              <span className="text-xs font-bold text-muted block mb-1">برترین پرامپت آرشیو</span>
+              <span className="text-xs font-black text-primary block truncate max-w-[200px]" title={stats.mostPopular}>
                 {stats.mostPopular}
               </span>
             </div>
@@ -837,13 +837,13 @@ export default function AdminDashboard() {
       )}
 
       {/* Navigation Command Center Tabs */}
-      <div className="flex border-b border-slate-200 gap-1 overflow-x-auto pb-0.5">
+      <div className="flex border-b border-line gap-1 overflow-x-auto pb-0.5">
         <button
           onClick={() => setActiveTab("prompts")}
           className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold transition-all border-b-2 rounded-t-xl shrink-0 cursor-pointer ${
             activeTab === "prompts"
-              ? "border-[#6C47FF] text-[#6C47FF] bg-[#6C47FF]/5"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              ? "border-brand text-brand bg-brand-solid/5"
+              : "border-transparent text-muted hover:text-primary hover:bg-surface-soft"
           }`}
         >
           <Database className="w-4 h-4" />
@@ -854,8 +854,8 @@ export default function AdminDashboard() {
           onClick={() => setActiveTab("taxonomies")}
           className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold transition-all border-b-2 rounded-t-xl shrink-0 cursor-pointer ${
             activeTab === "taxonomies"
-              ? "border-[#6C47FF] text-[#6C47FF] bg-[#6C47FF]/5"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              ? "border-brand text-brand bg-brand-solid/5"
+              : "border-transparent text-muted hover:text-primary hover:bg-surface-soft"
           }`}
         >
           <Tag className="w-4 h-4" />
@@ -866,8 +866,8 @@ export default function AdminDashboard() {
           onClick={() => setActiveTab("graph")}
           className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold transition-all border-b-2 rounded-t-xl shrink-0 cursor-pointer ${
             activeTab === "graph"
-              ? "border-[#6C47FF] text-[#6C47FF] bg-[#6C47FF]/5"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              ? "border-brand text-brand bg-brand-solid/5"
+              : "border-transparent text-muted hover:text-primary hover:bg-surface-soft"
           }`}
         >
           <Network className="w-4 h-4" />
@@ -878,8 +878,8 @@ export default function AdminDashboard() {
           onClick={() => setActiveTab("branding")}
           className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold transition-all border-b-2 rounded-t-xl shrink-0 cursor-pointer ${
             activeTab === "branding"
-              ? "border-[#6C47FF] text-[#6C47FF] bg-[#6C47FF]/5"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              ? "border-brand text-brand bg-brand-solid/5"
+              : "border-transparent text-muted hover:text-primary hover:bg-surface-soft"
           }`}
         >
           <ImageIcon className="w-4 h-4" />
@@ -890,8 +890,8 @@ export default function AdminDashboard() {
           onClick={() => setActiveTab("ai")}
           className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold transition-all border-b-2 rounded-t-xl shrink-0 cursor-pointer ${
             activeTab === "ai"
-              ? "border-[#6C47FF] text-[#6C47FF] bg-[#6C47FF]/5"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              ? "border-brand text-brand bg-brand-solid/5"
+              : "border-transparent text-muted hover:text-primary hover:bg-surface-soft"
           }`}
         >
           <Settings className="w-4 h-4" />
@@ -905,14 +905,14 @@ export default function AdminDashboard() {
           }}
           className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold transition-all border-b-2 rounded-t-xl shrink-0 cursor-pointer ${
             activeTab === "roles"
-              ? "border-[#6C47FF] text-[#6C47FF] bg-[#6C47FF]/5"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              ? "border-brand text-brand bg-brand-solid/5"
+              : "border-transparent text-muted hover:text-primary hover:bg-surface-soft"
           }`}
         >
           <Users className="w-4 h-4" />
           <span>۶. مدیریت کاربران و دسترسی‌ها (RBAC)</span>
           {isSuperAdmin && (
-            <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-amber-500/15 text-amber-800 border border-amber-300 font-black">
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-amber-500/15 text-caution-text border border-caution-text font-black">
               مدیر کل
             </span>
           )}
@@ -920,7 +920,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main Tab Contents */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+      <div className="bg-surface border border-line rounded-3xl p-6 shadow-sm">
         <AnimatePresence mode="wait">
           
           {/* TAB 1: Prompts Listing */}
@@ -934,12 +934,12 @@ export default function AdminDashboard() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-black text-slate-800">آرشیو جامع پرامپت‌ها</h3>
-                  <p className="text-xs text-slate-400">لیست کامل پرامپت‌های مهندسی‌شده همراه با فیلتر سریع فعال/غیرفعال</p>
+                  <h3 className="text-base font-black text-primary">آرشیو جامع پرامپت‌ها</h3>
+                  <p className="text-xs text-muted">لیست کامل پرامپت‌های مهندسی‌شده همراه با فیلتر سریع فعال/غیرفعال</p>
                 </div>
                 <Link
                   to="/admin/prompts/new"
-                  className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-[#6C47FF] font-bold text-xs py-2 px-4 rounded-xl transition"
+                  className="flex items-center gap-1 bg-surface-soft hover:bg-surface-inset text-brand font-bold text-xs py-2 px-4 rounded-xl transition"
                 >
                   <Plus className="w-4 h-4" />
                   <span>پرامپت جدید</span>
@@ -947,9 +947,9 @@ export default function AdminDashboard() {
               </div>
 
               {prompts.length > 0 ? (
-                <div className="overflow-x-auto rounded-xl border border-slate-100">
-                  <table className="w-full text-sm text-right text-slate-600 font-sans">
-                    <thead className="bg-slate-50 text-slate-500 text-xs font-bold border-b border-slate-100">
+                <div className="overflow-x-auto rounded-xl border border-line">
+                  <table className="w-full text-sm text-right text-secondary font-sans">
+                    <thead className="bg-surface-soft text-muted text-xs font-bold border-b border-line">
                       <tr>
                         <th scope="col" className="px-6 py-4">عنوان پرامپت</th>
                         <th scope="col" className="px-6 py-4">ابزار اصلی / موضوع</th>
@@ -959,24 +959,24 @@ export default function AdminDashboard() {
                         <th scope="col" className="px-6 py-4 text-left">عملیات</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-line">
                       {prompts.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-50 transition duration-150">
-                          <td className="px-6 py-4 font-bold text-slate-800 max-w-sm">
+                        <tr key={p.id} className="hover:bg-surface-soft transition duration-150">
+                          <td className="px-6 py-4 font-bold text-primary max-w-sm">
                             <div className="flex items-center gap-2">
                               <span className="truncate max-w-[200px]">{p.title}</span>
                               {p.id.startsWith("p_contrib_") && !p.isActive && (
-                                <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-200 animate-pulse shrink-0">
+                                <span className="bg-caution-soft text-caution-text text-[10px] font-black px-2 py-0.5 rounded-full border border-caution-text animate-pulse shrink-0">
                                   مشارکت در انتظار تایید 📬
                                 </span>
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-xs font-semibold text-slate-500">
+                          <td className="px-6 py-4 text-xs font-semibold text-muted">
                             {(p.tools && p.tools.length > 0 ? p.tools.join("، ") : null) || (p.domains && p.domains.length > 0 ? p.domains.join("، ") : null) || (p as any).category || "عمومی"}
                           </td>
                           <td className="px-6 py-4">
-                            <span className="text-[10px] bg-slate-100 text-slate-600 font-black px-2 py-0.5 rounded">
+                            <span className="text-[10px] bg-surface-soft text-secondary font-black px-2 py-0.5 rounded">
                               {p.difficulty || "Beginner"}
                             </span>
                           </td>
@@ -987,8 +987,8 @@ export default function AdminDashboard() {
                               disabled={actionLoading === p.id}
                               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition ${
                                 p.isActive
-                                  ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                                  : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                                  ? "bg-success-soft text-success-text hover:bg-success-soft"
+                                  : "bg-surface-soft text-muted hover:bg-surface-inset"
                               }`}
                             >
                               {p.isActive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -999,7 +999,7 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-end gap-2">
                               <Link
                                 to={`/admin/prompts/${p.id}/edit`}
-                                className="p-1 px-2.5 text-blue-600 hover:bg-blue-50 border border-blue-100 rounded-lg text-xs font-bold flex items-center gap-1"
+                                className="p-1 px-2.5 text-info-text hover:bg-info-soft border border-info-text rounded-lg text-xs font-bold flex items-center gap-1"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
                                 <span>ویرایش</span>
@@ -1007,7 +1007,7 @@ export default function AdminDashboard() {
                               <button
                                 onClick={() => handleDeletePrompt(p.id)}
                                 disabled={actionLoading === p.id}
-                                className="p-1 px-2.5 text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                                className="p-1 px-2.5 text-danger-text hover:bg-danger-soft border border-danger-text rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                                 <span>حذف</span>
@@ -1020,9 +1020,9 @@ export default function AdminDashboard() {
                   </table>
                 </div>
               ) : (
-                <div className="p-12 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                  <Database className="w-8 h-8 mx-auto text-slate-300 mb-2" />
-                  <p className="text-sm font-bold text-slate-600">هنوز هیچ پرامپتی اضافه نکرده‌اید.</p>
+                <div className="p-12 text-center text-muted bg-surface-soft rounded-2xl border border-dashed border-line">
+                  <Database className="w-8 h-8 mx-auto text-muted mb-2" />
+                  <p className="text-sm font-bold text-secondary">هنوز هیچ پرامپتی اضافه نکرده‌اید.</p>
                 </div>
               )}
             </motion.div>
@@ -1038,25 +1038,25 @@ export default function AdminDashboard() {
               className="space-y-8"
             >
               <div>
-                <h3 className="text-base font-black text-slate-800">۲. مدیریت تاکسونومی‌ها و فیلدهای هوشمند معنایی</h3>
-                <p className="text-xs text-slate-400">تاکسونومی‌ها ساختارهای اصلی طبقه‌بندی پلتفرم هستند که موتور جستجو بر پایه آن‌ها الگوها را می‌فهمد.</p>
+                <h3 className="text-base font-black text-primary">۲. مدیریت تاکسونومی‌ها و فیلدهای هوشمند معنایی</h3>
+                <p className="text-xs text-muted">تاکسونومی‌ها ساختارهای اصلی طبقه‌بندی پلتفرم هستند که موتور جستجو بر پایه آن‌ها الگوها را می‌فهمد.</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Taxonomy Creator Form */}
-                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 space-y-4">
-                  <h4 className="text-xs font-extrabold text-slate-700 flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-100 inline-block">
-                    <Plus className="w-3.5 h-3.5 text-[#6C47FF]" />
+                <div className="bg-surface-soft/50 p-5 rounded-2xl border border-line space-y-4">
+                  <h4 className="text-xs font-extrabold text-primary flex items-center gap-1 bg-surface px-3 py-1.5 rounded-lg border border-line inline-block">
+                    <Plus className="w-3.5 h-3.5 text-brand" />
                     <span>{editingTaxId ? "ویرایش فیلد معنایی (تاکسونومی)" : "ایجاد فیلد معنایی (تاکسونومی) جدید"}</span>
                   </h4>
 
                   <form onSubmit={handleCreateTaxonomy} className="space-y-4 text-right">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500">نوع تاکسونومی (Type)</label>
+                      <label className="text-xs font-bold text-muted">نوع تاکسونومی (Type)</label>
                       <select
                         value={newTaxType}
                         onChange={(e) => setNewTaxType(e.target.value)}
-                        className="w-full text-xs py-2 px-3 bg-white border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-right font-semibold"
+                        className="w-full text-xs py-2 px-3 bg-surface border border-line rounded-xl focus:border-brand outline-none text-right font-semibold"
                       >
                         <option value="intent">Intent (قصد/هدف)</option>
                         <option value="domain">Domain (حوزه کاری)</option>
@@ -1069,49 +1069,49 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500">اسلاگ یکتا (Slug - انگلیسی بدون فاصله)</label>
+                      <label className="text-xs font-bold text-muted">اسلاگ یکتا (Slug - انگلیسی بدون فاصله)</label>
                       <input
                         type="text"
                         placeholder="e.g. video-editing"
                         value={newTaxSlug}
                         onChange={(e) => setNewTaxSlug(e.target.value)}
-                        className="w-full text-xs py-2 px-3 bg-white border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-left font-mono"
+                        className="w-full text-xs py-2 px-3 bg-surface border border-line rounded-xl focus:border-brand outline-none text-left font-mono"
                         required
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500">عنوان انگلیسی (Title English)</label>
+                      <label className="text-xs font-bold text-muted">عنوان انگلیسی (Title English)</label>
                       <input
                         type="text"
                         placeholder="e.g. Video Editing"
                         value={newTaxTitleEn}
                         onChange={(e) => setNewTaxTitleEn(e.target.value)}
-                        className="w-full text-xs py-2 px-3 bg-white border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-left"
+                        className="w-full text-xs py-2 px-3 bg-surface border border-line rounded-xl focus:border-brand outline-none text-left"
                         required
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500">عنوان فارسی (توضیح برای کاربر)</label>
+                      <label className="text-xs font-bold text-muted">عنوان فارسی (توضیح برای کاربر)</label>
                       <input
                         type="text"
                         placeholder="مثال: تدوین ویدیو"
                         value={newTaxTitleFa}
                         onChange={(e) => setNewTaxTitleFa(e.target.value)}
-                        className="w-full text-xs py-2 px-3 bg-white border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-right"
+                        className="w-full text-xs py-2 px-3 bg-surface border border-line rounded-xl focus:border-brand outline-none text-right"
                         required
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500">توضیحات فارسی (اختیاری)</label>
+                      <label className="text-xs font-bold text-muted">توضیحات فارسی (اختیاری)</label>
                       <textarea
                         rows={2}
                         placeholder="توضیح مختصری درباره کارایی این فیلد..."
                         value={newTaxDescFa}
                         onChange={(e) => setNewTaxDescFa(e.target.value)}
-                        className="w-full text-xs py-2 px-3 bg-white border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-right"
+                        className="w-full text-xs py-2 px-3 bg-surface border border-line rounded-xl focus:border-brand outline-none text-right"
                       />
                     </div>
 
@@ -1119,7 +1119,7 @@ export default function AdminDashboard() {
                       <button
                         type="submit"
                         disabled={taxActionLoading}
-                        className="flex-1 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition cursor-pointer"
+                        className="flex-1 py-2.5 bg-brand-solid hover:bg-brand-solid disabled:bg-surface-inset text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition cursor-pointer"
                       >
                         {taxActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>{editingTaxId ? "اعمال تغییرات ✍️" : "ذخیره فیلد معنایی 📂"}</span>}
                       </button>
@@ -1128,7 +1128,7 @@ export default function AdminDashboard() {
                         <button
                           type="button"
                           onClick={handleCancelEditTaxonomy}
-                          className="py-2.5 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                          className="py-2.5 px-4 bg-surface-inset hover:bg-surface-inset text-primary font-bold text-xs rounded-xl transition cursor-pointer"
                         >
                           انصراف
                         </button>
@@ -1136,14 +1136,14 @@ export default function AdminDashboard() {
                     </div>
 
                     {taxSuccess && (
-                      <div className="p-3 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-xl border border-emerald-100 flex items-center gap-1.5">
-                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <div className="p-3 bg-success-soft text-success-text text-xs font-bold rounded-xl border border-success-text flex items-center gap-1.5">
+                        <CheckCircle className="w-4 h-4 text-success-text shrink-0" />
                         <span>{taxSuccess}</span>
                       </div>
                     )}
 
                     {taxError && (
-                      <div className="p-3 bg-rose-50 text-rose-600 text-xs font-bold rounded-xl border border-rose-100">
+                      <div className="p-3 bg-danger-soft text-danger-text text-xs font-bold rounded-xl border border-danger-text">
                         <span>⚠️ {taxError}</span>
                       </div>
                     )}
@@ -1153,11 +1153,11 @@ export default function AdminDashboard() {
                 {/* Taxonomy Viewer & Editor */}
                 <div className="lg:col-span-2 space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400">فیلتر لیست طبقه‌بندی فعال:</span>
+                    <span className="text-xs font-bold text-muted">فیلتر لیست طبقه‌بندی فعال:</span>
                     <select
                       value={selectedTaxonomyType}
                       onChange={(e) => setSelectedTaxonomyType(e.target.value)}
-                      className="text-xs bg-slate-50 border border-slate-200 rounded-lg py-1 px-3 font-semibold outline-none focus:border-[#6C47FF]"
+                      className="text-xs bg-surface-soft border border-line rounded-lg py-1 px-3 font-semibold outline-none focus:border-brand"
                     >
                       <option value="intent">Intent (اهداف)</option>
                       <option value="domain">Domain (حوزه‌ها)</option>
@@ -1169,9 +1169,9 @@ export default function AdminDashboard() {
                     </select>
                   </div>
 
-                  <div className="overflow-x-auto rounded-xl border border-slate-100">
-                    <table className="w-full text-sm text-right text-slate-600 font-sans">
-                      <thead className="bg-slate-50 text-slate-500 text-xs font-bold border-b border-slate-100">
+                  <div className="overflow-x-auto rounded-xl border border-line">
+                    <table className="w-full text-sm text-right text-secondary font-sans">
+                      <thead className="bg-surface-soft text-muted text-xs font-bold border-b border-line">
                         <tr>
                           <th scope="col" className="px-6 py-3">عنوان فارسی</th>
                           <th scope="col" className="px-6 py-3">عنوان انگلیسی</th>
@@ -1179,23 +1179,23 @@ export default function AdminDashboard() {
                           <th scope="col" className="px-6 py-3 text-left">عملیات</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 text-xs">
+                      <tbody className="divide-y divide-line text-xs">
                         {taxonomies.filter(t => t.type === selectedTaxonomyType).map((t) => (
-                          <tr key={t.id} className="hover:bg-slate-50">
-                            <td className="px-6 py-3 font-bold text-slate-800">{t.titleFa}</td>
-                            <td className="px-6 py-3 font-medium text-slate-600">{t.titleEn}</td>
-                            <td className="px-6 py-3 font-mono text-slate-400">{t.slug}</td>
+                          <tr key={t.id} className="hover:bg-surface-soft">
+                            <td className="px-6 py-3 font-bold text-primary">{t.titleFa}</td>
+                            <td className="px-6 py-3 font-medium text-secondary">{t.titleEn}</td>
+                            <td className="px-6 py-3 font-mono text-muted">{t.slug}</td>
                             <td className="px-6 py-3 text-left">
                               <div className="flex items-center justify-end gap-2">
                                 <button
                                   onClick={() => handleEditTaxonomyStart(t)}
-                                  className="p-1 px-2.5 border border-blue-100 text-blue-600 hover:bg-blue-50 rounded-lg font-bold transition cursor-pointer"
+                                  className="p-1 px-2.5 border border-info-text text-info-text hover:bg-info-soft rounded-lg font-bold transition cursor-pointer"
                                 >
                                   ویرایش
                                 </button>
                                 <button
                                   onClick={() => handleDeleteTaxonomy(t.id)}
-                                  className="p-1 px-2.5 border border-rose-100 text-rose-500 hover:bg-rose-50 rounded-lg font-bold transition cursor-pointer"
+                                  className="p-1 px-2.5 border border-danger-text text-danger-text hover:bg-danger-soft rounded-lg font-bold transition cursor-pointer"
                                 >
                                   حذف
                                 </button>
@@ -1205,7 +1205,7 @@ export default function AdminDashboard() {
                         ))}
                         {taxonomies.filter(t => t.type === selectedTaxonomyType).length === 0 && (
                           <tr>
-                            <td colSpan={4} className="p-6 text-center text-slate-400">هیچ عنصری در این دسته‌بندی یافت نشد.</td>
+                            <td colSpan={4} className="p-6 text-center text-muted">هیچ عنصری در این دسته‌بندی یافت نشد.</td>
                           </tr>
                         )}
                       </tbody>
@@ -1226,31 +1226,31 @@ export default function AdminDashboard() {
               className="space-y-8"
             >
               <div>
-                <h3 className="text-base font-black text-slate-800">۳. مهندسی روابط و گراف دانش (Knowledge Graph Expansion)</h3>
-                <p className="text-xs text-slate-400">در گراف دانش پرامپتی، پرامپت‌ها دیگر جزیره‌های جدا افتاده نیستند! ارتباط دادن پرامپت به ابزارها، اهداف و سایر پرامپت‌ها باعث بهبود هوش جستجو و معرفی پرامپت‌های مکمل می‌شود.</p>
+                <h3 className="text-base font-black text-primary">۳. مهندسی روابط و گراف دانش (Knowledge Graph Expansion)</h3>
+                <p className="text-xs text-muted">در گراف دانش پرامپتی، پرامپت‌ها دیگر جزیره‌های جدا افتاده نیستند! ارتباط دادن پرامپت به ابزارها، اهداف و سایر پرامپت‌ها باعث بهبود هوش جستجو و معرفی پرامپت‌های مکمل می‌شود.</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Create Link Form */}
-                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 space-y-4">
-                  <h4 className="text-xs font-extrabold text-slate-700 flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-100 inline-block">
-                    <Network className="w-3.5 h-3.5 text-[#6C47FF]" />
+                <div className="bg-surface-soft/50 p-5 rounded-2xl border border-line space-y-4">
+                  <h4 className="text-xs font-extrabold text-primary flex items-center gap-1 bg-surface px-3 py-1.5 rounded-lg border border-line inline-block">
+                    <Network className="w-3.5 h-3.5 text-brand" />
                     <span>ایجاد ارتباط معنایی در گراف</span>
                   </h4>
 
                   <form onSubmit={handleCreateRelationship} className="space-y-4 text-right">
                     
                     {/* Source selection */}
-                    <div className="space-y-3 p-3 bg-white rounded-xl border border-slate-100">
-                      <span className="text-[10px] text-indigo-600 font-bold block">مرحله اول: انتخاب مبدا (Source)</span>
+                    <div className="space-y-3 p-3 bg-surface rounded-xl border border-line">
+                      <span className="text-[10px] text-brand font-bold block">مرحله اول: انتخاب مبدا (Source)</span>
                       
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <label className="text-[10px] text-slate-400 font-bold block">نوع مبدا</label>
+                          <label className="text-[10px] text-muted font-bold block">نوع مبدا</label>
                           <select
                             value={relSourceType}
                             onChange={(e) => { setRelSourceType(e.target.value); setRelSourceId(""); }}
-                            className="w-full text-xs py-1.5 px-2 bg-slate-50 border border-slate-200 rounded-lg outline-none"
+                            className="w-full text-xs py-1.5 px-2 bg-surface-soft border border-line rounded-lg outline-none"
                           >
                             <option value="Prompt">پرامپت</option>
                             <option value="TaxonomyTerm">تاکسونومی</option>
@@ -1258,11 +1258,11 @@ export default function AdminDashboard() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[10px] text-slate-400 font-bold block">انتخاب عنصر</label>
+                          <label className="text-[10px] text-muted font-bold block">انتخاب عنصر</label>
                           <select
                             value={relSourceId}
                             onChange={(e) => setRelSourceId(e.target.value)}
-                            className="w-full text-xs py-1.5 px-2 bg-slate-50 border border-slate-200 rounded-lg outline-none"
+                            className="w-full text-xs py-1.5 px-2 bg-surface-soft border border-line rounded-lg outline-none"
                             required
                           >
                             <option value="">انتخاب کنید...</option>
@@ -1276,16 +1276,16 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* Target selection */}
-                    <div className="space-y-3 p-3 bg-white rounded-xl border border-slate-100">
-                      <span className="text-[10px] text-emerald-600 font-bold block">مرحله دوم: انتخاب مقصد (Target)</span>
+                    <div className="space-y-3 p-3 bg-surface rounded-xl border border-line">
+                      <span className="text-[10px] text-success-text font-bold block">مرحله دوم: انتخاب مقصد (Target)</span>
                       
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <label className="text-[10px] text-slate-400 font-bold block">نوع مقصد</label>
+                          <label className="text-[10px] text-muted font-bold block">نوع مقصد</label>
                           <select
                             value={relTargetType}
                             onChange={(e) => { setRelTargetType(e.target.value); setRelTargetId(""); }}
-                            className="w-full text-xs py-1.5 px-2 bg-slate-50 border border-slate-200 rounded-lg outline-none"
+                            className="w-full text-xs py-1.5 px-2 bg-surface-soft border border-line rounded-lg outline-none"
                           >
                             <option value="TaxonomyTerm">تاکسونومی</option>
                             <option value="Prompt">پرامپت</option>
@@ -1293,11 +1293,11 @@ export default function AdminDashboard() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[10px] text-slate-400 font-bold block">انتخاب عنصر</label>
+                          <label className="text-[10px] text-muted font-bold block">انتخاب عنصر</label>
                           <select
                             value={relTargetId}
                             onChange={(e) => setRelTargetId(e.target.value)}
-                            className="w-full text-xs py-1.5 px-2 bg-slate-50 border border-slate-200 rounded-lg outline-none"
+                            className="w-full text-xs py-1.5 px-2 bg-surface-soft border border-line rounded-lg outline-none"
                             required
                           >
                             <option value="">انتخاب کنید...</option>
@@ -1312,11 +1312,11 @@ export default function AdminDashboard() {
 
                     {/* Relation metadata */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500">نوع رابطه (Relationship Type)</label>
+                      <label className="text-xs font-bold text-muted">نوع رابطه (Relationship Type)</label>
                       <select
                         value={relType}
                         onChange={(e) => setRelType(e.target.value)}
-                        className="w-full text-xs py-2 px-3 bg-white border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none"
+                        className="w-full text-xs py-2 px-3 bg-surface border border-line rounded-xl focus:border-brand outline-none"
                       >
                         <option value="Prompt_To_Tool">Prompt_To_Tool (پرامپت به ابزار)</option>
                         <option value="Prompt_To_Intent">Prompt_To_Intent (پرامپت به قصد)</option>
@@ -1328,7 +1328,7 @@ export default function AdminDashboard() {
 
                     <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-500 font-bold">میزان اطمینان</label>
+                        <label className="text-[10px] text-muted font-bold">میزان اطمینان</label>
                         <input
                           type="number"
                           step="0.1"
@@ -1336,11 +1336,11 @@ export default function AdminDashboard() {
                           max="1"
                           value={relConfidence}
                           onChange={(e) => setRelConfidence(e.target.value)}
-                          className="w-full text-xs py-1.5 px-2 bg-white border border-slate-200 rounded-lg text-center"
+                          className="w-full text-xs py-1.5 px-2 bg-surface border border-line rounded-lg text-center"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-500 font-bold">وزن تعامل (Weight)</label>
+                        <label className="text-[10px] text-muted font-bold">وزن تعامل (Weight)</label>
                         <input
                           type="number"
                           step="0.1"
@@ -1348,16 +1348,16 @@ export default function AdminDashboard() {
                           max="1"
                           value={relWeight}
                           onChange={(e) => setRelWeight(e.target.value)}
-                          className="w-full text-xs py-1.5 px-2 bg-white border border-slate-200 rounded-lg text-center"
+                          className="w-full text-xs py-1.5 px-2 bg-surface border border-line rounded-lg text-center"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-500 font-bold">اولویت (Priority)</label>
+                        <label className="text-[10px] text-muted font-bold">اولویت (Priority)</label>
                         <input
                           type="number"
                           value={relPriority}
                           onChange={(e) => setRelPriority(e.target.value)}
-                          className="w-full text-xs py-1.5 px-2 bg-white border border-slate-200 rounded-lg text-center"
+                          className="w-full text-xs py-1.5 px-2 bg-surface border border-line rounded-lg text-center"
                         />
                       </div>
                     </div>
@@ -1365,20 +1365,20 @@ export default function AdminDashboard() {
                     <button
                       type="submit"
                       disabled={graphActionLoading}
-                      className="w-full py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition"
+                      className="w-full py-2.5 bg-brand-solid hover:bg-brand-solid disabled:bg-surface-inset text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition"
                     >
                       {graphActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>تثبیت ارتباط در گراف 🔀</span>}
                     </button>
 
                     {graphSuccess && (
-                      <div className="p-3 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-xl border border-emerald-100 flex items-center gap-1.5">
-                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <div className="p-3 bg-success-soft text-success-text text-xs font-bold rounded-xl border border-success-text flex items-center gap-1.5">
+                        <CheckCircle className="w-4 h-4 text-success-text shrink-0" />
                         <span>{graphSuccess}</span>
                       </div>
                     )}
 
                     {graphError && (
-                      <div className="p-3 bg-rose-50 text-rose-600 text-xs font-bold rounded-xl border border-rose-100">
+                      <div className="p-3 bg-danger-soft text-danger-text text-xs font-bold rounded-xl border border-danger-text">
                         <span>⚠️ {graphError}</span>
                       </div>
                     )}
@@ -1387,11 +1387,11 @@ export default function AdminDashboard() {
 
                 {/* Relationships list */}
                 <div className="lg:col-span-2 space-y-4">
-                  <span className="text-xs font-bold text-slate-400">فهرست پیوندهای گراف دانش فعال ({relationships.length}):</span>
+                  <span className="text-xs font-bold text-muted">فهرست پیوندهای گراف دانش فعال ({relationships.length}):</span>
                   
-                  <div className="overflow-x-auto rounded-xl border border-slate-100 max-h-[500px] overflow-y-auto">
-                    <table className="w-full text-sm text-right text-slate-600 font-sans">
-                      <thead className="bg-slate-50 text-slate-500 text-xs font-bold border-b border-slate-100 sticky top-0">
+                  <div className="overflow-x-auto rounded-xl border border-line max-h-[500px] overflow-y-auto">
+                    <table className="w-full text-sm text-right text-secondary font-sans">
+                      <thead className="bg-surface-soft text-muted text-xs font-bold border-b border-line sticky top-0">
                         <tr>
                           <th scope="col" className="px-6 py-3">مبدا (Source)</th>
                           <th scope="col" className="px-6 py-3">نوع رابطه</th>
@@ -1400,7 +1400,7 @@ export default function AdminDashboard() {
                           <th scope="col" className="px-6 py-3 text-left">حذف</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 text-xs">
+                      <tbody className="divide-y divide-line text-xs">
                         {relationships.map((r) => {
                           // Find readable name of source and target
                           let srcName = r.sourceId;
@@ -1423,15 +1423,15 @@ export default function AdminDashboard() {
                           }
 
                           return (
-                            <tr key={r.id} className="hover:bg-slate-50">
-                              <td className="px-6 py-3 font-semibold text-indigo-700 max-w-[150px] truncate" title={srcName}>{srcName}</td>
-                              <td className="px-6 py-3 font-mono text-[10px] text-slate-400">{r.relationType}</td>
-                              <td className="px-6 py-3 font-semibold text-emerald-700 max-w-[150px] truncate" title={tgtName}>{tgtName}</td>
-                              <td className="px-6 py-3 text-center font-mono font-bold text-slate-500">W: {r.weight} | C: {r.confidenceScore}</td>
+                            <tr key={r.id} className="hover:bg-surface-soft">
+                              <td className="px-6 py-3 font-semibold text-brand max-w-[150px] truncate" title={srcName}>{srcName}</td>
+                              <td className="px-6 py-3 font-mono text-[10px] text-muted">{r.relationType}</td>
+                              <td className="px-6 py-3 font-semibold text-success-text max-w-[150px] truncate" title={tgtName}>{tgtName}</td>
+                              <td className="px-6 py-3 text-center font-mono font-bold text-muted">W: {r.weight} | C: {r.confidenceScore}</td>
                               <td className="px-6 py-3 text-left">
                                 <button
                                   onClick={() => handleDeleteRelationship(r.id)}
-                                  className="text-rose-500 hover:text-rose-700 font-bold text-xs"
+                                  className="text-danger-text hover:text-danger-text font-bold text-xs"
                                 >
                                   حذف
                                 </button>
@@ -1441,7 +1441,7 @@ export default function AdminDashboard() {
                         })}
                         {relationships.length === 0 && (
                           <tr>
-                            <td colSpan={5} className="p-12 text-center text-slate-400">هنوز هیچ پیوندی در گراف پلتفرم تعریف نشده است.</td>
+                            <td colSpan={5} className="p-12 text-center text-muted">هنوز هیچ پیوندی در گراف پلتفرم تعریف نشده است.</td>
                           </tr>
                         )}
                       </tbody>
@@ -1461,27 +1461,27 @@ export default function AdminDashboard() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-6"
             >
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-                <ImageIcon className="w-5 h-5 text-[#6C47FF]" />
+              <div className="flex items-center gap-2 pb-2 border-b border-line">
+                <ImageIcon className="w-5 h-5 text-brand" />
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">برندینگ، لوگو و ظاهر سایت</h3>
-                  <p className="text-[11px] text-slate-400">شخصی‌سازی نام پلتفرم، شعار، عناوین هیرو، متن‌های فوتر و تصویر لوگوی سراسری Promty</p>
+                  <h3 className="text-sm font-bold text-primary">برندینگ، لوگو و ظاهر سایت</h3>
+                  <p className="text-[11px] text-muted">شخصی‌سازی نام پلتفرم، شعار، عناوین هیرو، متن‌های فوتر و تصویر لوگوی سراسری Promty</p>
                 </div>
               </div>
 
               {/* Logo Upload & Preview Card */}
-              <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-4">
-                <h4 className="text-xs font-black text-slate-700 flex items-center gap-2">
-                  <Upload className="w-4 h-4 text-[#6C47FF]" />
+              <div className="bg-surface-soft/70 border border-line/80 rounded-2xl p-5 space-y-4">
+                <h4 className="text-xs font-black text-primary flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-brand" />
                   <span>لوگوی اختصاصی پلتفرم</span>
                 </h4>
 
                 <div className="flex flex-col sm:flex-row items-center gap-5">
-                  <div className="w-20 h-20 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="w-20 h-20 rounded-2xl bg-surface border border-line shadow-sm flex items-center justify-center overflow-hidden shrink-0">
                     {siteLogoLocal ? (
                       <img src={siteLogoLocal} alt="لوگوی سایت" className="w-full h-full object-contain p-2" />
                     ) : (
-                      <div className="w-full h-full bg-[#6C47FF]/10 text-[#6C47FF] flex flex-col items-center justify-center p-2 text-center">
+                      <div className="w-full h-full bg-brand-solid/10 text-brand flex flex-col items-center justify-center p-2 text-center">
                         <Sparkles className="w-6 h-6 mb-1" />
                         <span className="text-[9px] font-bold">بدون لوگو</span>
                       </div>
@@ -1489,11 +1489,11 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="space-y-2 flex-1 text-center sm:text-right">
-                    <p className="text-xs text-slate-600 font-medium">
-                      فرمت‌های مجاز: <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-[11px]">WEBP</code>، <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-[11px]">PNG</code>، <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-[11px]">SVG</code>
+                    <p className="text-xs text-secondary font-medium">
+                      فرمت‌های مجاز: <code className="bg-surface px-1.5 py-0.5 rounded border border-line font-mono text-[11px]">WEBP</code>، <code className="bg-surface px-1.5 py-0.5 rounded border border-line font-mono text-[11px]">PNG</code>، <code className="bg-surface px-1.5 py-0.5 rounded border border-line font-mono text-[11px]">SVG</code>
                     </p>
-                    <p className="text-[11px] text-slate-400">
-                      لوگو به صورت خودکار در ابعاد متناسب بهینه‌سازی شده و در <code className="bg-white px-1 py-0.5 rounded font-mono text-[10px]">/dl/brand/logo.webp</code> (یا SVG) ذخیره می‌گردد.
+                    <p className="text-[11px] text-muted">
+                      لوگو به صورت خودکار در ابعاد متناسب بهینه‌سازی شده و در <code className="bg-surface px-1 py-0.5 rounded font-mono text-[10px]">/dl/brand/logo.webp</code> (یا SVG) ذخیره می‌گردد.
                     </p>
                     <div>
                       <input
@@ -1508,16 +1508,16 @@ export default function AdminDashboard() {
                         type="button"
                         onClick={() => logoInputRef.current?.click()}
                         disabled={logoUploading}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-xs transition cursor-pointer disabled:opacity-50"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-surface hover:bg-surface-soft text-primary text-xs font-bold rounded-xl border border-line shadow-xs transition cursor-pointer disabled:opacity-50"
                       >
                         {logoUploading ? (
                           <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6C47FF]" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
                             <span>در حال آپلود و بهینه‌سازی...</span>
                           </>
                         ) : (
                           <>
-                            <Upload className="w-3.5 h-3.5 text-[#6C47FF]" />
+                            <Upload className="w-3.5 h-3.5 text-brand" />
                             <span>انتخاب و بارگذاری فایل لوگو</span>
                           </>
                         )}
@@ -1531,7 +1531,7 @@ export default function AdminDashboard() {
               <form onSubmit={handleSaveBranding} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-600 block">
+                    <label className="text-xs font-bold text-secondary block">
                       نام برند و عنوان پلتفرم (Site Title)
                     </label>
                     <input
@@ -1539,13 +1539,13 @@ export default function AdminDashboard() {
                       value={siteTitleLocal}
                       onChange={(e) => setSiteTitleLocal(e.target.value)}
                       placeholder="پرامپتی | Promty"
-                      className="w-full text-slate-700 bg-slate-50 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition font-bold"
+                      className="w-full text-primary bg-surface-soft rounded-xl px-4 py-2.5 text-xs border border-line outline-none focus:bg-surface focus:border-brand transition font-bold"
                       required
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-600 block">
+                    <label className="text-xs font-bold text-secondary block">
                       شعار هدر و زیرعنوان (Site Subtitle)
                     </label>
                     <input
@@ -1553,13 +1553,13 @@ export default function AdminDashboard() {
                       value={siteSubtitleLocal}
                       onChange={(e) => setSiteSubtitleLocal(e.target.value)}
                       placeholder="موتور شخصی‌سازی و پرامپت مهندسی"
-                      className="w-full text-slate-700 bg-slate-50 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition font-medium"
+                      className="w-full text-primary bg-surface-soft rounded-xl px-4 py-2.5 text-xs border border-line outline-none focus:bg-surface focus:border-brand transition font-medium"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-600 block">
+                  <label className="text-xs font-bold text-secondary block">
                     عنوان اصلی بخش هیرو (Hero Title)
                   </label>
                   <input
@@ -1567,12 +1567,12 @@ export default function AdminDashboard() {
                     value={heroTitleLocal}
                     onChange={(e) => setHeroTitleLocal(e.target.value)}
                     placeholder="قلب تپنده نوآوری با پرامپتی"
-                    className="w-full text-slate-700 bg-slate-50 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition font-bold"
+                    className="w-full text-primary bg-surface-soft rounded-xl px-4 py-2.5 text-xs border border-line outline-none focus:bg-surface focus:border-brand transition font-bold"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-600 block">
+                  <label className="text-xs font-bold text-secondary block">
                     توضیحات و پاراگراف اصلی هیرو (Hero Description)
                   </label>
                   <textarea
@@ -1580,12 +1580,12 @@ export default function AdminDashboard() {
                     value={heroDescriptionLocal}
                     onChange={(e) => setHeroDescriptionLocal(e.target.value)}
                     placeholder="اولین پلتفرم گرافِ دانش پرامپت در ایران..."
-                    className="w-full text-slate-700 bg-slate-50 rounded-xl p-3 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition leading-relaxed font-sans"
+                    className="w-full text-primary bg-surface-soft rounded-xl p-3 text-xs border border-line outline-none focus:bg-surface focus:border-brand transition leading-relaxed font-sans"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-600 block">
+                  <label className="text-xs font-bold text-secondary block">
                     متن «درباره ما» در فوتر (Footer About)
                   </label>
                   <textarea
@@ -1593,12 +1593,12 @@ export default function AdminDashboard() {
                     value={footerAboutLocal}
                     onChange={(e) => setFooterAboutLocal(e.target.value)}
                     placeholder="پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است..."
-                    className="w-full text-slate-700 bg-slate-50 rounded-xl p-3 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition leading-relaxed font-sans"
+                    className="w-full text-primary bg-surface-soft rounded-xl p-3 text-xs border border-line outline-none focus:bg-surface focus:border-brand transition leading-relaxed font-sans"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-600 block">
+                  <label className="text-xs font-bold text-secondary block">
                     متن کپی‌رایت فوتر (Footer Copyright)
                   </label>
                   <input
@@ -1606,18 +1606,18 @@ export default function AdminDashboard() {
                     value={footerCopyrightLocal}
                     onChange={(e) => setFooterCopyrightLocal(e.target.value)}
                     placeholder="تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است."
-                    className="w-full text-slate-700 bg-slate-50 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition"
+                    className="w-full text-primary bg-surface-soft rounded-xl px-4 py-2.5 text-xs border border-line outline-none focus:bg-surface focus:border-brand transition"
                   />
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-muted">
                     💡 تغییرات برندینگ فوراً در هدر، فوتر و صفحه اصلی کاربران منعکس می‌شود.
                   </p>
                   <button
                     type="submit"
                     disabled={brandingLoading}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition cursor-pointer"
+                    className="w-full sm:w-auto px-6 py-2.5 bg-brand-solid hover:bg-brand-solid disabled:bg-surface-inset text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition cursor-pointer"
                   >
                     {brandingLoading ? (
                       <>
@@ -1631,14 +1631,14 @@ export default function AdminDashboard() {
                 </div>
 
                 {brandingSuccess && (
-                  <div className="p-3 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <div className="p-3 bg-success-soft text-success-text text-xs font-bold rounded-xl border border-success-text flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-success-text" />
                     <span>{brandingSuccess}</span>
                   </div>
                 )}
                 {brandingError && (
-                  <div className="p-3 bg-rose-50 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-600" />
+                  <div className="p-3 bg-danger-soft text-danger-text text-xs font-bold rounded-xl border border-danger-text flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-danger-text" />
                     <span>{brandingError}</span>
                   </div>
                 )}
@@ -1655,24 +1655,24 @@ export default function AdminDashboard() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-6"
             >
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-                <Settings className="w-5 h-5 text-[#6C47FF]" />
+              <div className="flex items-center gap-2 pb-2 border-b border-line">
+                <Settings className="w-5 h-5 text-brand" />
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">موتور هوش مصنوعی و اتوماسیون</h3>
-                  <p className="text-[11px] text-slate-400">مسیر وب‌هوک‌های n8n، کلیدهای مدل‌های هوش مصنوعی و تنظیم مهلت زمانی پاسخگویی (Timeout)</p>
+                  <h3 className="text-sm font-bold text-primary">موتور هوش مصنوعی و اتوماسیون</h3>
+                  <p className="text-[11px] text-muted">مسیر وب‌هوک‌های n8n، کلیدهای مدل‌های هوش مصنوعی و تنظیم مهلت زمانی پاسخگویی (Timeout)</p>
                 </div>
               </div>
 
               <form onSubmit={handleSaveAiSettings} className="space-y-6">
                 {/* Webhook block */}
                 <div className="space-y-3">
-                  <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
+                  <h4 className="text-xs font-extrabold text-primary bg-surface-soft px-3 py-1.5 rounded-lg inline-block">
                     🔗 مسیرهای وب‌هوک اتوماسیون (n8n Agent)
                   </h4>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label htmlFor="n8n_analyze_input_tab" className="text-xs font-bold text-slate-500 block">
+                      <label htmlFor="n8n_analyze_input_tab" className="text-xs font-bold text-muted block">
                         آدرس وب‌هوک تحلیل چشمه پرامپت (Analyze Agent)
                       </label>
                       <input
@@ -1682,12 +1682,12 @@ export default function AdminDashboard() {
                         value={n8nAnalyzeWebhook}
                         onChange={(e) => setN8nAnalyzeWebhook(e.target.value)}
                         placeholder="https://n8n.your-domain.com/webhook/analyze"
-                        className="w-full text-slate-700 bg-slate-50 placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition font-mono text-left"
+                        className="w-full text-primary bg-surface-soft placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-line outline-none focus:bg-surface focus:ring-2 focus:ring-brand/20 focus:border-brand transition font-mono text-left"
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <label htmlFor="n8n_refine_input_tab" className="text-xs font-bold text-slate-500 block">
+                      <label htmlFor="n8n_refine_input_tab" className="text-xs font-bold text-muted block">
                         آدرس وب‌هوک ارتقای پرامپت کلاینت (Refine Agent)
                       </label>
                       <input
@@ -1697,21 +1697,21 @@ export default function AdminDashboard() {
                         value={n8nRefineWebhook}
                         onChange={(e) => setN8nRefineWebhook(e.target.value)}
                         placeholder="https://n8n.your-domain.com/webhook/refine"
-                        className="w-full text-slate-700 bg-slate-50 placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition font-mono text-left"
+                        className="w-full text-primary bg-surface-soft placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-line outline-none focus:bg-surface focus:ring-2 focus:ring-brand/20 focus:border-brand transition font-mono text-left"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* API Keys block */}
-                <div className="space-y-3 pt-4 border-t border-slate-50">
-                  <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
+                <div className="space-y-3 pt-4 border-t border-line">
+                  <h4 className="text-xs font-extrabold text-primary bg-surface-soft px-3 py-1.5 rounded-lg inline-block">
                     🔑 کلیدهای مستقیم مدل‌های هوش مصنوعی (Fallback)
                   </h4>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label htmlFor="gemini_key_tab" className="text-xs font-bold text-slate-500 block">
+                      <label htmlFor="gemini_key_tab" className="text-xs font-bold text-muted block">
                         کلید مستقیم Gemini API (Fallback)
                       </label>
                       <input
@@ -1721,12 +1721,12 @@ export default function AdminDashboard() {
                         value={geminiApiKey}
                         onChange={(e) => setGeminiApiKey(e.target.value)}
                         placeholder="AIzaSy..."
-                        className="w-full text-slate-700 bg-slate-50 placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition font-mono text-left"
+                        className="w-full text-primary bg-surface-soft placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-line outline-none focus:bg-surface focus:ring-2 focus:ring-brand/20 focus:border-brand transition font-mono text-left"
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <label htmlFor="openai_key_tab" className="text-xs font-bold text-slate-500 block">
+                      <label htmlFor="openai_key_tab" className="text-xs font-bold text-muted block">
                         کلید مستقیم OpenAI API (برای توسعه آینده)
                       </label>
                       <input
@@ -1736,20 +1736,20 @@ export default function AdminDashboard() {
                         value={openaiApiKey}
                         onChange={(e) => setOpenaiApiKey(e.target.value)}
                         placeholder="sk-..."
-                        className="w-full text-slate-700 bg-slate-50 placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition font-mono text-left"
+                        className="w-full text-primary bg-surface-soft placeholder-slate-300 rounded-xl px-4 py-2.5 text-xs border border-line outline-none focus:bg-surface focus:ring-2 focus:ring-brand/20 focus:border-brand transition font-mono text-left"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* AI Timeout Configuration */}
-                <div className="space-y-3 pt-4 border-t border-slate-50">
-                  <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
+                <div className="space-y-3 pt-4 border-t border-line">
+                  <h4 className="text-xs font-extrabold text-primary bg-surface-soft px-3 py-1.5 rounded-lg inline-block">
                     ⏱️ تنظیم مهلت زمانی پاسخگویی هوش مصنوعی (Timeout)
                   </h4>
                   
                   <div className="max-w-md space-y-1.5">
-                    <label htmlFor="ai_timeout_input" className="text-xs font-bold text-slate-500 block">
+                    <label htmlFor="ai_timeout_input" className="text-xs font-bold text-muted block">
                       حداکثر مدت زمان انتظار پاسخ (ثانیه)
                     </label>
                     <div className="flex items-center gap-2">
@@ -1760,50 +1760,50 @@ export default function AdminDashboard() {
                         max={300}
                         value={aiTimeoutSecondsLocal}
                         onChange={(e) => setAiTimeoutSecondsLocal(Number(e.target.value))}
-                        className="w-28 text-slate-700 bg-slate-50 rounded-xl px-4 py-2.5 text-xs border border-slate-200 outline-none focus:bg-white focus:border-[#6C47FF] transition font-mono font-bold text-center"
+                        className="w-28 text-primary bg-surface-soft rounded-xl px-4 py-2.5 text-xs border border-line outline-none focus:bg-surface focus:border-brand transition font-mono font-bold text-center"
                         required
                       />
-                      <span className="text-xs text-slate-500 font-medium">ثانیه (پیش‌فرض: ۶۰، حداقل: ۱۰، حداکثر: ۳۰۰)</span>
+                      <span className="text-xs text-muted font-medium">ثانیه (پیش‌فرض: ۶۰، حداقل: ۱۰، حداکثر: ۳۰۰)</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-1">
+                    <p className="text-[11px] text-muted mt-1">
                       در صورتی که ایجنت‌های تحلیل یا بهینه‌سازی n8n پس از این مدت پاسخی ارسال نکنند، درخواست لغو شده و خطای صریح به کاربر نمایش داده می‌شود.
                     </p>
                   </div>
                 </div>
 
                 {/* Search Boosting / Search Rules Configuration */}
-                <div className="space-y-3 pt-4 border-t border-slate-50">
-                  <h4 className="text-xs font-extrabold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg inline-block">
+                <div className="space-y-3 pt-4 border-t border-line">
+                  <h4 className="text-xs font-extrabold text-primary bg-surface-soft px-3 py-1.5 rounded-lg inline-block">
                     🔍 تنظیم قوانین و ضریب موتور جستجوی هوشمند (Search Rules)
                   </h4>
                   
-                  <div className="bg-slate-50 p-4 rounded-xl text-xs space-y-3 text-slate-600">
+                  <div className="bg-surface-soft p-4 rounded-xl text-xs space-y-3 text-secondary">
                     <div className="flex items-center justify-between border-b border-white pb-2">
                       <span className="font-bold">ضریب اولویت کلمات عنوان پرامپت (Title Match Boost)</span>
-                      <span className="bg-indigo-100 text-[#6C47FF] font-black px-2 py-0.5 rounded">۵.۰x (بالاترین اولویت)</span>
+                      <span className="bg-brand-soft text-brand font-black px-2 py-0.5 rounded">۵.۰x (بالاترین اولویت)</span>
                     </div>
 
                     <div className="flex items-center justify-between border-b border-white pb-2">
                       <span className="font-bold">ضریب اولویت فیلدهای ابزار و قصد (Tools & Intents Boost)</span>
-                      <span className="bg-indigo-100 text-[#6C47FF] font-black px-2 py-0.5 rounded">۳.۵x (اولویت دوم)</span>
+                      <span className="bg-brand-soft text-brand font-black px-2 py-0.5 rounded">۳.۵x (اولویت دوم)</span>
                     </div>
 
                     <div className="flex items-center justify-between">
                       <span className="font-bold">استفاده از الگوریتم جستجوی فازی لوون‌اشتاین (Levenstein Threshold)</span>
-                      <span className="bg-emerald-100 text-emerald-700 font-black px-2 py-0.5 rounded">فعال (آستانه تطبیق: ۷۵٪)</span>
+                      <span className="bg-success-soft text-success-text font-black px-2 py-0.5 rounded">فعال (آستانه تطبیق: ۷۵٪)</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-muted">
                     💡 تمام تنظیمات وب‌هوک و هوش مصنوعی بلادرنگ در سیستم اعمال می‌شوند.
                   </p>
                   
                   <button
                     type="submit"
                     disabled={aiSettingsLoading}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] disabled:bg-slate-300 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition cursor-pointer"
+                    className="w-full sm:w-auto px-6 py-2.5 bg-brand-solid hover:bg-brand-solid disabled:bg-surface-inset text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition cursor-pointer"
                   >
                     {aiSettingsLoading ? (
                       <>
@@ -1817,15 +1817,15 @@ export default function AdminDashboard() {
                 </div>
 
                 {aiSettingsSuccess && (
-                  <div className="p-3 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 flex items-center gap-1.5">
-                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <div className="p-3 bg-success-soft text-success-text text-xs font-bold rounded-xl border border-success-text flex items-center gap-1.5">
+                    <CheckCircle className="w-4 h-4 text-success-text" />
                     <span>{aiSettingsSuccess}</span>
                   </div>
                 )}
 
                 {aiSettingsError && (
-                  <div className="p-3 bg-rose-50 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 flex items-center gap-1.5">
-                    <AlertCircle className="w-4 h-4 text-rose-600" />
+                  <div className="p-3 bg-danger-soft text-danger-text text-xs font-bold rounded-xl border border-danger-text flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 text-danger-text" />
                     <span>⚠️ {aiSettingsError}</span>
                   </div>
                 )}
@@ -1843,26 +1843,26 @@ export default function AdminDashboard() {
               className="space-y-6"
             >
               {/* Header banner */}
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-violet-500/10 via-[#6C47FF]/5 to-amber-500/10 border border-[#6C47FF]/15">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-violet-500/10 via-brand-solid/5 to-amber-500/10 border border-brand/15">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="p-2 rounded-xl bg-[#6C47FF] text-white">
+                    <span className="p-2 rounded-xl bg-brand-solid text-white">
                       <Users className="w-5 h-5" />
                     </span>
-                    <h3 className="text-base font-black text-slate-800">مدیریت دسترسی‌ها و کاربران (RBAC)</h3>
+                    <h3 className="text-base font-black text-primary">مدیریت دسترسی‌ها و کاربران (RBAC)</h3>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                    سیستم کنترل دسترسی نقش‌محور شامل سه سطح دسترسی: <strong className="text-amber-700">مدیر ارشد (SUPER_ADMIN)</strong>، <strong className="text-[#6C47FF]">مدیر (ADMIN)</strong>، و <strong className="text-slate-600">کاربر عادی (USER)</strong>.
+                  <p className="text-xs text-muted mt-1 leading-relaxed">
+                    سیستم کنترل دسترسی نقش‌محور شامل سه سطح دسترسی: <strong className="text-caution-text">مدیر ارشد (SUPER_ADMIN)</strong>، <strong className="text-brand">مدیر (ADMIN)</strong>، و <strong className="text-secondary">کاربر عادی (USER)</strong>.
                   </p>
                 </div>
                 {isSuperAdmin ? (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-300 text-amber-800 text-xs font-bold shrink-0">
-                    <ShieldCheck className="w-4 h-4 text-amber-600" />
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-caution-text text-caution-text text-xs font-bold shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-caution-text" />
                     <span>شما با سطح دسترسی مدیر کل (Super Admin) وارد شده‌اید.</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium shrink-0">
-                    <ShieldAlert className="w-4 h-4 text-slate-400" />
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-soft border border-line text-secondary text-xs font-medium shrink-0">
+                    <ShieldAlert className="w-4 h-4 text-muted" />
                     <span>تعیین و تغییر نقش‌ها منحصراً در اختیار مدیر ارشد (Super Admin) است.</span>
                   </div>
                 )}
@@ -1873,15 +1873,15 @@ export default function AdminDashboard() {
                 <div
                   className={`p-4 rounded-2xl text-xs font-bold flex items-center justify-between ${
                     roleStatusMessage.type === "success"
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      : "bg-rose-50 text-rose-700 border border-rose-200"
+                      ? "bg-success-soft text-success-text border border-success-text"
+                      : "bg-danger-soft text-danger-text border border-danger-text"
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     {roleStatusMessage.type === "success" ? (
-                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      <CheckCircle className="w-4 h-4 text-success-text" />
                     ) : (
-                      <AlertCircle className="w-4 h-4 text-rose-600" />
+                      <AlertCircle className="w-4 h-4 text-danger-text" />
                     )}
                     <span>{roleStatusMessage.text}</span>
                   </div>
@@ -1896,9 +1896,9 @@ export default function AdminDashboard() {
 
               {/* Quick Role Delegation Form (Super Admin only) */}
               {isSuperAdmin && (
-                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
-                  <h4 className="text-xs font-black text-slate-700 flex items-center gap-1.5">
-                    <UserPlus className="w-4 h-4 text-[#6C47FF]" />
+                <div className="p-5 rounded-2xl bg-surface border border-line/80 shadow-xs space-y-3">
+                  <h4 className="text-xs font-black text-primary flex items-center gap-1.5">
+                    <UserPlus className="w-4 h-4 text-brand" />
                     <span>انتساب سریع نقش به کاربر</span>
                   </h4>
                   <form onSubmit={handleDirectRoleAssign} className="flex flex-col sm:flex-row items-center gap-3">
@@ -1907,13 +1907,13 @@ export default function AdminDashboard() {
                       value={directIdentifier}
                       onChange={(e) => setDirectIdentifier(e.target.value)}
                       placeholder="شماره موبایل (مثلاً ۰۹۱۲۳۴۵۶۷۸۹) یا ایمیل کاربر"
-                      className="flex-1 w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-[#6C47FF] focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/10 text-right"
+                      className="flex-1 w-full px-4 py-2.5 rounded-xl border border-line text-xs font-medium focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/10 text-right"
                       required
                     />
                     <select
                       value={directRole}
                       onChange={(e) => setDirectRole(e.target.value as any)}
-                      className="w-full sm:w-48 px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 focus:border-[#6C47FF] focus:outline-none bg-white"
+                      className="w-full sm:w-48 px-3 py-2.5 rounded-xl border border-line text-xs font-bold text-primary focus:border-brand focus:outline-none bg-surface"
                     >
                       <option value="ADMIN">مدیر سیستم (ADMIN)</option>
                       <option value="USER">کاربر عادی (USER)</option>
@@ -1922,7 +1922,7 @@ export default function AdminDashboard() {
                     <button
                       type="submit"
                       disabled={roleActionLoading === directIdentifier.trim()}
-                      className="w-full sm:w-auto px-5 py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                      className="w-full sm:w-auto px-5 py-2.5 bg-brand-solid hover:bg-brand-solid text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
                     >
                       {roleActionLoading === directIdentifier.trim() ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -1938,25 +1938,25 @@ export default function AdminDashboard() {
               <div className="space-y-3">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="relative w-full sm:w-72">
-                    <Search className="absolute right-3 top-3 w-4 h-4 text-slate-400" />
+                    <Search className="absolute right-3 top-3 w-4 h-4 text-muted" />
                     <input
                       type="text"
                       value={userSearchQuery}
                       onChange={(e) => setUserSearchQuery(e.target.value)}
                       placeholder="جستجوی کاربر بر اساس نام، موبایل یا ایمیل..."
-                      className="w-full pr-9 pl-4 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:border-[#6C47FF] focus:outline-none text-right"
+                      className="w-full pr-9 pl-4 py-2 rounded-xl border border-line text-xs font-medium focus:border-brand focus:outline-none text-right"
                     />
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 text-xs text-muted">
                     <button
                       onClick={fetchUsers}
-                      className="flex items-center gap-1 px-3 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl font-bold transition cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-2 border border-line hover:bg-surface-soft rounded-xl font-bold transition cursor-pointer"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${usersLoading ? "animate-spin" : ""}`} />
                       <span>به‌روزرسانی لیست</span>
                     </button>
-                    <span className="bg-slate-100 px-3 py-2 rounded-xl font-bold font-mono">
+                    <span className="bg-surface-soft px-3 py-2 rounded-xl font-bold font-mono">
                       {usersList.length} کاربر
                     </span>
                   </div>
@@ -1967,15 +1967,15 @@ export default function AdminDashboard() {
                   <motion.div
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-wrap items-center justify-between gap-2 p-3 bg-[#6C47FF]/10 border border-[#6C47FF]/20 rounded-2xl"
+                    className="flex flex-wrap items-center justify-between gap-2 p-3 bg-brand-solid/10 border border-brand/20 rounded-2xl"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-1 bg-[#6C47FF] text-white text-[11px] font-black rounded-lg">
+                      <span className="px-2.5 py-1 bg-brand-solid text-white text-[11px] font-black rounded-lg">
                         {selectedUserIds.length} کاربر انتخاب‌شده
                       </span>
                       <button
                         onClick={() => setSelectedUserIds([])}
-                        className="text-[11px] text-slate-500 hover:text-slate-700 underline cursor-pointer"
+                        className="text-[11px] text-muted hover:text-primary underline cursor-pointer"
                       >
                         لغو انتخاب
                       </button>
@@ -1986,7 +1986,7 @@ export default function AdminDashboard() {
                         <button
                           onClick={() => setBulkRoleModalOpen(true)}
                           disabled={bulkActionLoading}
-                          className="px-3 py-1.5 bg-white hover:bg-slate-50 text-[#6C47FF] border border-[#6C47FF]/30 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                          className="px-3 py-1.5 bg-surface hover:bg-surface-soft text-brand border border-brand/30 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                         >
                           <Shield className="w-3.5 h-3.5" />
                           <span>تغییر نقش دسته‌جمعی</span>
@@ -2026,16 +2026,16 @@ export default function AdminDashboard() {
                     filteredUsers.every((u) => selectedUserIds.includes(u.id));
 
                   return (
-                    <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-xs">
-                      <table className="w-full text-right text-xs text-slate-600 font-sans">
-                        <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                    <div className="overflow-x-auto rounded-2xl border border-line shadow-xs">
+                      <table className="w-full text-right text-xs text-secondary font-sans">
+                        <thead className="bg-surface-soft text-muted font-bold border-b border-line">
                           <tr>
                             <th className="px-4 py-3.5 w-10 text-center">
                               <input
                                 type="checkbox"
                                 checked={allFilteredSelected}
                                 onChange={() => handleToggleSelectAll(filteredUsers.map((u) => u.id))}
-                                className="rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] cursor-pointer"
+                                className="rounded border-line-strong text-brand focus:ring-brand cursor-pointer"
                                 title="انتخاب همه"
                               />
                             </th>
@@ -2046,7 +2046,7 @@ export default function AdminDashboard() {
                             <th className="px-5 py-3.5 text-left">عملیات و نقش</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-line">
                           {filteredUsers.map((u) => {
                             const roleLower = u.role.toLowerCase();
                             const isSuper = roleLower === "super_admin";
@@ -2057,14 +2057,14 @@ export default function AdminDashboard() {
                             return (
                               <tr
                                 key={u.id}
-                                className={`transition ${isSelected ? "bg-[#6C47FF]/5" : "hover:bg-slate-50/60"}`}
+                                className={`transition ${isSelected ? "bg-brand-solid/5" : "hover:bg-surface-soft/60"}`}
                               >
                                 <td className="px-4 py-4 text-center">
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
                                     onChange={() => handleToggleSelectUser(u.id)}
-                                    className="rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] cursor-pointer"
+                                    className="rounded border-line-strong text-brand focus:ring-brand cursor-pointer"
                                   />
                                 </td>
 
@@ -2074,18 +2074,18 @@ export default function AdminDashboard() {
                                       <img
                                         src={u.avatar}
                                         alt={u.name || "کاربر"}
-                                        className="w-8 h-8 rounded-xl object-cover border border-slate-200"
+                                        className="w-8 h-8 rounded-xl object-cover border border-line"
                                       />
                                     ) : (
-                                      <div className="w-8 h-8 rounded-xl bg-[#6C47FF]/10 text-[#6C47FF] flex items-center justify-center font-bold text-xs">
+                                      <div className="w-8 h-8 rounded-xl bg-brand-solid/10 text-brand flex items-center justify-center font-bold text-xs">
                                         {(u.name || u.phone || "ک").charAt(0)}
                                       </div>
                                     )}
                                     <div>
-                                      <span className="font-bold text-slate-800 block">
+                                      <span className="font-bold text-primary block">
                                         {u.name || (u.phone ? `کاربر ${u.phone.slice(-4)}` : "بدون نام")}
                                       </span>
-                                      <span className="text-[10px] text-slate-400 font-mono block">
+                                      <span className="text-[10px] text-muted font-mono block">
                                         شناسه: {u.id.slice(0, 8)}...
                                       </span>
                                     </div>
@@ -2095,47 +2095,47 @@ export default function AdminDashboard() {
                                 <td className="px-5 py-4">
                                   <div className="space-y-0.5">
                                     {u.phone && (
-                                      <span className="font-mono text-slate-700 block font-semibold" dir="ltr">
+                                      <span className="font-mono text-primary block font-semibold" dir="ltr">
                                         {u.phone}
                                       </span>
                                     )}
                                     {u.email && (
-                                      <span className="font-mono text-slate-400 text-[11px] block" dir="ltr">
+                                      <span className="font-mono text-muted text-[11px] block" dir="ltr">
                                         {u.email}
                                       </span>
                                     )}
                                     {!u.phone && !u.email && (
-                                      <span className="text-slate-400 text-[10px]">-</span>
+                                      <span className="text-muted text-[10px]">-</span>
                                     )}
                                   </div>
                                 </td>
 
                                 <td className="px-5 py-4">
                                   {isSuper ? (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-indigo-500/15 text-amber-800 border border-amber-300">
-                                      <ShieldCheck className="w-3 h-3 text-amber-600" />
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-indigo-500/15 text-caution-text border border-caution-text">
+                                      <ShieldCheck className="w-3 h-3 text-caution-text" />
                                       <span>مدیر کل (Super Admin)</span>
                                     </span>
                                   ) : isAdminRole ? (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#6C47FF]/10 text-[#6C47FF] border border-[#6C47FF]/20">
-                                      <Shield className="w-3 h-3 text-[#6C47FF]" />
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-brand-solid/10 text-brand border border-brand/20">
+                                      <Shield className="w-3 h-3 text-brand" />
                                       <span>مدیر (ADMIN)</span>
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-surface-soft text-secondary border border-line">
                                       کاربر عادی (USER)
                                     </span>
                                   )}
                                 </td>
 
-                                <td className="px-5 py-4 text-slate-400 font-mono text-[11px]">
+                                <td className="px-5 py-4 text-muted font-mono text-[11px]">
                                   {new Date(u.createdAt).toLocaleDateString("fa-IR")}
                                 </td>
 
                                 <td className="px-5 py-4 text-left">
                                   <div className="flex items-center justify-end gap-2">
                                     {isActionTarget ? (
-                                      <Loader2 className="w-4 h-4 animate-spin text-[#6C47FF]" />
+                                      <Loader2 className="w-4 h-4 animate-spin text-brand" />
                                     ) : (
                                       <>
                                         {/* Direct Role Change Selector */}
@@ -2143,7 +2143,7 @@ export default function AdminDashboard() {
                                           value={u.role.toUpperCase()}
                                           onChange={(e) => handleRoleChange(u.id, e.target.value as any)}
                                           disabled={!isSuperAdmin}
-                                          className="text-[11px] font-bold py-1 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-[#6C47FF] disabled:opacity-50 cursor-pointer"
+                                          className="text-[11px] font-bold py-1 px-2 rounded-lg border border-line bg-surface text-primary focus:outline-none focus:border-brand disabled:opacity-50 cursor-pointer"
                                           title={isSuperAdmin ? "تغییر مستقیم نقش" : "فقط مدیر ارشد مجاز است"}
                                         >
                                           <option value="USER">کاربر عادی</option>
@@ -2154,7 +2154,7 @@ export default function AdminDashboard() {
                                         {/* Edit Button */}
                                         <button
                                           onClick={() => handleOpenEditUser(u)}
-                                          className="p-1.5 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-lg transition cursor-pointer"
+                                          className="p-1.5 hover:bg-surface-soft text-secondary hover:text-primary rounded-lg transition cursor-pointer"
                                           title="ویرایش کاربر"
                                         >
                                           <Pencil className="w-3.5 h-3.5" />
@@ -2164,7 +2164,7 @@ export default function AdminDashboard() {
                                         <button
                                           onClick={() => setDeleteConfirmUser(u)}
                                           disabled={u.id === user?.id}
-                                          className="p-1.5 hover:bg-rose-50 text-rose-500 hover:text-rose-700 rounded-lg transition cursor-pointer disabled:opacity-30"
+                                          className="p-1.5 hover:bg-danger-soft text-danger-text hover:text-danger-text rounded-lg transition cursor-pointer disabled:opacity-30"
                                           title={u.id === user?.id ? "حذف حساب جاری غیرمجاز است" : "حذف کاربر"}
                                         >
                                           <Trash2 className="w-3.5 h-3.5" />
@@ -2179,7 +2179,7 @@ export default function AdminDashboard() {
 
                           {filteredUsers.length === 0 && !usersLoading && (
                             <tr>
-                              <td colSpan={6} className="py-8 text-center text-slate-400">
+                              <td colSpan={6} className="py-8 text-center text-muted">
                                 هیچ کاربری با مشخصات جستجوشده یافت نشد.
                               </td>
                             </tr>
@@ -2203,19 +2203,19 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 space-y-4 font-sans text-right"
+            className="w-full max-w-md bg-surface rounded-3xl p-6 shadow-2xl border border-line space-y-4 font-sans text-right"
             dir="rtl"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-[#6C47FF]/10 text-[#6C47FF] rounded-xl">
+                <div className="p-2 bg-brand-solid/10 text-brand rounded-xl">
                   <Pencil className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-black text-slate-800">ویرایش اطلاعات کاربر</h3>
+                <h3 className="text-sm font-black text-primary">ویرایش اطلاعات کاربر</h3>
               </div>
               <button
                 onClick={() => setEditingUser(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
+                className="p-1.5 text-muted hover:text-secondary rounded-lg hover:bg-surface-soft cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2223,48 +2223,48 @@ export default function AdminDashboard() {
 
             <form onSubmit={handleSaveEditUser} className="space-y-4 text-xs">
               <div className="space-y-1">
-                <label className="font-bold text-slate-600 block">نام و نام خانوادگی</label>
+                <label className="font-bold text-secondary block">نام و نام خانوادگی</label>
                 <input
                   type="text"
                   value={editUserName}
                   onChange={(e) => setEditUserName(e.target.value)}
                   placeholder="نام کاربر..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-medium focus:border-[#6C47FF] focus:outline-none text-right"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line font-medium focus:border-brand focus:outline-none text-right"
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-600 block">ایمیل</label>
+                <label className="font-bold text-secondary block">ایمیل</label>
                 <input
                   type="email"
                   dir="ltr"
                   value={editUserEmail}
                   onChange={(e) => setEditUserEmail(e.target.value)}
                   placeholder="user@example.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-medium focus:border-[#6C47FF] focus:outline-none text-left font-mono"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line font-medium focus:border-brand focus:outline-none text-left font-mono"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-600 block">شماره موبایل</label>
+                <label className="font-bold text-secondary block">شماره موبایل</label>
                 <input
                   type="text"
                   dir="ltr"
                   value={editUserPhone}
                   onChange={(e) => setEditUserPhone(e.target.value)}
                   placeholder="09xxxxxxxxx"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-medium focus:border-[#6C47FF] focus:outline-none text-left font-mono"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line font-medium focus:border-brand focus:outline-none text-left font-mono"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-600 block">نقش کاربر</label>
+                <label className="font-bold text-secondary block">نقش کاربر</label>
                 <select
                   value={editUserRole}
                   onChange={(e) => setEditUserRole(e.target.value as any)}
                   disabled={!isSuperAdmin && editUserRole === "SUPER_ADMIN"}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-bold focus:border-[#6C47FF] focus:outline-none bg-white text-right"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line font-bold focus:border-brand focus:outline-none bg-surface text-right"
                 >
                   <option value="USER">کاربر عادی (USER)</option>
                   <option value="ADMIN">مدیر سیستم (ADMIN)</option>
@@ -2272,18 +2272,18 @@ export default function AdminDashboard() {
                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition cursor-pointer"
+                  className="px-4 py-2 border border-line text-secondary font-bold rounded-xl hover:bg-surface-soft transition cursor-pointer"
                 >
                   انصراف
                 </button>
                 <button
                   type="submit"
                   disabled={bulkActionLoading}
-                  className="px-5 py-2 bg-[#6C47FF] hover:bg-[#5935e6] text-white font-bold rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-5 py-2 bg-brand-solid hover:bg-brand-solid text-white font-bold rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {bulkActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                   <span>ذخیره تغییرات</span>
@@ -2301,27 +2301,27 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 space-y-4 font-sans text-right"
+            className="w-full max-w-sm bg-surface rounded-3xl p-6 shadow-2xl border border-line space-y-4 font-sans text-right"
             dir="rtl"
           >
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl shrink-0">
+              <div className="p-3 bg-danger-soft text-danger-text rounded-2xl shrink-0">
                 <AlertCircle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-sm font-black text-slate-800">تایید حذف کاربر</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">عملیات غیرقابل بازگشت</p>
+                <h3 className="text-sm font-black text-primary">تایید حذف کاربر</h3>
+                <p className="text-[11px] text-muted mt-0.5">عملیات غیرقابل بازگشت</p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
-              آیا از حذف حساب کاربری <strong className="text-slate-900 font-black">{deleteConfirmUser.name || deleteConfirmUser.phone || deleteConfirmUser.id}</strong> اطمینان دارید؟ تمامی اطلاعات، پیش‌تنظیم‌ها و نشان‌شده‌های کاربر پاک خواهد شد.
+            <p className="text-xs text-secondary leading-relaxed">
+              آیا از حذف حساب کاربری <strong className="text-primary font-black">{deleteConfirmUser.name || deleteConfirmUser.phone || deleteConfirmUser.id}</strong> اطمینان دارید؟ تمامی اطلاعات، پیش‌تنظیم‌ها و نشان‌شده‌های کاربر پاک خواهد شد.
             </p>
 
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 onClick={() => setDeleteConfirmUser(null)}
-                className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition cursor-pointer"
+                className="px-4 py-2 border border-line text-secondary text-xs font-bold rounded-xl hover:bg-surface-soft transition cursor-pointer"
               >
                 انصراف
               </button>
@@ -2345,22 +2345,22 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 space-y-4 font-sans text-right"
+            className="w-full max-w-sm bg-surface rounded-3xl p-6 shadow-2xl border border-line space-y-4 font-sans text-right"
             dir="rtl"
           >
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-              <Shield className="w-5 h-5 text-[#6C47FF]" />
-              <h3 className="text-sm font-black text-slate-800">
+            <div className="flex items-center gap-2 pb-2 border-b border-line">
+              <Shield className="w-5 h-5 text-brand" />
+              <h3 className="text-sm font-black text-primary">
                 تغییر نقش {selectedUserIds.length} کاربر
               </h3>
             </div>
 
             <div className="space-y-2 text-xs">
-              <label className="font-bold text-slate-600 block">نقش جدید برای کاربران انتخاب‌شده:</label>
+              <label className="font-bold text-secondary block">نقش جدید برای کاربران انتخاب‌شده:</label>
               <select
                 value={bulkTargetRole}
                 onChange={(e) => setBulkTargetRole(e.target.value as any)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-bold focus:border-[#6C47FF] focus:outline-none bg-white text-right"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-line font-bold focus:border-brand focus:outline-none bg-surface text-right"
               >
                 <option value="USER">کاربر عادی (USER)</option>
                 <option value="ADMIN">مدیر سیستم (ADMIN)</option>
@@ -2368,17 +2368,17 @@ export default function AdminDashboard() {
               </select>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
               <button
                 onClick={() => setBulkRoleModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition cursor-pointer"
+                className="px-4 py-2 border border-line text-secondary text-xs font-bold rounded-xl hover:bg-surface-soft transition cursor-pointer"
               >
                 انصراف
               </button>
               <button
                 onClick={handleBulkRoleChange}
                 disabled={bulkActionLoading}
-                className="px-5 py-2 bg-[#6C47FF] hover:bg-[#5935e6] text-white text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                className="px-5 py-2 bg-brand-solid hover:bg-brand-solid text-white text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
               >
                 {bulkActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 <span>اعمال نقش بر کاربران</span>

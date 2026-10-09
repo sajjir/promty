@@ -258,25 +258,25 @@ export default function PromptWizard({
   };
 
   return (
-    <div id="prompt-wizard-container" className="bg-slate-50 border border-slate-100 rounded-xl p-5 space-y-4 animate-fade-in text-right" dir="rtl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-2">
-        <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+    <div id="prompt-wizard-container" className="bg-surface-soft border border-line rounded-xl p-5 space-y-4 animate-fade-in text-right" dir="rtl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-line pb-3 gap-2">
+        <h4 className="text-sm font-bold text-primary flex items-center gap-1.5">
           <span>✏️</span>
           <span>شخصی‌سازی مقادیر پرامپت</span>
         </h4>
-        <span className="text-[10px] text-slate-400">تغییرات در همان لحظه اعمال می‌شود</span>
+        <span className="text-[10px] text-muted">تغییرات در همان لحظه اعمال می‌شود</span>
       </div>
 
       {successMessage && (
-        <div className="flex items-center gap-2 p-3 bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-lg text-xs font-bold">
-          <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
+        <div className="flex items-center gap-2 p-3 bg-success-soft text-success-text border border-success-text rounded-lg text-xs font-bold">
+          <CheckCircle className="w-4 h-4 shrink-0 text-success-text" />
           <span>{successMessage}</span>
         </div>
       )}
 
       {errorMessage && (
-        <div className="flex items-center gap-2 p-3 bg-rose-50 text-rose-800 border border-rose-100 rounded-lg text-xs font-bold">
-          <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+        <div className="flex items-center gap-2 p-3 bg-danger-soft text-danger-text border border-danger-text rounded-lg text-xs font-bold">
+          <AlertCircle className="w-4 h-4 shrink-0 text-danger-text" />
           <span>{errorMessage}</span>
         </div>
       )}
@@ -287,9 +287,9 @@ export default function PromptWizard({
 
           return (
             <div key={field.key} className="flex flex-col gap-1.5">
-              <label htmlFor={field.key} className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+              <label htmlFor={field.key} className="text-xs font-semibold text-primary flex items-center gap-1">
                 <span>{field.label}</span>
-                {field.required && <span className="text-rose-500 text-xs">*</span>}
+                {field.required && <span className="text-danger-text text-xs">*</span>}
               </label>
 
               {field.type === "textarea" ? (
@@ -299,7 +299,7 @@ export default function PromptWizard({
                   value={value}
                   onChange={(e) => handleInputChange(field.key, e.target.value)}
                   placeholder={field.placeholder || "توضیحات مربوطه را بنویسید..."}
-                  className="w-full text-xs p-2.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition"
+                  className="w-full text-xs p-2.5 bg-surface border border-line focus:border-brand focus:ring-1 focus:ring-brand rounded-lg outline-none transition"
                 />
               ) : field.type === "select" ? (
                 customMode[field.key] ? (
@@ -310,7 +310,7 @@ export default function PromptWizard({
                       value={value}
                       onChange={(e) => handleInputChange(field.key, e.target.value)}
                       placeholder={field.placeholder || "مقدار دلخواه خود را بنویسید..."}
-                      className="flex-1 text-xs p-2.5 bg-white border border-[#6C47FF] focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition"
+                      className="flex-1 text-xs p-2.5 bg-surface border border-brand focus:border-brand focus:ring-1 focus:ring-brand rounded-lg outline-none transition"
                     />
                     <button
                       type="button"
@@ -318,7 +318,7 @@ export default function PromptWizard({
                         setCustomMode((prev) => ({ ...prev, [field.key]: false }));
                         handleInputChange(field.key, "");
                       }}
-                      className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded-lg transition shrink-0 cursor-pointer"
+                      className="p-2.5 bg-surface-soft hover:bg-surface-inset text-muted hover:text-primary rounded-lg transition shrink-0 cursor-pointer"
                       title="بازگشت به لیست"
                     >
                       <X className="w-4 h-4" />
@@ -337,7 +337,7 @@ export default function PromptWizard({
                         handleInputChange(field.key, val);
                       }
                     }}
-                    className="w-full text-xs p-2.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition cursor-pointer"
+                    className="w-full text-xs p-2.5 bg-surface border border-line focus:border-brand focus:ring-1 focus:ring-brand rounded-lg outline-none transition cursor-pointer"
                   >
                     <option value="">{field.placeholder || "یکی را انتخاب کنید"}</option>
                     {field.options?.map((opt) => {
@@ -348,12 +348,12 @@ export default function PromptWizard({
                         </option>
                       );
                     })}
-                    <option value="__CUSTOM__" className="text-[#6C47FF] font-bold">+ تایپ مقدار دلخواه...</option>
+                    <option value="__CUSTOM__" className="text-brand font-bold">+ تایپ مقدار دلخواه...</option>
                   </select>
                 )
               ) : field.type === "color" ? (
                 <div id="color-picker-group" className="flex items-center gap-2">
-                  <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-slate-200 cursor-pointer flex-shrink-0">
+                  <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-line cursor-pointer flex-shrink-0">
                     <input
                       type="color"
                       id={field.key}
@@ -367,7 +367,7 @@ export default function PromptWizard({
                     value={value}
                     onChange={(e) => handleInputChange(field.key, e.target.value)}
                     placeholder="#000000 پس‌زمینه"
-                    className="flex-1 text-xs p-2.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition font-mono text-left"
+                    className="flex-1 text-xs p-2.5 bg-surface border border-line focus:border-brand focus:ring-1 focus:ring-brand rounded-lg outline-none transition font-mono text-left"
                   />
                 </div>
               ) : field.type === "switch" ? (
@@ -378,8 +378,8 @@ export default function PromptWizard({
                     onChange={(e) => handleInputChange(field.key, e.target.checked ? "بله" : "خیر")}
                     className="sr-only peer"
                   />
-                  <div className="relative w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#6C47FF]"></div>
-                  <span className="text-xs text-slate-600 font-bold">{value || "خیر"}</span>
+                  <div className="relative w-9 h-5 bg-surface-inset peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-surface after:border-line-strong after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-solid"></div>
+                  <span className="text-xs text-secondary font-bold">{value || "خیر"}</span>
                 </label>
               ) : field.type === "slider" ? (
                 <div className="flex items-center gap-3 w-full">
@@ -390,9 +390,9 @@ export default function PromptWizard({
                     max={field.max ?? 100}
                     value={value || field.min || 10}
                     onChange={(e) => handleInputChange(field.key, e.target.value)}
-                    className="flex-1 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#6C47FF]"
+                    className="flex-1 h-1.5 bg-surface-inset rounded-lg appearance-none cursor-pointer accent-[#6C47FF]"
                   />
-                  <span className="text-xs font-mono font-bold bg-[#6C47FF]/10 text-[#6C47FF] px-2.5 py-0.5 rounded">
+                  <span className="text-xs font-mono font-bold bg-brand-solid/10 text-brand px-2.5 py-0.5 rounded">
                     {value || field.min || 10}
                   </span>
                 </div>
@@ -401,14 +401,14 @@ export default function PromptWizard({
                   {field.options?.map((opt) => {
                     const parsed = parseOption(opt);
                     return (
-                      <label key={opt} className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600">
+                      <label key={opt} className="flex items-center gap-1.5 cursor-pointer text-xs text-secondary">
                         <input
                           type="radio"
                           name={field.key}
                           value={parsed.value}
                           checked={value === parsed.value}
                           onChange={() => handleInputChange(field.key, parsed.value)}
-                          className="w-3.5 h-3.5 text-[#6C47FF] focus:ring-[#6C47FF]"
+                          className="w-3.5 h-3.5 text-brand focus:ring-brand"
                         />
                         <span>{parsed.label}</span>
                       </label>
@@ -416,7 +416,7 @@ export default function PromptWizard({
                   })}
                 </div>
               ) : field.type === "multiselect" ? (
-                <div className="flex flex-wrap gap-2 mt-1 p-2 bg-white border border-slate-200 rounded-lg max-h-24 overflow-y-auto w-full">
+                <div className="flex flex-wrap gap-2 mt-1 p-2 bg-surface border border-line rounded-lg max-h-24 overflow-y-auto w-full">
                   {field.options?.map((opt) => {
                     const parsed = parseOption(opt);
                     const selectedList = value ? value.split(", ") : [];
@@ -432,12 +432,12 @@ export default function PromptWizard({
                     };
 
                     return (
-                      <label key={opt} className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded border border-slate-100">
+                      <label key={opt} className="flex items-center gap-1.5 cursor-pointer text-xs text-secondary bg-surface-soft hover:bg-surface-soft px-2.5 py-1 rounded border border-line">
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={toggleOption}
-                          className="w-3.5 h-3.5 text-[#6C47FF] focus:ring-[#6C47FF] rounded"
+                          className="w-3.5 h-3.5 text-brand focus:ring-brand rounded"
                         />
                         <span>{parsed.label}</span>
                       </label>
@@ -451,7 +451,7 @@ export default function PromptWizard({
                   value={value}
                   onChange={(e) => handleInputChange(field.key, e.target.value)}
                   placeholder={field.placeholder || "https://example.com"}
-                  className="w-full text-xs p-2.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition text-left font-mono"
+                  className="w-full text-xs p-2.5 bg-surface border border-line focus:border-brand focus:ring-1 focus:ring-brand rounded-lg outline-none transition text-left font-mono"
                   style={{ direction: "ltr" }}
                 />
               ) : (
@@ -461,7 +461,7 @@ export default function PromptWizard({
                   value={value}
                   onChange={(e) => handleInputChange(field.key, e.target.value)}
                   placeholder={field.placeholder || "متنی وارد کنید..."}
-                  className="w-full text-xs p-2.5 bg-white border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-lg outline-none transition"
+                  className="w-full text-xs p-2.5 bg-surface border border-line focus:border-brand focus:ring-1 focus:ring-brand rounded-lg outline-none transition"
                 />
               )}
             </div>
@@ -478,7 +478,7 @@ export default function PromptWizard({
           setWizardCopied(true);
           setTimeout(() => setWizardCopied(false), 2000);
         }}
-        className="w-full mt-4 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-l from-[#6C47FF] to-[#8B6CFF] text-white text-sm font-black rounded-2xl shadow-lg shadow-[#6C47FF]/20 hover:shadow-xl transition-all cursor-pointer"
+        className="w-full mt-4 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-l from-brand-solid to-[#8B6CFF] text-white text-sm font-black rounded-2xl shadow-lg shadow-brand/20 hover:shadow-xl transition-all cursor-pointer"
       >
         <Copy className="w-4 h-4" />
         <span>{wizardCopied ? "کپی شد! 🎉" : "✅ کپی پرامپت نهایی شخصی‌سازی‌شده"}</span>
@@ -486,14 +486,14 @@ export default function PromptWizard({
 
       {/* Preset Customizer Controls */}
       {promptId && (
-        <div className="flex flex-col sm:flex-row gap-2.5 pt-4 border-t border-slate-200 justify-between items-center">
+        <div className="flex flex-col sm:flex-row gap-2.5 pt-4 border-t border-line justify-between items-center">
           <div className="text-right">
             {finalActivePresetId ? (
-              <p className="text-[10px] text-[#6C47FF] font-black flex items-center gap-1">
+              <p className="text-[10px] text-brand font-black flex items-center gap-1">
                 <span>🌟 درحال ویرایش نسخه فعال لود شده</span>
               </p>
             ) : (
-              <p className="text-[10px] text-slate-400 font-semibold">
+              <p className="text-[10px] text-muted font-semibold">
                 می‌توانید مقادیر بالا را به عنوان یک نسخه شخصی (Preset) برای بعد ذخیره کنید.
               </p>
             )}
@@ -503,7 +503,7 @@ export default function PromptWizard({
             <button
               type="button"
               onClick={resetForm}
-              className="px-4 py-2 text-xs font-black text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-700 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0"
+              className="px-4 py-2 text-xs font-black text-muted bg-surface border border-line hover:bg-surface-soft hover:text-primary rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>بازنشانی مقادیر</span>
@@ -514,7 +514,7 @@ export default function PromptWizard({
                   type="button"
                   onClick={handleUpdatePreset}
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-black text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0"
+                  className="px-4 py-2 text-xs font-black text-primary bg-surface border border-line hover:bg-surface-soft hover:border-line-strong rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0"
                 >
                   💾 بروزرسانی این نسخه
                 </button>
@@ -522,7 +522,7 @@ export default function PromptWizard({
                   type="button"
                   onClick={handleSaveNewPresetClick}
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-black text-white bg-[#6C47FF] hover:bg-[#5935e6] rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-sm"
+                  className="px-4 py-2 text-xs font-black text-white bg-brand-solid hover:bg-brand-solid rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-sm"
                 >
                   <FolderPlus className="w-3.5 h-3.5" />
                   <span>ذخیره به عنوان نسخه جدید</span>
@@ -533,7 +533,7 @@ export default function PromptWizard({
                 type="button"
                 onClick={handleSaveNewPresetClick}
                 disabled={isSubmitting}
-                className="px-4 py-2 text-xs font-black text-white bg-[#6C47FF] hover:bg-[#5935e6] rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-md shadow-[#6C47FF]/10"
+                className="px-4 py-2 text-xs font-black text-white bg-brand-solid hover:bg-brand-solid rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-md shadow-brand/10"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>ذخیره مقادیر به عنوان نسخه شخصی (Preset)</span>
@@ -546,29 +546,29 @@ export default function PromptWizard({
       {/* Elegant Naming Modal */}
       {isSaveModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs" style={{ zIndex: Z.MODAL }}>
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 max-w-sm w-full space-y-4 shadow-xl text-right animate-scale-up" dir="rtl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h5 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-[#6C47FF]" />
+          <div className="bg-surface rounded-2xl border border-line p-6 max-w-sm w-full space-y-4 shadow-xl text-right animate-scale-up" dir="rtl">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <h5 className="text-xs font-black text-primary flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-brand" />
                 <span>ذخیره نسخه جدید پرامپت</span>
               </h5>
               <button
                 onClick={() => setIsSaveModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition"
+                className="text-muted hover:text-secondary transition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="preset-name-input" className="text-[11px] font-bold text-slate-500">نام نسخه شخصی:</label>
+              <label htmlFor="preset-name-input" className="text-[11px] font-bold text-muted">نام نسخه شخصی:</label>
               <input
                 id="preset-name-input"
                 type="text"
                 value={presetName}
                 onChange={(e) => setPresetName(e.target.value)}
                 placeholder="مثلا: نسخه تست بازاریابی"
-                className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:bg-white rounded-xl outline-none transition"
+                className="w-full p-2.5 text-xs bg-surface-soft border border-line focus:border-brand focus:bg-surface rounded-xl outline-none transition"
               />
             </div>
 
@@ -576,7 +576,7 @@ export default function PromptWizard({
               <button
                 type="button"
                 onClick={() => setIsSaveModalOpen(false)}
-                className="px-3 py-2 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition cursor-pointer"
+                className="px-3 py-2 text-xs font-bold text-muted hover:bg-surface-soft rounded-xl transition cursor-pointer"
               >
                 انصراف
               </button>
@@ -584,7 +584,7 @@ export default function PromptWizard({
                 type="button"
                 onClick={submitNewPreset}
                 disabled={isSubmitting}
-                className="px-4 py-2 text-xs font-black text-white bg-[#6C47FF] hover:bg-[#5935e6] rounded-xl transition cursor-pointer shadow-sm flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-black text-white bg-brand-solid hover:bg-brand-solid rounded-xl transition cursor-pointer shadow-sm flex items-center gap-1.5"
               >
                 {isSubmitting ? "در حال ذخیره‌سازی..." : "ثبت و ذخیره"}
               </button>

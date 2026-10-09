@@ -33,20 +33,20 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center py-12 px-4 animate-fade-in">
-      <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm max-w-md w-full space-y-6">
+      <div className="bg-surface p-8 rounded-3xl border border-line shadow-sm max-w-md w-full space-y-6">
         
         {/* Title */}
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 bg-[#6C47FF]/10 text-[#6C47FF] rounded-2xl mb-2">
+          <div className="inline-flex p-3 bg-brand-solid/10 text-brand rounded-2xl mb-2">
             <Lock className="w-6 h-6" />
           </div>
-          <h1 className="text-xl font-black text-slate-800">ورود به پنل مدیریت</h1>
-          <p className="text-xs text-slate-400">برای ایجاد، ویرایش و مدیریت پرامپت‌ها وارد شوید</p>
+          <h1 className="text-xl font-black text-primary">ورود به پنل مدیریت</h1>
+          <p className="text-xs text-muted">برای ایجاد، ویرایش و مدیریت پرامپت‌ها وارد شوید</p>
         </div>
 
         {/* Error notification */}
         {error && (
-          <div className="flex items-start gap-2.5 p-3.5 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-xs leading-relaxed">
+          <div className="flex items-start gap-2.5 p-3.5 bg-danger-soft border border-danger-text text-danger-text rounded-xl text-xs leading-relaxed">
             <AlertTriangle className="w-5 h-5 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -54,7 +54,7 @@ export default function AdminLogin() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="admin-email" className="text-xs font-bold text-slate-600 block">پست الکترونیکی</label>
+            <label htmlFor="admin-email" className="text-xs font-bold text-secondary block">پست الکترونیکی</label>
             <div className="relative">
               <input
                 type="email"
@@ -63,14 +63,14 @@ export default function AdminLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@promty.ir"
-                className="w-full text-xs py-3 pr-10 pl-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition text-right"
+                className="w-full text-xs py-3 pr-10 pl-3 bg-surface-soft border border-line focus:border-brand focus:ring-1 focus:ring-brand rounded-xl outline-none transition text-right"
               />
-              <Mail className="w-4.5 h-4.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
+              <Mail className="w-4.5 h-4.5 text-muted absolute right-3 top-1/2 -translate-y-1/2" />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="admin-password" className="text-xs font-bold text-slate-600 block">رمز عبور</label>
+            <label htmlFor="admin-password" className="text-xs font-bold text-secondary block">رمز عبور</label>
             <div className="relative">
               <input
                 type="password"
@@ -79,16 +79,16 @@ export default function AdminLogin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full text-xs py-3 pr-10 pl-3 bg-slate-50 border border-slate-200 focus:border-[#6C47FF] focus:ring-1 focus:ring-[#6C47FF] rounded-xl outline-none transition text-right"
+                className="w-full text-xs py-3 pr-10 pl-3 bg-surface-soft border border-line focus:border-brand focus:ring-1 focus:ring-brand rounded-xl outline-none transition text-right"
               />
-              <Lock className="w-4.5 h-4.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
+              <Lock className="w-4.5 h-4.5 text-muted absolute right-3 top-1/2 -translate-y-1/2" />
             </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-[#6C47FF] hover:bg-[#5935e6] text-white font-bold text-xs rounded-xl shadow-md transition duration-200 cursor-pointer flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-brand-solid hover:bg-brand-solid text-white font-bold text-xs rounded-xl shadow-md transition duration-200 cursor-pointer flex items-center justify-center gap-2"
           >
             {loading ? (
               <>

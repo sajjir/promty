@@ -7,10 +7,10 @@ import CopyButton from "../components/CopyButton";
 import PromptCard from "../components/PromptCard";
 import { useAuth } from "../components/AuthContext";
 import { Z } from "../lib/zIndex";
-import { 
-  ChevronRight, Megaphone, Globe, Video, Camera, Sparkles, 
-  Wand2, PlayCircle, Loader2, Copy, Layers, Eye, Compass, 
-  HelpCircle, MessageSquare, BookOpen, Search, Share2, Tag, 
+import {
+  ChevronRight, Megaphone, Globe, Video, Camera, Sparkles,
+  Wand2, PlayCircle, Loader2, Copy, Layers, Eye, Compass,
+  HelpCircle, MessageSquare, BookOpen, Search, Share2, Tag,
   Info, Cpu, Check, FileCode, CheckCircle2, ChevronLeft, Trash2,
   Pencil, X, Bookmark
 } from "lucide-react";
@@ -45,7 +45,7 @@ function renderHighlightedNodes(body: string, values: Record<string, string>): R
       nodes.push(
         <span
           key={key++}
-          className="text-amber-400 border-b border-dashed border-amber-400/70"
+          className="text-caution-text border-b border-dashed border-caution-text/70"
           title="این بخش قابل شخصی‌سازی است"
         >
           {value}
@@ -70,61 +70,61 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 const TRANSLATIONS: Record<string, string> = {
-  "create": "ایجاد محتوا", 
-  "write": "نگارش و ادبیات", 
-  "code": "کدنویسی", 
-  "design": "طراحی و هنر", 
+  "create": "ایجاد محتوا",
+  "write": "نگارش و ادبیات",
+  "code": "کدنویسی",
+  "design": "طراحی و هنر",
   "market": "بازاریابی",
-  "analyze": "تحلیل و آنالیز", 
-  "learn": "آموزش", 
-  "automate": "اتوماسیون", 
-  "research": "پژوهش", 
+  "analyze": "تحلیل و آنالیز",
+  "learn": "آموزش",
+  "automate": "اتوماسیون",
+  "research": "پژوهش",
   "productivity": "بهره‌وری فردی",
-  "business": "کسب‌وکار", 
-  "marketing": "مارکتینگ", 
-  "education": "آموزش", 
-  "medical": "سلامت و پزشکی", 
-  "health": "سلامت و پزشکی", 
-  "health & medical": "سلامت و پزشکی", 
+  "business": "کسب‌وکار",
+  "marketing": "مارکتینگ",
+  "education": "آموزش",
+  "medical": "سلامت و پزشکی",
+  "health": "سلامت و پزشکی",
+  "health & medical": "سلامت و پزشکی",
   "legal": "حقوقی",
-  "finance": "مالی", 
-  "programming": "برنامه‌نویسی", 
-  "gaming": "بازی", 
-  "photography": "عکاسی", 
+  "finance": "مالی",
+  "programming": "برنامه‌نویسی",
+  "gaming": "بازی",
+  "photography": "عکاسی",
   "ai": "هوش مصنوعی",
-  "beginner": "مبتدی", 
-  "intermediate": "متوسط", 
-  "advanced": "پیشرفته", 
+  "beginner": "مبتدی",
+  "intermediate": "متوسط",
+  "advanced": "پیشرفته",
   "expert": "حرفه‌ای",
-  "persian": "فارسی", 
+  "persian": "فارسی",
   "english": "انگلیسی",
-  "Create": "ایجاد محتوا", 
-  "Write": "نگارش و ادبیات", 
-  "Code": "کدنویسی", 
-  "Design": "طراحی و هنر", 
+  "Create": "ایجاد محتوا",
+  "Write": "نگارش و ادبیات",
+  "Code": "کدنویسی",
+  "Design": "طراحی و هنر",
   "Market": "بازاریابی",
-  "Analyze": "تحلیل و آنالیز", 
-  "Learn": "آموزش", 
-  "Automate": "اتوماسیون", 
-  "Research": "پژوهش", 
+  "Analyze": "تحلیل و آنالیز",
+  "Learn": "آموزش",
+  "Automate": "اتوماسیون",
+  "Research": "پژوهش",
   "Productivity": "بهره‌وری فردی",
-  "Business": "کسب‌وکار", 
-  "Marketing": "مارکتینگ", 
-  "Education": "آموزش", 
-  "Medical": "سلامت و پزشکی", 
-  "Health": "سلامت و پزشکی", 
-  "Health & Medical": "سلامت و پزشکی", 
+  "Business": "کسب‌وکار",
+  "Marketing": "مارکتینگ",
+  "Education": "آموزش",
+  "Medical": "سلامت و پزشکی",
+  "Health": "سلامت و پزشکی",
+  "Health & Medical": "سلامت و پزشکی",
   "Legal": "حقوقی",
-  "Finance": "مالی", 
-  "Programming": "برنامه‌نویسی", 
-  "Gaming": "بازی", 
-  "Photography": "عکاسی", 
+  "Finance": "مالی",
+  "Programming": "برنامه‌نویسی",
+  "Gaming": "بازی",
+  "Photography": "عکاسی",
   "AI": "هوش مصنوعی",
-  "Beginner": "مبتدی", 
-  "Intermediate": "متوسط", 
-  "Advanced": "پیشرفته", 
+  "Beginner": "مبتدی",
+  "Intermediate": "متوسط",
+  "Advanced": "پیشرفته",
   "Expert": "حرفه‌ای",
-  "Persian": "فارسی", 
+  "Persian": "فارسی",
   "English": "انگلیسی"
 };
 
@@ -139,22 +139,22 @@ const RUN_URLS: Record<string, string> = {
 
 function TaxonomyBlock({ prompt }: { prompt: Prompt }) {
   return (
-    <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4 text-right" dir="rtl">
-      <div className="flex items-center gap-1.5 pb-2.5 border-b border-slate-50">
-        <Tag className="w-4 h-4 text-[#6C47FF]" />
-        <h4 className="text-xs font-black text-slate-800">شناسنامه پرامپت</h4>
+    <div className="bg-surface rounded-3xl p-5 border border-line shadow-sm space-y-4 text-right" dir="rtl">
+      <div className="flex items-center gap-1.5 pb-2.5 border-b border-line">
+        <Tag className="w-4 h-4 text-brand" />
+        <h4 className="text-xs font-black text-primary">شناسنامه پرامپت</h4>
       </div>
 
-      <div className="grid grid-cols-2 gap-3.5 text-xs text-slate-600">
+      <div className="grid grid-cols-2 gap-3.5 text-xs text-secondary">
         {prompt.tools && prompt.tools.length > 0 && (
           <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-bold block">🛠️ ابزار هوش مصنوعی:</span>
+            <span className="text-[10px] text-muted font-bold block">🛠️ ابزار هوش مصنوعی:</span>
             <div className="flex flex-wrap gap-1">
               {prompt.tools.map(t => (
-                <Link 
-                  key={t} 
+                <Link
+                  key={t}
                   to={`/?tool=${t}`}
-                  className="bg-indigo-50 text-[#6C47FF] px-2 py-0.5 rounded text-[10px] font-bold border border-indigo-100/50 hover:ring-2 hover:ring-[#6C47FF]/50 transition-all cursor-pointer block"
+                  className="bg-brand-soft text-brand px-2 py-0.5 rounded text-[10px] font-bold border border-brand/50 hover:ring-2 hover:ring-brand/50 transition-all cursor-pointer block"
                 >
                   {t}
                 </Link>
@@ -165,13 +165,13 @@ function TaxonomyBlock({ prompt }: { prompt: Prompt }) {
 
         {prompt.domains && prompt.domains.length > 0 && (
           <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-bold block">🌐 حوزه کاری (Domain):</span>
+            <span className="text-[10px] text-muted font-bold block">🌐 حوزه کاری (Domain):</span>
             <div className="flex flex-wrap gap-1">
               {prompt.domains.map(d => (
-                <Link 
-                  key={d} 
+                <Link
+                  key={d}
                   to={`/?domain=${d}`}
-                  className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold hover:ring-2 hover:ring-[#6C47FF]/50 transition-all cursor-pointer block"
+                  className="bg-surface-soft text-secondary px-2 py-0.5 rounded text-[10px] font-bold hover:ring-2 hover:ring-brand/50 transition-all cursor-pointer block"
                 >
                   {TRANSLATIONS[d] || TRANSLATIONS[d.toLowerCase()] || d}
                 </Link>
@@ -182,10 +182,10 @@ function TaxonomyBlock({ prompt }: { prompt: Prompt }) {
 
         {prompt.intent && (
           <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-bold block">🎯 قصد و هدف پرامپت:</span>
-            <Link 
+            <span className="text-[10px] text-muted font-bold block">🎯 قصد و هدف پرامپت:</span>
+            <Link
               to={`/?intent=${prompt.intent}`}
-              className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100/30 inline-block hover:ring-2 hover:ring-[#6C47FF]/50 transition-all cursor-pointer"
+              className="bg-success-soft text-success-text px-2 py-0.5 rounded text-[10px] font-bold border border-success-text/30 inline-block hover:ring-2 hover:ring-brand/50 transition-all cursor-pointer"
             >
               {TRANSLATIONS[prompt.intent] || TRANSLATIONS[prompt.intent.toLowerCase()] || prompt.intent}
             </Link>
@@ -194,8 +194,8 @@ function TaxonomyBlock({ prompt }: { prompt: Prompt }) {
 
         {prompt.language && (
           <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-bold block">💬 زبان پرامپت:</span>
-            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold inline-block">
+            <span className="text-[10px] text-muted font-bold block">💬 زبان پرامپت:</span>
+            <span className="bg-surface-soft text-secondary px-2 py-0.5 rounded text-[10px] font-bold inline-block">
               {TRANSLATIONS[prompt.language] || TRANSLATIONS[prompt.language.toLowerCase()] || prompt.language}
             </span>
           </div>
@@ -203,12 +203,12 @@ function TaxonomyBlock({ prompt }: { prompt: Prompt }) {
 
         {prompt.difficulty && (
           <div className="space-y-1 col-span-2">
-            <span className="text-[10px] text-slate-400 font-bold block">⚡ سطح تخصص مورد نیاز:</span>
+            <span className="text-[10px] text-muted font-bold block">⚡ سطح تخصص مورد نیاز:</span>
             <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold inline-block border ${
-              prompt.difficulty.toLowerCase() === "beginner" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
-              prompt.difficulty.toLowerCase() === "intermediate" ? "bg-blue-50 text-blue-700 border-blue-100" :
-              prompt.difficulty.toLowerCase() === "advanced" ? "bg-amber-50 text-amber-700 border-amber-100" :
-              "bg-rose-50 text-rose-700 border-rose-100"
+              prompt.difficulty.toLowerCase() === "beginner" ? "bg-success-soft text-success-text border-success-text" :
+              prompt.difficulty.toLowerCase() === "intermediate" ? "bg-info-soft text-info-text border-info-text" :
+              prompt.difficulty.toLowerCase() === "advanced" ? "bg-caution-soft text-caution-text border-caution-text" :
+              "bg-danger-soft text-danger-text border-danger-text"
             }`}>
               {TRANSLATIONS[prompt.difficulty] || TRANSLATIONS[prompt.difficulty.toLowerCase()] || prompt.difficulty}
             </span>
@@ -217,14 +217,14 @@ function TaxonomyBlock({ prompt }: { prompt: Prompt }) {
       </div>
 
       {prompt.tags && prompt.tags.length > 0 && (
-        <div className="pt-3 border-t border-slate-50 space-y-1.5">
-          <span className="text-[10px] text-slate-400 font-bold block">برچسب‌ها:</span>
+        <div className="pt-3 border-t border-line space-y-1.5">
+          <span className="text-[10px] text-muted font-bold block">برچسب‌ها:</span>
           <div className="flex flex-wrap gap-1">
             {prompt.tags.map((tag) => (
-              <Link 
-                key={tag} 
+              <Link
+                key={tag}
                 to={`/?tag=${tag}`}
-                className="px-2 py-0.5 bg-slate-50 text-slate-500 text-[10px] font-medium rounded border border-slate-100 hover:ring-2 hover:ring-[#6C47FF]/50 transition-all cursor-pointer block"
+                className="px-2 py-0.5 bg-surface-soft text-muted text-[10px] font-medium rounded border border-line hover:ring-2 hover:ring-brand/50 transition-all cursor-pointer block"
               >
                 #{tag}
               </Link>
@@ -415,14 +415,14 @@ export default function PromptDetail() {
   const renderPresetsSection = () => {
     if (!user) return null;
     return (
-      <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4 text-right" dir="rtl">
-        <div className="flex items-center gap-1.5 pb-2.5 border-b border-slate-50">
-          <Sparkles className="w-4 h-4 text-[#6C47FF]" />
-          <h4 className="text-xs font-black text-slate-800">نسخه‌های شخصی من (My Presets)</h4>
+      <div className="bg-surface rounded-3xl p-5 border border-line shadow-sm space-y-4 text-right" dir="rtl">
+        <div className="flex items-center gap-1.5 pb-2.5 border-b border-line">
+          <Sparkles className="w-4 h-4 text-brand" />
+          <h4 className="text-xs font-black text-primary">نسخه‌های شخصی من (My Presets)</h4>
         </div>
 
         {presets.length === 0 ? (
-          <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+          <p className="text-[10px] text-muted font-semibold leading-relaxed">
             هنوز هیچ نسخه‌ای برای این پرامپت ذخیره نکرده‌اید. برای شروع مقادیر دلخواه خود را در فرم شخصی‌سازی وارد کرده و دکمه ذخیره نسخه را بزنید.
           </p>
         ) : (
@@ -440,8 +440,8 @@ export default function PromptDetail() {
                   onClick={() => !isEditing && handleLoadPreset(preset)}
                   className={`group relative p-3 rounded-2xl border transition-all cursor-pointer text-right flex items-center justify-between gap-2 ${
                     isActive
-                      ? "bg-indigo-50/40 border-[#6C47FF] shadow-xs"
-                      : "bg-slate-50 hover:bg-slate-100/70 border-slate-100"
+                      ? "bg-brand-soft/40 border-brand shadow-xs"
+                      : "bg-surface-soft hover:bg-surface-soft/70 border-line"
                   }`}
                 >
                   <div className="space-y-1 min-w-0 flex-1">
@@ -459,14 +459,14 @@ export default function PromptDetail() {
                               setEditingPresetId(null);
                             }
                           }}
-                          className="w-full text-xs p-1.5 bg-white border border-[#6C47FF] rounded-lg outline-none"
+                          className="w-full text-xs p-1.5 bg-surface border border-brand rounded-lg outline-none"
                           autoFocus
                         />
                         <button
                           type="button"
                           onClick={() => handleUpdatePresetNameSubmit(preset.id)}
                           disabled={isUpdatingPresetName}
-                          className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition disabled:opacity-50 shrink-0"
+                          className="p-1.5 bg-success-soft text-success-text hover:bg-success-soft rounded-lg transition disabled:opacity-50 shrink-0"
                           title="تایید"
                         >
                           {isUpdatingPresetName ? (
@@ -479,7 +479,7 @@ export default function PromptDetail() {
                           type="button"
                           onClick={() => setEditingPresetId(null)}
                           disabled={isUpdatingPresetName}
-                          className="p-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg transition disabled:opacity-50 shrink-0"
+                          className="p-1.5 bg-surface-soft text-muted hover:bg-surface-inset rounded-lg transition disabled:opacity-50 shrink-0"
                           title="انصراف"
                         >
                           <X className="w-3.5 h-3.5" />
@@ -487,10 +487,10 @@ export default function PromptDetail() {
                       </div>
                     ) : (
                       <>
-                        <span className={`text-[11px] font-black block truncate ${isActive ? 'text-[#6C47FF]' : 'text-slate-700'}`}>
+                        <span className={`text-[11px] font-black block truncate ${isActive ? 'text-brand' : 'text-primary'}`}>
                           {preset.name}
                         </span>
-                        <span className="text-[9px] text-slate-400 block">
+                        <span className="text-[9px] text-muted block">
                           تاریخ ثبت: {dateStr}
                         </span>
                       </>
@@ -505,7 +505,7 @@ export default function PromptDetail() {
                           setEditingPresetId(preset.id);
                           setEditingName(preset.name);
                         }}
-                        className="p-1.5 hover:bg-indigo-50 text-slate-400 hover:text-[#6C47FF] rounded-lg transition"
+                        className="p-1.5 hover:bg-brand-soft text-muted hover:text-brand rounded-lg transition"
                         title="ویرایش نام"
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -513,7 +513,7 @@ export default function PromptDetail() {
                       <button
                         type="button"
                         onClick={(e) => handleDeletePreset(preset.id, e)}
-                        className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition"
+                        className="p-1.5 hover:bg-danger-soft text-muted hover:text-danger-text rounded-lg transition"
                         title="حذف نسخه"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -622,7 +622,7 @@ export default function PromptDetail() {
       setRefinedPrompt(null);
       setRefineMessage(null);
       setOriginalBeforeRefining(renderedBody);
-      
+
       const steps = [
         "در حال فراخوانی عامل هوش مصنوعی (AI Agent)...",
         "در حال مهندسی و بازنویسی متغیرها تحت گایدلاین‌ها...",
@@ -630,7 +630,7 @@ export default function PromptDetail() {
         "افزودن تنظیمات کیفیت بالا (Photorealistic & 8K Directives)...",
         "اعمال ویژگی‌های اختصاصی سبک و نورپردازی حرفه‌ای سینمایی..."
       ];
-      
+
       let stepIndex = 0;
       setLoadingStep(steps[0]);
       const interval = setInterval(() => {
@@ -753,8 +753,8 @@ export default function PromptDetail() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 gap-3 text-slate-400">
-        <Loader2 className="w-8 h-8 animate-spin text-[#6C47FF]" />
+      <div className="flex flex-col items-center justify-center py-32 gap-3 text-muted">
+        <Loader2 className="w-8 h-8 animate-spin text-brand" />
         <p className="text-xs font-semibold">در حال بارگذاری ایمن جزئیات پرامپت مهندسی‌شده...</p>
       </div>
     );
@@ -762,10 +762,10 @@ export default function PromptDetail() {
 
   if (!prompt) {
     return (
-      <div className="bg-white border border-slate-100 rounded-3xl p-12 text-center text-slate-400 space-y-4 max-w-lg mx-auto shadow-sm">
-        <Sparkles className="w-8 h-8 text-[#6C47FF] mx-auto animate-pulse" />
-        <p className="text-sm font-semibold text-slate-600">پرامپت مورد نظر پیدا نشد.</p>
-        <Link to="/" className="inline-block text-xs bg-[#6C47FF] text-white px-4 py-2.5 rounded-xl hover:bg-opacity-90 font-bold transition">
+      <div className="bg-surface border border-line rounded-3xl p-12 text-center text-muted space-y-4 max-w-lg mx-auto shadow-sm">
+        <Sparkles className="w-8 h-8 text-brand mx-auto animate-pulse" />
+        <p className="text-sm font-semibold text-secondary">پرامپت مورد نظر پیدا نشد.</p>
+        <Link to="/" className="inline-block text-xs bg-brand-solid text-white px-4 py-2.5 rounded-xl hover:bg-opacity-90 font-bold transition">
           بازگشت به خانه
         </Link>
       </div>
@@ -778,14 +778,14 @@ export default function PromptDetail() {
   const IMAGE_TOOLS = ['midjourney', 'flux', 'stable-diffusion', 'dalle', 'runway', 'kling'];
   const isImagePrompt = prompt.tools ? prompt.tools.some(tool => IMAGE_TOOLS.includes(tool.toLowerCase())) : false;
 
-  const isCoding = 
-    prompt.tools?.some(t => ["chatgpt", "claude", "gemini", "grok"].includes(t.toLowerCase())) || 
+  const isCoding =
+    prompt.tools?.some(t => ["chatgpt", "claude", "gemini", "grok"].includes(t.toLowerCase())) ||
     prompt.domains?.some(d => ["programming", "code", "development"].includes(d.toLowerCase())) ||
     prompt.intent?.toLowerCase() === "code" ||
     prompt.tags?.some(tag => ["کد", "برنامه‌نویسی", "react", "programming", "code"].includes(tag.toLowerCase()));
 
-  const mediaGalleryArray = Array.isArray(prompt.mediaGallery) 
-    ? (prompt.mediaGallery as unknown as string[]) 
+  const mediaGalleryArray = Array.isArray(prompt.mediaGallery)
+    ? (prompt.mediaGallery as unknown as string[])
     : [];
 
   const allMedia: string[] = [];
@@ -800,15 +800,15 @@ export default function PromptDetail() {
 
   return (
     <div className="space-y-8 pb-16 animate-fade-in text-right" dir="rtl">
-      
+
       {/* Top Breadcrumb Nav */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 border border-slate-100 rounded-2xl shadow-xs">
-        <nav className="flex items-center gap-1.5 text-xs text-slate-400 font-bold">
-          <Link to="/" className="hover:text-slate-600 transition">خانه</Link>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-surface p-4 border border-line rounded-2xl shadow-xs">
+        <nav className="flex items-center gap-1.5 text-xs text-muted font-bold">
+          <Link to="/" className="hover:text-secondary transition">خانه</Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">{prompt.category || "عمومی"}</span>
+          <span className="text-muted bg-surface-soft px-2 py-0.5 rounded-md border border-line">{prompt.category || "عمومی"}</span>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-slate-700 truncate max-w-[150px]">{prompt.title}</span>
+          <span className="text-primary truncate max-w-[150px]">{prompt.title}</span>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -817,18 +817,18 @@ export default function PromptDetail() {
             onClick={handleBookmarkToggle}
             className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
               isBookmarked
-                ? "bg-amber-50 text-amber-600 border-amber-200"
-                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                ? "bg-caution-soft text-caution-text border-caution-text"
+                : "bg-surface text-secondary border-line hover:bg-surface-soft"
             }`}
           >
-            <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? "fill-amber-500 text-amber-500" : ""}`} />
+            <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? "fill-amber-500 text-caution-text" : ""}`} />
             <span>{isBookmarked ? "نشان شده" : "نشان کردن"}</span>
           </button>
 
           {isAdmin && (
             <Link
               to={`/admin/prompts/new?forkedFrom=${prompt.id}`}
-              className="flex items-center gap-1.5 text-xs font-black text-amber-600 bg-amber-50 border border-amber-200/50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition"
+              className="flex items-center gap-1.5 text-xs font-black text-caution-text bg-caution-soft border border-caution-text/50 hover:bg-caution-soft px-3 py-1.5 rounded-lg transition"
             >
               <span>🔄 ایجاد انشعاب (Fork)</span>
             </Link>
@@ -836,7 +836,7 @@ export default function PromptDetail() {
 
           <Link
             to="/"
-            className="flex items-center gap-1 text-xs font-bold text-[#6C47FF] hover:bg-[#6C47FF]/5 px-3 py-1.5 rounded-lg transition"
+            className="flex items-center gap-1 text-xs font-bold text-brand hover:bg-brand-solid/5 px-3 py-1.5 rounded-lg transition"
           >
             <span>بازگشت به آرشیو پرامپت‌ها</span>
             <ChevronLeft className="w-4 h-4" />
@@ -845,9 +845,9 @@ export default function PromptDetail() {
       </div>
 
       {prompt.parent && (
-        <div className="bg-amber-50/40 border border-amber-200/50 text-amber-800 px-4 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold shadow-xs">
+        <div className="bg-caution-soft/40 border border-caution-text/50 text-caution-text px-4 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold shadow-xs">
           <span>🔗 این پرامپت انشعابی از</span>
-          <Link to={`/prompts/${prompt.parent.id}`} className="underline hover:text-amber-900 transition font-black">
+          <Link to={`/prompts/${prompt.parent.id}`} className="underline hover:text-caution-text transition font-black">
             {prompt.parent.title}
           </Link>
           <span>است</span>
@@ -856,16 +856,16 @@ export default function PromptDetail() {
 
       {/* Grid: Main Prompt Body Content & Customization Wizard */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
+
         {/* Left Side: Metadata, Taxonomy Badges, Sample Output Visuals, SEO Simulation */}
         <div className="lg:col-span-5 space-y-6">
-          
+
           {/* Main Visual/Image Card */}
-          <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm p-5 space-y-4">
+          <div className="bg-surface rounded-3xl overflow-hidden border border-line shadow-sm p-5 space-y-4">
             <div className="space-y-3">
               {/* Language toggle at top of the card */}
               {prompt.bodyFa && (
-                <div className="flex items-center gap-2 p-1 bg-slate-50 border border-slate-100 rounded-xl w-fit">
+                <div className="flex items-center gap-2 p-1 bg-surface-soft border border-line rounded-xl w-fit">
                   <button
                     type="button"
                     onClick={() => {
@@ -874,8 +874,8 @@ export default function PromptDetail() {
                     }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
                       promptLang === "fa"
-                        ? "bg-[#6C47FF] text-white shadow-xs"
-                        : "text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"
+                        ? "bg-brand-solid text-white shadow-xs"
+                        : "text-muted hover:text-primary hover:bg-surface-soft/50"
                     }`}
                   >
                     <span>🇮🇷</span>
@@ -889,8 +889,8 @@ export default function PromptDetail() {
                     }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
                       promptLang === "en"
-                        ? "bg-[#6C47FF] text-white shadow-xs"
-                        : "text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"
+                        ? "bg-brand-solid text-white shadow-xs"
+                        : "text-muted hover:text-primary hover:bg-surface-soft/50"
                     }`}
                   >
                     <span>🇬🇧</span>
@@ -900,29 +900,29 @@ export default function PromptDetail() {
                 </div>
               )}
 
-              <div className="flex items-center gap-1.5 text-xs text-[#6C47FF] font-black">
+              <div className="flex items-center gap-1.5 text-xs text-brand font-black">
                 <IconComponent className="w-4 h-4" />
                 <span>دسته‌بندی: {prompt.category || "عمومی"}</span>
               </div>
 
-              <h1 className="text-lg md:text-xl font-black text-slate-800 leading-tight">
+              <h1 className="text-lg md:text-xl font-black text-primary leading-tight">
                 {prompt.title}
               </h1>
 
               {/* Requires Reference Image Badge */}
               {prompt.requiresReferenceImage && (
-                <div className="flex items-center gap-2 bg-rose-50 border border-rose-100 text-rose-700 px-3 py-2 rounded-xl text-xs font-black">
+                <div className="flex items-center gap-2 bg-danger-soft border border-danger-text text-danger-text px-3 py-2 rounded-xl text-xs font-black">
                   <span className="animate-pulse">⚠️</span>
                   <span>نیاز به تصویر منبع: این پرامپت به بارگذاری تصویر ورودی/منبع نیاز دارد.</span>
                 </div>
               )}
 
-              <p className="text-slate-500 text-xs leading-relaxed">
+              <p className="text-muted text-xs leading-relaxed">
                 {prompt.description || "توضیحی برای این پرامپت مهندسی شده ثبت نشده است."}
               </p>
             </div>
 
-            <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-100">
+            <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-surface-soft border border-line">
               {prompt.coverImage ? (
                 <img
                   src={prompt.coverImage}
@@ -938,13 +938,13 @@ export default function PromptDetail() {
                   className="w-full h-full object-cover animate-fade-in"
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 gap-2">
-                  <PlayCircle className="w-12 h-12 text-[#6C47FF]/30" />
-                  <span className="text-[10px] font-bold text-slate-400">بدون تصویر خروجی مستقیم</span>
+                <div className="w-full h-full flex flex-col items-center justify-center text-muted bg-gradient-to-br from-brand-soft/50 to-brand-soft/50 gap-2">
+                  <PlayCircle className="w-12 h-12 text-brand/30" />
+                  <span className="text-[10px] font-bold text-muted">بدون تصویر خروجی مستقیم</span>
                 </div>
               )}
               {prompt.isPremium && (
-                <span className="absolute top-3 right-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-3 py-1 rounded-xl text-[10px] font-black shadow-md border border-amber-400/20">
+                <span className="absolute top-3 right-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-3 py-1 rounded-xl text-[10px] font-black shadow-md border border-caution-text/20">
                   پرامپت ویژه 🛡️
                 </span>
               )}
@@ -953,10 +953,10 @@ export default function PromptDetail() {
 
           {/* Smart Media Gallery Section */}
           {mediaGalleryArray.length > 0 && (
-            <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 pb-2.5 border-b border-slate-50">
-                <Camera className="w-4.5 h-4.5 text-[#6C47FF]" />
-                <h4 className="text-xs font-black text-slate-800">📸 نمونه خروجی‌ها</h4>
+            <div className="bg-surface rounded-3xl p-5 border border-line shadow-sm space-y-4">
+              <div className="flex items-center gap-2 pb-2.5 border-b border-line">
+                <Camera className="w-4.5 h-4.5 text-brand" />
+                <h4 className="text-xs font-black text-primary">📸 نمونه خروجی‌ها</h4>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
@@ -967,11 +967,11 @@ export default function PromptDetail() {
                       const originalUrl = url.replace("thumbnail-", "gallery-");
                       setLightboxImage(originalUrl);
                     }}
-                    className="group relative aspect-video rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shadow-xs cursor-pointer block"
+                    className="group relative aspect-video rounded-xl overflow-hidden bg-surface-soft border border-line shadow-xs cursor-pointer block"
                   >
-                    <img 
-                      src={url} 
-                      alt={`${prompt.title} - نمونه خروجی ${index + 1}`} 
+                    <img
+                      src={url}
+                      alt={`${prompt.title} - نمونه خروجی ${index + 1}`}
                       referrerPolicy="no-referrer"
                       loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-300 cursor-pointer hover:scale-105"
@@ -994,41 +994,41 @@ export default function PromptDetail() {
 
           {/* SEO Performance Visual Card Accordion */}
           {isAdmin && (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-lg transition-all duration-300">
+            <div className="bg-slate-900 border border-line-strong rounded-3xl overflow-hidden shadow-lg transition-all duration-300">
               <button
                 onClick={() => setShowSeoAccordion(!showSeoAccordion)}
                 className="w-full flex items-center justify-between p-5 text-right font-sans focus:outline-none cursor-pointer"
               >
                 <div className="flex items-center gap-1.5">
-                  <Search className="w-4 h-4 text-[#6C47FF]" />
-                  <h4 className="text-xs font-black text-slate-300">نمایه‌سازی موتورهای جستجو (SEO Preview)</h4>
+                  <Search className="w-4 h-4 text-brand" />
+                  <h4 className="text-xs font-black text-muted">نمایه‌سازی موتورهای جستجو (SEO Preview)</h4>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] text-emerald-400 font-black px-2 py-0.5 bg-emerald-500/10 rounded">فعال و بهینه</span>
-                  <span className="text-slate-400 text-xs">{showSeoAccordion ? "▲" : "▼"}</span>
+                  <span className="text-[9px] text-success-text font-black px-2 py-0.5 bg-emerald-500/10 rounded">فعال و بهینه</span>
+                  <span className="text-muted text-xs">{showSeoAccordion ? "▲" : "▼"}</span>
                 </div>
               </button>
 
               {showSeoAccordion && (
-                <div className="p-5 pt-0 border-t border-slate-800 space-y-4 text-left font-mono" style={{ direction: "ltr" }}>
+                <div className="p-5 pt-0 border-t border-line-strong space-y-4 text-left font-mono" style={{ direction: "ltr" }}>
                   <div className="space-y-3">
                     <div className="space-y-1">
-                      <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>Google SERP Title (بهینه شده):</span>
-                      <p className="text-xs text-sky-400 font-bold hover:underline cursor-pointer leading-tight">
+                      <span className="text-[10px] text-muted font-bold block text-right" style={{ direction: "rtl" }}>Google SERP Title (بهینه شده):</span>
+                      <p className="text-xs text-info-text font-bold hover:underline cursor-pointer leading-tight">
                         {prompt.title} | قالب آماده هوش مصنوعی Promty.ir
                       </p>
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>SEO Meta Description:</span>
-                      <p className="text-[11px] text-slate-400 leading-normal text-right" style={{ direction: "rtl" }}>
+                      <span className="text-[10px] text-muted font-bold block text-right" style={{ direction: "rtl" }}>SEO Meta Description:</span>
+                      <p className="text-[11px] text-muted leading-normal text-right" style={{ direction: "rtl" }}>
                         دانلود، ویرایش و کپی سریع پرامپت مهندسی‌شده "{prompt.title}" مخصوص {prompt.tools?.join("، ") || "هوش مصنوعی"}. {prompt.description || "بهترین نتایج خروجی در کوتاهترین زمان."}
                       </p>
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-[10px] text-slate-500 font-bold block text-right" style={{ direction: "rtl" }}>URL Slug:</span>
-                      <p className="text-[10px] text-[#6C47FF] hover:underline cursor-pointer">
+                      <span className="text-[10px] text-muted font-bold block text-right" style={{ direction: "rtl" }}>URL Slug:</span>
+                      <p className="text-[10px] text-brand hover:underline cursor-pointer">
                         https://promty.ir/prompts/{prompt.id}
                       </p>
                     </div>
@@ -1042,21 +1042,21 @@ export default function PromptDetail() {
 
         {/* Right Side: Core Interactive Textbox, Versioning, Dynamic Wizard, Mock Outputs */}
         <div className="lg:col-span-7 space-y-6">
-          
+
           {/* Main prompt code block */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-5 lg:sticky lg:top-6 lg:self-start z-10">
-            
+          <div className="bg-surface rounded-3xl p-6 border border-line shadow-sm space-y-5 lg:sticky lg:top-6 lg:self-start z-10">
+
             {/* Prompt Textbox */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <label htmlFor="prompt-box-area" className="text-xs font-black text-slate-400">متن پرامپت نهایی:</label>
+                  <label htmlFor="prompt-box-area" className="text-xs font-black text-muted">متن پرامپت نهایی:</label>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md">
+                <span className="text-[10px] font-mono text-muted bg-surface-soft px-2.5 py-1 rounded-md">
                   {prompt.usageCount} کپی و بررسی موفقیت‌آمیز
                 </span>
               </div>
-              
+
               <div className="relative">
                 {isManualEditMode ? (
                   <textarea
@@ -1064,14 +1064,14 @@ export default function PromptDetail() {
                     rows={9}
                     value={renderedBody}
                     onChange={(e) => setRenderedBody(e.target.value)}
-                    className={`w-full p-4.5 pt-11 bg-slate-900 text-slate-100 text-[13px] leading-relaxed rounded-2xl ring-4 ring-slate-900/5 focus:outline-none focus:ring-4 focus:ring-[#6C47FF]/20 ${
+                    className={`w-full p-4.5 pt-11 bg-slate-900 text-muted text-[13px] leading-relaxed rounded-2xl ring-4 ring-line-strong/5 focus:outline-none focus:ring-4 focus:ring-brand/20 ${
                       promptLang === "fa" ? "text-right font-sans" : "text-left font-mono"
                     }`}
                     style={{ direction: promptLang === "fa" ? "rtl" : "ltr" }}
                   />
                 ) : (
                   <div
-                    className={`w-full p-4.5 pt-11 bg-slate-900 text-slate-100 text-[13px] leading-relaxed rounded-2xl ring-4 ring-slate-900/5 whitespace-pre-wrap min-h-[220px] max-h-[420px] overflow-y-auto ${
+                    className={`w-full p-4.5 pt-11 bg-slate-900 text-muted text-[13px] leading-relaxed rounded-2xl ring-4 ring-line-strong/5 whitespace-pre-wrap min-h-[220px] max-h-[420px] overflow-y-auto ${
                       promptLang === "fa" ? "text-right font-sans" : "text-left font-mono"
                     }`}
                     style={{ direction: promptLang === "fa" ? "rtl" : "ltr" }}
@@ -1089,7 +1089,7 @@ export default function PromptDetail() {
                     setBoxCopied(true);
                     setTimeout(() => setBoxCopied(false), 2000);
                   }}
-                  className={`absolute top-3 ${promptLang === "fa" ? "left-3" : "right-3"} flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg transition cursor-pointer z-20`}
+                  className={`absolute top-3 ${promptLang === "fa" ? "left-3" : "right-3"} flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-muted text-[10px] font-bold rounded-lg transition cursor-pointer z-20`}
                 >
                   <Copy className="w-3 h-3" />
                   <span>{boxCopied ? "کپی شد! 🎉" : "کپی"}</span>
@@ -1099,7 +1099,7 @@ export default function PromptDetail() {
                 <button
                   type="button"
                   onClick={() => setIsManualEditMode(v => !v)}
-                  className={`absolute top-3 ${promptLang === "fa" ? "right-3" : "left-3"} text-[10px] text-slate-500 hover:text-slate-300 font-bold transition cursor-pointer z-20`}
+                  className={`absolute top-3 ${promptLang === "fa" ? "right-3" : "left-3"} text-[10px] text-muted hover:text-muted font-bold transition cursor-pointer z-20`}
                 >
                   {isManualEditMode ? "پایان ویرایش دستی" : "✏️ ویرایش دستی متن"}
                 </button>
@@ -1111,30 +1111,30 @@ export default function PromptDetail() {
                <div>
                  {/* Left side empty or metadata */}
                </div>
-               
+
                {prompt.tools && prompt.tools.length > 1 ? (
-                 <div className="flex items-center bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 overflow-hidden transition-all text-xs shrink-0 border border-slate-200 shadow-xs">
+                 <div className="flex items-center bg-surface-soft hover:bg-surface-inset rounded-lg text-secondary overflow-hidden transition-all text-xs shrink-0 border border-line shadow-xs">
                    <button
                      onClick={() => handleRunExternal(renderedBody, selectedRunTool)}
-                     className="flex items-center gap-1 px-3 py-2 font-bold cursor-pointer border-l border-slate-300"
+                     className="flex items-center gap-1 px-3 py-2 font-bold cursor-pointer border-l border-line-strong"
                    >
                      <span>▶️ {selectedRunTool}</span>
                    </button>
                    <select
                      value={selectedRunTool}
                      onChange={(e) => setSelectedRunTool(e.target.value)}
-                     className="bg-transparent text-slate-500 text-[10px] font-bold py-2 px-2 outline-none cursor-pointer border-none"
+                     className="bg-transparent text-muted text-[10px] font-bold py-2 px-2 outline-none cursor-pointer border-none"
                    >
                      {prompt.tools.map((t) => (<option key={t} value={t}>{t}</option>))}
                    </select>
                  </div>
                ) : (
-                 <button onClick={() => handleRunExternal(renderedBody)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 shadow-xs cursor-pointer shrink-0">
+                 <button onClick={() => handleRunExternal(renderedBody)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-secondary bg-surface-soft hover:bg-surface-inset rounded-lg border border-line shadow-xs cursor-pointer shrink-0">
                    <span>▶️ {prompt.tools?.[0] || "اجرا"}</span>
                  </button>
                )}
              </div>
- 
+
             {/* Live Wizard Form */}
             {prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
               <div className="pt-2" ref={wizardRef}>
@@ -1163,17 +1163,17 @@ export default function PromptDetail() {
           </div>
 
           {/* AI Refinement Panel */}
-          <div className="bg-gradient-to-r from-[#6C47FF]/10 to-indigo-50/20 border border-[#6C47FF]/20 rounded-2xl p-5 space-y-4 shadow-sm">
+          <div className="bg-gradient-to-r from-brand-solid/10 to-brand-soft/20 border border-brand/20 rounded-2xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#6C47FF] animate-pulse" />
+                <Sparkles className="w-5 h-5 text-brand animate-pulse" />
                 <div>
-                  <h4 className="text-xs font-black text-slate-800">ارتقای هوشمند پرامپت با Agentیک n8n</h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">افزودن خودکار متغیرهای حرفه‌ای، عکاسی ۳ بعدی و دستورالعمل‌های نهایی‌سازی موتور هوش مصنوعی</p>
+                  <h4 className="text-xs font-black text-primary">ارتقای هوشمند پرامپت با Agentیک n8n</h4>
+                  <p className="text-[10px] text-muted mt-0.5">افزودن خودکار متغیرهای حرفه‌ای، عکاسی ۳ بعدی و دستورالعمل‌های نهایی‌سازی موتور هوش مصنوعی</p>
                 </div>
               </div>
-              
-              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${isn8nConfigured ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+
+              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${isn8nConfigured ? 'bg-success-soft text-success-text' : 'bg-surface-soft text-muted'}`}>
                 {isn8nConfigured ? "عامل متصل" : "محلی فعال"}
               </span>
             </div>
@@ -1181,12 +1181,12 @@ export default function PromptDetail() {
             <button
               onClick={handleRefinePrompt}
               disabled={refineLoading}
-              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-[#6C47FF] hover:text-[#5935e6] font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition border-2 border-[#6C47FF]/30 cursor-pointer shadow-sm"
+              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-brand hover:text-brand font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition border-2 border-brand/30 cursor-pointer shadow-sm"
             >
               {refineLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin text-[#6C47FF]" />
+                <Loader2 className="w-4 h-4 animate-spin text-brand" />
               ) : (
-                <Wand2 className="w-4 h-4 text-[#6C47FF]" />
+                <Wand2 className="w-4 h-4 text-brand" />
               )}
               <span>ارتقا و بهبود فوری این پرامپت با عامل n8n 🤖✨</span>
             </button>
@@ -1194,39 +1194,39 @@ export default function PromptDetail() {
 
           {/* Incremental Version Timeline / History Log */}
           {refineHistory.length > 0 && (
-            <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 pb-2.5 border-b border-slate-50">
-                <Layers className="w-4 h-4 text-[#6C47FF]" />
-                <h4 className="text-xs font-black text-slate-800">تاریخچه و سوابق تغییرات پرامپت (Version Log)</h4>
+            <div className="bg-surface rounded-3xl p-5 border border-line shadow-sm space-y-4">
+              <div className="flex items-center gap-2 pb-2.5 border-b border-line">
+                <Layers className="w-4 h-4 text-brand" />
+                <h4 className="text-xs font-black text-primary">تاریخچه و سوابق تغییرات پرامپت (Version Log)</h4>
               </div>
 
               <div className="space-y-3">
                 {refineHistory.map((historyItem, idx) => {
                   const isCurrent = renderedBody === historyItem.body;
                   return (
-                    <div 
+                    <div
                       key={idx}
                       onClick={() => setRenderedBody(historyItem.body)}
                       className={`p-3.5 rounded-2xl border transition cursor-pointer text-right flex items-center justify-between gap-3 ${
-                        isCurrent 
-                          ? "bg-indigo-50/50 border-[#6C47FF] ring-2 ring-[#6C47FF]/10" 
-                          : "bg-slate-50 border-slate-200/60 hover:bg-slate-100/50"
+                        isCurrent
+                          ? "bg-brand-soft/50 border-brand ring-2 ring-brand/10"
+                          : "bg-surface-soft border-line/60 hover:bg-surface-soft/50"
                       }`}
                     >
                       <div className="space-y-1">
-                        <p className={`text-xs font-black ${isCurrent ? "text-[#6C47FF]" : "text-slate-700"}`}>
+                        <p className={`text-xs font-black ${isCurrent ? "text-brand" : "text-primary"}`}>
                           {historyItem.versionName}
                         </p>
-                        <p className="text-[9px] text-slate-400 font-bold">{historyItem.timestamp}</p>
+                        <p className="text-[9px] text-muted font-bold">{historyItem.timestamp}</p>
                       </div>
 
                       <div className="flex items-center gap-2">
                         {isCurrent && (
-                          <span className="bg-[#6C47FF]/10 text-[#6C47FF] text-[9px] font-black px-2 py-0.5 rounded-lg border border-[#6C47FF]/20">
+                          <span className="bg-brand-solid/10 text-brand text-[9px] font-black px-2 py-0.5 rounded-lg border border-brand/20">
                             فعال در ادیتور
                           </span>
                         )}
-                        <span className="text-[10px] text-[#6C47FF] hover:underline transition font-bold">
+                        <span className="text-[10px] text-brand hover:underline transition font-bold">
                           بازیابی نسخه 🔄
                         </span>
                       </div>
@@ -1239,53 +1239,53 @@ export default function PromptDetail() {
 
           {/* AI Processing Feedback */}
           {refineLoading && (
-            <div className="bg-slate-900 text-slate-200 border border-[#6C47FF]/30 p-6 rounded-3xl flex flex-col items-center justify-center gap-4 text-center animate-pulse">
-              <Loader2 className="w-8 h-8 animate-spin text-[#6C47FF]" />
+            <div className="bg-slate-900 text-muted border border-brand/30 p-6 rounded-3xl flex flex-col items-center justify-center gap-4 text-center animate-pulse">
+              <Loader2 className="w-8 h-8 animate-spin text-brand" />
               <div className="space-y-1">
                 <p className="text-sm font-bold text-white">در حال پردازش پرامپت و همگام‌سازی با n8n...</p>
-                <p className="text-xs text-slate-400 font-mono mt-1">{loadingStep}</p>
+                <p className="text-xs text-muted font-mono mt-1">{loadingStep}</p>
               </div>
             </div>
           )}
 
           {/* Side by side comparison (Before & After) */}
           {refinedPrompt && (
-            <div className="bg-white border border-[#6C47FF]/20 rounded-3xl p-6 space-y-6 shadow-sm animate-fade-in text-right">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+            <div className="bg-surface border border-brand/20 rounded-3xl p-6 space-y-6 shadow-sm animate-fade-in text-right">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-line">
                 <div className="space-y-0.5">
-                  <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                  <h3 className="text-sm font-black text-primary flex items-center gap-1.5">
                     <span>🔮</span>
                     <span>مقایسه نهایی قبل و بعد پرامپت هوشمند</span>
                   </h3>
-                  <p className="text-[11px] text-slate-400 font-semibold">دستیار هوشمند کلمات کلیدی، جزئیات پس‌زمینه و ابزارهای حرفه‌ای عکاسی را به پرامپت شما افزوده است</p>
+                  <p className="text-[11px] text-muted font-semibold">دستیار هوشمند کلمات کلیدی، جزئیات پس‌زمینه و ابزارهای حرفه‌ای عکاسی را به پرامپت شما افزوده است</p>
                 </div>
-                <span className="text-[10px] text-[#6C47FF] bg-[#6C47FF]/10 px-2.5 py-1 rounded-full font-bold shrink-0">
+                <span className="text-[10px] text-brand bg-brand-solid/10 px-2.5 py-1 rounded-full font-bold shrink-0">
                   عامل بهینه‌سازی فعال
                 </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3 flex flex-col justify-between">
+                <div className="bg-surface-soft border border-line rounded-2xl p-4 space-y-3 flex flex-col justify-between">
                   <div className="space-y-2">
-                    <span className="text-slate-500 text-xs font-bold bg-slate-200/50 px-2.5 py-0.5 rounded inline-block">پرامپت خام اولیه (قبل)</span>
-                    <div className="text-xs text-slate-600 bg-white border border-slate-100 p-3.5 rounded-xl font-mono leading-relaxed overflow-y-auto max-h-[140px] text-left" style={{ direction: "ltr" }}>
+                    <span className="text-muted text-xs font-bold bg-surface-inset/50 px-2.5 py-0.5 rounded inline-block">پرامپت خام اولیه (قبل)</span>
+                    <div className="text-xs text-secondary bg-surface border border-line p-3.5 rounded-xl font-mono leading-relaxed overflow-y-auto max-h-[140px] text-left" style={{ direction: "ltr" }}>
                       {originalBeforeRefining}
                     </div>
                   </div>
-                  <CopyButton text={originalBeforeRefining} label="کپی پرامپت اولیه" className="w-full text-xs py-2 bg-slate-200 hover:bg-slate-300 text-slate-700" />
+                  <CopyButton text={originalBeforeRefining} label="کپی پرامپت اولیه" className="w-full text-xs py-2 bg-surface-inset hover:bg-surface-inset text-primary" />
                 </div>
 
-                <div className="bg-slate-900 border-2 border-[#6C47FF]/30 rounded-2xl p-4 space-y-3 flex flex-col justify-between relative overflow-hidden shadow-sm">
+                <div className="bg-slate-900 border-2 border-brand/30 rounded-2xl p-4 space-y-3 flex flex-col justify-between relative overflow-hidden shadow-sm">
                   <div className="space-y-2 z-10 w-full">
-                    <span className="text-white text-xs font-bold bg-[#6C47FF]/20 border border-[#6C47FF]/30 px-2.5 py-0.5 rounded inline-flex items-center gap-1">
+                    <span className="text-white text-xs font-bold bg-brand-solid/20 border border-brand/30 px-2.5 py-0.5 rounded inline-flex items-center gap-1">
                       <span>🚀</span>
                       <span>پرامپت ارتقا یافته با هوش مصنوعی (بعد)</span>
                     </span>
-                    <div className="text-xs text-emerald-300 bg-slate-950/80 border border-[#6C47FF]/20 p-3.5 rounded-xl font-mono leading-relaxed overflow-y-auto max-h-[140px] text-left" style={{ direction: "ltr" }}>
+                    <div className="text-xs text-success-text bg-slate-950/80 border border-brand/20 p-3.5 rounded-xl font-mono leading-relaxed overflow-y-auto max-h-[140px] text-left" style={{ direction: "ltr" }}>
                       {refinedPrompt}
                     </div>
                   </div>
-                  <CopyButton text={refinedPrompt} label="کپی پرامپت بهبودیافته" className="w-full text-xs py-2.5 bg-[#6C47FF] hover:bg-[#5935e6] text-white shadow-md font-bold" />
+                  <CopyButton text={refinedPrompt} label="کپی پرامپت بهبودیافته" className="w-full text-xs py-2.5 bg-brand-solid hover:bg-brand-solid text-white shadow-md font-bold" />
                 </div>
               </div>
             </div>
@@ -1293,41 +1293,41 @@ export default function PromptDetail() {
 
           {/* Sample Output Mocking container Accordion */}
           {!isImagePrompt && (
-            <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm transition-all duration-300">
+            <div className="bg-surface rounded-3xl overflow-hidden border border-line shadow-sm transition-all duration-300">
               <button
                 onClick={() => setShowOutputAccordion(!showOutputAccordion)}
                 className="w-full flex items-center justify-between p-6 text-right font-sans focus:outline-none cursor-pointer"
               >
                 <div className="flex items-center gap-1.5">
-                  <MessageSquare className="w-4.5 h-4.5 text-[#6C47FF]" />
-                  <h4 className="text-xs font-black text-slate-800">پیش‌نمایش خروجی نمونه (Sample Output Mock)</h4>
+                  <MessageSquare className="w-4.5 h-4.5 text-brand" />
+                  <h4 className="text-xs font-black text-primary">پیش‌نمایش خروجی نمونه (Sample Output Mock)</h4>
                 </div>
-                <span className="text-slate-400 text-xs">{showOutputAccordion ? "▲" : "▼"}</span>
+                <span className="text-muted text-xs">{showOutputAccordion ? "▲" : "▼"}</span>
               </button>
 
               {showOutputAccordion && (
-                <div className="p-6 pt-0 border-t border-slate-50 space-y-4">
+                <div className="p-6 pt-0 border-t border-line space-y-4">
                   <div className="space-y-4">
-                    <p className="text-xs text-slate-500 leading-relaxed">شبیه‌سازی گفت‌وگو و نمونه پاسخ دریافتی از مدل‌های متنی (مانند ChatGPT / Claude):</p>
-                    
-                    <div className="bg-slate-50 rounded-2xl p-4.5 border border-slate-100 space-y-4">
+                    <p className="text-xs text-muted leading-relaxed">شبیه‌سازی گفت‌وگو و نمونه پاسخ دریافتی از مدل‌های متنی (مانند ChatGPT / Claude):</p>
+
+                    <div className="bg-surface-soft rounded-2xl p-4.5 border border-line space-y-4">
                       {/* User message */}
                       <div className="flex items-start gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs shrink-0">شما</div>
-                        <div className="bg-slate-100 text-slate-700 text-xs p-3 rounded-2xl rounded-tr-none leading-relaxed shadow-xs flex-1">
+                        <div className="w-8 h-8 rounded-full bg-surface-inset flex items-center justify-center font-bold text-secondary text-xs shrink-0">شما</div>
+                        <div className="bg-surface-soft text-primary text-xs p-3 rounded-2xl rounded-tr-none leading-relaxed shadow-xs flex-1">
                           {prompt.description || "درخواست تولید محتوا..."}
                         </div>
                       </div>
 
                       {/* AI message */}
                       <div className="flex items-start gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-[#6C47FF] text-white flex items-center justify-center font-bold text-xs shrink-0">AI</div>
-                        <div className="bg-slate-900 text-slate-100 text-xs p-4 rounded-2xl rounded-tl-none leading-relaxed shadow-md flex-1 space-y-2 font-sans">
-                          <p className="font-bold text-indigo-300 flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <div className="w-8 h-8 rounded-full bg-brand-solid text-white flex items-center justify-center font-bold text-xs shrink-0">AI</div>
+                        <div className="bg-slate-900 text-muted text-xs p-4 rounded-2xl rounded-tl-none leading-relaxed shadow-md flex-1 space-y-2 font-sans">
+                          <p className="font-bold text-brand flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-success-text" />
                             <span>پاسخ شبیه‌سازی شده مدل هوشمند:</span>
                           </p>
-                          <p className="text-slate-300 whitespace-pre-wrap leading-relaxed">
+                          <p className="text-muted whitespace-pre-wrap leading-relaxed">
                             به عنوان یک مدل پردازش متن هوشمند، پاسخ این پرامپت دارای ساختار زیر است:{"\n"}
                             ۱. بهینه‌سازی ادبی متناسب با کلمات کلیدی مشخص شده{"\n"}
                             ۲. دسته‌بندی و فرمت خروجی به صورت بخش‌بندی منظم یا جدول{"\n"}
@@ -1343,23 +1343,23 @@ export default function PromptDetail() {
           )}
 
           {/* Operational Guidance Block */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-3.5">
-            <div className="flex items-center gap-1.5 pb-2.5 border-b border-slate-50">
-              <BookOpen className="w-4.5 h-4.5 text-[#6C47FF]" />
-              <h4 className="text-xs font-black text-slate-800">راهنمای استفاده و فوت‌وفن مهندسی پرامپت</h4>
+          <div className="bg-surface rounded-3xl p-6 border border-line shadow-sm space-y-3.5">
+            <div className="flex items-center gap-1.5 pb-2.5 border-b border-line">
+              <BookOpen className="w-4.5 h-4.5 text-brand" />
+              <h4 className="text-xs font-black text-primary">راهنمای استفاده و فوت‌وفن مهندسی پرامپت</h4>
             </div>
 
-            <ul className="space-y-3 text-xs text-slate-600 leading-relaxed font-sans">
+            <ul className="space-y-3 text-xs text-secondary leading-relaxed font-sans">
               <li className="flex items-start gap-2">
-                <span className="text-[#6C47FF] font-black mt-0.5">•</span>
-                <span>همواره متغیرها را با علامت‌های مشخص شده مانند <code className="bg-slate-100 text-slate-700 px-1 rounded font-mono">[ ]</code> با جزئیات واقعی و فارسی روان جایگزین نمایید.</span>
+                <span className="text-brand font-black mt-0.5">•</span>
+                <span>همواره متغیرها را با علامت‌های مشخص شده مانند <code className="bg-surface-soft text-primary px-1 rounded font-mono">[ ]</code> با جزئیات واقعی و فارسی روان جایگزین نمایید.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-[#6C47FF] font-black mt-0.5">•</span>
-                <span>در مدل‌های تصویرساز نظیر Midjourney، پارامترهای پایانی مانند <code className="bg-slate-100 text-slate-700 px-1 rounded font-mono">--ar 16:9</code> نسبت طول به عرض تصویر را مشخص می‌کنند که به سلیقه خودتان قابل ویرایش است.</span>
+                <span className="text-brand font-black mt-0.5">•</span>
+                <span>در مدل‌های تصویرساز نظیر Midjourney، پارامترهای پایانی مانند <code className="bg-surface-soft text-primary px-1 rounded font-mono">--ar 16:9</code> نسبت طول به عرض تصویر را مشخص می‌کنند که به سلیقه خودتان قابل ویرایش است.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-[#6C47FF] font-black mt-0.5">•</span>
+                <span className="text-brand font-black mt-0.5">•</span>
                 <span>شخصی‌ساز هوشمند پرامپتی این امکان را به شما می‌دهد که مقادیر را بدون به هم ریختن ساختار کلی پرامپت کپی کنید.</span>
               </li>
             </ul>
@@ -1371,14 +1371,14 @@ export default function PromptDetail() {
 
       {/* Related Prompts Grid Section */}
       {relatedPrompts.length > 0 && (
-        <section className="space-y-4 pt-4 border-t border-slate-100">
+        <section className="space-y-4 pt-4 border-t border-line">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
-                <Compass className="w-5 h-5 text-[#6C47FF]" />
+              <h3 className="text-base font-black text-primary flex items-center gap-2">
+                <Compass className="w-5 h-5 text-brand" />
                 <span>پرامپت‌های مکمل و پیشنهادی</span>
               </h3>
-              <p className="text-[11px] text-slate-400 font-semibold">پرامپت‌هایی با ابزارها یا موضوعات طبقه‌بندی شده مشابه که مکمل تسک فعلی شما هستند</p>
+              <p className="text-[11px] text-muted font-semibold">پرامپت‌هایی با ابزارها یا موضوعات طبقه‌بندی شده مشابه که مکمل تسک فعلی شما هستند</p>
             </div>
           </div>
 
@@ -1394,14 +1394,14 @@ export default function PromptDetail() {
 
       {/* Lightbox Modal */}
       {lightboxImage && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
           style={{ zIndex: Z.MODAL }}
           onClick={() => setLightboxImage(null)}
         >
           {/* Close button */}
-          <button 
-            className="absolute top-4 right-4 text-white hover:text-slate-300 p-2 cursor-pointer transition focus:outline-none"
+          <button
+            className="absolute top-4 right-4 text-white hover:text-muted p-2 cursor-pointer transition focus:outline-none"
             onClick={() => setLightboxImage(null)}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1410,9 +1410,9 @@ export default function PromptDetail() {
           </button>
 
           {/* Central Image */}
-          <img 
-            src={lightboxImage} 
-            alt="نمای بزرگ تصویر" 
+          <img
+            src={lightboxImage}
+            alt="نمای بزرگ تصویر"
             referrerPolicy="no-referrer"
             className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
             onClick={(e) => e.stopPropagation()}
@@ -1426,10 +1426,10 @@ export default function PromptDetail() {
           {/* Bookmark Button (25% width) */}
           <button
             onClick={handleBookmarkToggle}
-            className="w-1/4 flex flex-col sm:flex-row items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 active:scale-95 transition-all text-xs font-bold cursor-pointer"
+            className="w-1/4 flex flex-col sm:flex-row items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-800 text-muted hover:bg-slate-700 active:scale-95 transition-all text-xs font-bold cursor-pointer"
             title={isBookmarked ? "نشان شده" : "افزودن به نشان‌شده‌ها"}
           >
-            <Bookmark className={`w-4 h-4 transition-colors ${isBookmarked ? "fill-amber-400 text-amber-400" : "text-slate-300"}`} />
+            <Bookmark className={`w-4 h-4 transition-colors ${isBookmarked ? "fill-amber-400 text-caution-text" : "text-muted"}`} />
             <span className="text-[11px] truncate">{isBookmarked ? "نشان‌شده" : "نشان"}</span>
           </button>
 
@@ -1441,7 +1441,7 @@ export default function PromptDetail() {
               setMobileCopied(true);
               setTimeout(() => setMobileCopied(false), 2000);
             }}
-            className="w-3/4 flex items-center justify-center gap-2 py-3 bg-[#6C47FF] hover:bg-[#5b38ea] text-white rounded-xl shadow-lg shadow-[#6C47FF]/30 active:scale-95 transition-all text-sm font-black cursor-pointer"
+            className="w-3/4 flex items-center justify-center gap-2 py-3 bg-brand-solid hover:bg-brand-solid text-white rounded-xl shadow-lg shadow-brand/30 active:scale-95 transition-all text-sm font-black cursor-pointer"
           >
             {mobileCopied ? (
               <>

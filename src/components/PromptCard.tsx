@@ -156,10 +156,10 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
   return (
     <div
       id={`prompt-card-${prompt.id}`}
-      className="bg-white rounded-xl overflow-hidden border border-slate-100 hover:border-slate-200 transition-all duration-300 hover:shadow-md flex flex-col h-full group"
+      className="bg-surface rounded-xl overflow-hidden border border-line hover:border-line transition-all duration-300 hover:shadow-md flex flex-col h-full group"
     >
       {/* Sample Image */}
-      <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+      <div className="relative aspect-video w-full overflow-hidden bg-surface-soft">
         <Link to={`/prompts/${prompt.id}`} className="block w-full h-full">
           {coverElement}
         </Link>
@@ -167,16 +167,16 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
         {/* Bookmark Toggle Button */}
         <button
           onClick={handleBookmarkClick}
-          className="absolute top-3 left-3 p-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-600 hover:text-[#6C47FF] backdrop-blur-xs shadow-sm hover:shadow-md transition cursor-pointer z-10"
+          className="absolute top-3 left-3 p-1.5 rounded-lg bg-surface/90 hover:bg-surface text-secondary hover:text-brand backdrop-blur-xs shadow-sm hover:shadow-md transition cursor-pointer z-10"
           title={isBookmarked ? "حذف از نشان‌شده‌ها" : "نشان کردن پرامپت"}
         >
-          <Bookmark className={`w-4 h-4 transition-colors ${isBookmarked ? "fill-amber-500 text-amber-500" : ""}`} />
+          <Bookmark className={`w-4 h-4 transition-colors ${isBookmarked ? "fill-amber-500 text-caution-text" : ""}`} />
         </button>
 
         {/* Quick Copy Button */}
         <button
           onClick={handleQuickCopy}
-          className={`absolute top-3 left-12 p-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-600 backdrop-blur-xs shadow-sm hover:shadow-md transition cursor-pointer z-10 ${isCopied ? "text-emerald-500" : "hover:text-[#6C47FF]"}`}
+          className={`absolute top-3 left-12 p-1.5 rounded-lg bg-surface/90 hover:bg-surface text-secondary backdrop-blur-xs shadow-sm hover:shadow-md transition cursor-pointer z-10 ${isCopied ? "text-success-text" : "hover:text-brand"}`}
           title={isCopied ? "کپی شد!" : "کپی سریع پرامپت"}
         >
           <Copy className="w-4 h-4" />
@@ -186,7 +186,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
         <span
           className={`absolute top-3 right-3 px-2 py-1 text-xs font-bold rounded-lg shadow-sm ${
             prompt.isPremium
-              ? "bg-[#6C47FF] text-white"
+              ? "bg-brand-solid text-white"
               : "bg-emerald-500 text-white"
           }`}
         >
@@ -198,15 +198,15 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
       <div className="p-5 flex-1 flex flex-col">
         {/* Category & Tool Badge */}
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5 text-slate-500 text-xs">
-            <IconComponent className="w-3.5 h-3.5 text-[#6C47FF]" />
+          <div className="flex items-center gap-1.5 text-muted text-xs">
+            <IconComponent className="w-3.5 h-3.5 text-brand" />
             <span className="font-bold">{categoryLabel}</span>
             {extraToolsCount > 0 && (
-              <span className="text-[9px] text-slate-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded">+{extraToolsCount}</span>
+              <span className="text-[9px] text-muted font-bold bg-surface-soft px-1.5 py-0.5 rounded">+{extraToolsCount}</span>
             )}
           </div>
           {prompt.difficulty && (
-            <span className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-50 rounded">
+            <span className="text-[10px] text-muted font-bold px-2 py-0.5 bg-surface-soft rounded">
               {TRANSLATIONS[prompt.difficulty.toLowerCase()] || prompt.difficulty}
             </span>
           )}
@@ -214,9 +214,9 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
 
         {/* Title */}
         <Link to={`/prompts/${prompt.id}`} className="block">
-          <h3 className="text-lg font-bold text-slate-800 line-clamp-1 group-hover:text-[#6C47FF] transition-colors mb-2 flex items-center gap-1.5">
+          <h3 className="text-lg font-bold text-primary line-clamp-1 group-hover:text-brand transition-colors mb-2 flex items-center gap-1.5">
             {prompt.parentId && (
-              <span className="text-xs bg-amber-50 text-amber-600 border border-amber-200/50 px-1.5 py-0.5 rounded-md font-black shrink-0" title="نسخه انشعاب یافته">
+              <span className="text-xs bg-caution-soft text-caution-text border border-caution-text/50 px-1.5 py-0.5 rounded-md font-black shrink-0" title="نسخه انشعاب یافته">
                 🔄 انشعاب
               </span>
             )}
@@ -225,34 +225,34 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
         </Link>
 
         {/* Description */}
-        <p className="text-slate-500 text-sm line-clamp-2 leading-relaxed mb-4 flex-1 text-right">
+        <p className="text-muted text-sm line-clamp-2 leading-relaxed mb-4 flex-1 text-right">
           {prompt.description || "توضیحی برای این پرامپت ثبت نشده است."}
         </p>
 
         {/* Metadata Badges tag */}
         <div className="flex flex-wrap gap-1.5 mb-4">
           {(prompt.outputFormats && prompt.outputFormats.length > 0) && (
-            <span className="text-[10px] text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded">
+            <span className="text-[10px] text-muted font-medium bg-surface-soft px-2 py-0.5 rounded">
               خروجی: {prompt.outputFormats.slice(0, 2).join('، ')}
             </span>
           )}
           {prompt.language && (
-            <span className="text-[10px] text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded">
+            <span className="text-[10px] text-muted font-medium bg-surface-soft px-2 py-0.5 rounded">
               زبان: {prompt.language}
             </span>
           )}
         </div>
 
         {/* Footer info & Button */}
-        <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-50">
-          <span className="text-slate-400 text-xs font-mono">
+        <div className="flex items-center justify-between mt-auto pt-3 border-t border-line">
+          <span className="text-muted text-xs font-mono">
             {prompt.usageCount} استفاده
           </span>
 
           <Link
             id={`view-btn-${prompt.id}`}
             to={`/prompts/${prompt.id}`}
-            className="flex items-center gap-1 text-xs font-semibold text-[#6C47FF] hover:translate-x-[-4px] transition-transform duration-200"
+            className="flex items-center gap-1 text-xs font-semibold text-brand hover:translate-x-[-4px] transition-transform duration-200"
           >
             <span>مشاهده و ساخت</span>
             <ArrowLeft className="w-3.5 h-3.5" />

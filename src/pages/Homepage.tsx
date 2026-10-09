@@ -3,10 +3,10 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Prompt } from "../types";
 import PromptCard from "../components/PromptCard";
 import { useAuth } from "../components/AuthContext";
-import { 
-  Search, Megaphone, Globe, Video, Camera, Sparkles, 
-  SlidersHorizontal, Loader2, X, Clock, Tag, Check, 
-  Compass, Cpu, ChevronDown, ListFilter, RotateCcw, 
+import {
+  Search, Megaphone, Globe, Video, Camera, Sparkles,
+  SlidersHorizontal, Loader2, X, Clock, Tag, Check,
+  Compass, Cpu, ChevronDown, ListFilter, RotateCcw,
   Sparkle, AlertCircle, HelpCircle, ArrowLeft, Plus, CheckCircle2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -66,7 +66,7 @@ export default function Homepage() {
 
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Dynamic DB Taxonomies & Facet Counts state
   const [dbTaxonomies, setDbTaxonomies] = useState<any[]>([]);
   const [availableFacets, setAvailableFacets] = useState<any>(null);
@@ -132,14 +132,14 @@ export default function Homepage() {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       if (navigablePrompts.length > 0) {
-        setActiveSuggestionIndex((prev) => 
+        setActiveSuggestionIndex((prev) =>
           prev < navigablePrompts.length - 1 ? prev + 1 : 0
         );
       }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       if (navigablePrompts.length > 0) {
-        setActiveSuggestionIndex((prev) => 
+        setActiveSuggestionIndex((prev) =>
           prev > 0 ? prev - 1 : navigablePrompts.length - 1
         );
       }
@@ -264,7 +264,7 @@ export default function Homepage() {
       const limit = 20;
       const res = await fetch(`/api/prompts?page=${pageNum}&limit=${limit}`);
       const response = await res.json();
-      
+
       const newPrompts = response.data || [];
       const total = response.pagination?.total || 0;
 
@@ -451,8 +451,8 @@ export default function Homepage() {
   }, []);
 
   // Compute final filtered list
-  const displayPrompts = searchQuery.trim() 
-    ? (searchResults ? searchResults.prompts : []) 
+  const displayPrompts = searchQuery.trim()
+    ? (searchResults ? searchResults.prompts : [])
     : prompts;
 
   const filteredPrompts = displayPrompts.filter((p) => {
@@ -489,30 +489,30 @@ export default function Homepage() {
 
   return (
     <div className="space-y-8 pb-20 animate-fade-in relative text-right" dir="rtl">
-      
+
       {/* Search & Hero Engine Section */}
-      <section className="relative bg-white border border-slate-100 rounded-3xl shadow-sm p-6 md:p-12 text-center z-20">
+      <section className="home-hero relative bg-surface border border-line rounded-3xl shadow-sm p-6 md:p-12 text-center z-20">
         {/* Background visual accents */}
-        <div className="absolute top-0 right-1/4 w-80 h-80 bg-[#6C47FF]/5 blur-3xl rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-cyan-500/5 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-1/4 w-1/2 max-w-80 h-80 bg-brand-solid/5 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-1/2 max-w-80 h-80 bg-cyan-500/5 blur-3xl rounded-full pointer-events-none" />
 
         <div className="relative space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] rounded-full text-xs font-bold animate-pulse">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-solid/10 text-brand rounded-full text-xs font-bold animate-pulse">
             <Sparkles className="w-3.5 h-3.5" />
             <span>موتور جستجوی معنایی و هوشمند پرامپت</span>
           </div>
 
-          <h1 className="text-3xl md:text-5xl font-black text-slate-800 tracking-tight leading-tight md:leading-normal">
+          <h1 className="text-3xl md:text-5xl font-black text-primary tracking-tight leading-tight md:leading-normal">
             {branding.heroTitle ? (
               <span>{branding.heroTitle}</span>
             ) : (
               <>
-                قلب تپنده نوآوری با <span className="text-[#6C47FF] bg-gradient-to-r from-[#6C47FF] to-indigo-600 bg-clip-text text-transparent">{siteTitle}</span>
+                قلب تپنده نوآوری با <span className="text-brand">{siteTitle}</span>
               </>
             )}
           </h1>
 
-          <p className="text-slate-500 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
+          <p className="text-muted text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
             {branding.heroDescription || "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید."}
           </p>
 
@@ -526,14 +526,14 @@ export default function Homepage() {
                 onFocus={() => setShowSuggestions(true)}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="w-full text-sm md:text-base py-4.5 pr-12 pl-12 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border-2 border-slate-100 focus:border-[#6C47FF] rounded-2xl outline-none transition-all text-right shadow-sm focus:shadow-md font-medium"
+                className="w-full text-sm md:text-base py-4.5 pr-12 pl-12 bg-surface-soft hover:bg-surface-soft/50 focus:bg-surface border-2 border-line focus:border-brand rounded-2xl outline-none transition-all text-right shadow-sm focus:shadow-md font-medium"
               />
-              <Search className="w-5 h-5 text-[#6C47FF] absolute right-4 top-1/2 -translate-y-1/2" />
-              
+              <Search className="w-5 h-5 text-brand absolute right-4 top-1/2 -translate-y-1/2" />
+
               {searchQuery && (
-                <button 
+                <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200 transition"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-secondary rounded-full hover:bg-surface-inset transition"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -548,40 +548,40 @@ export default function Homepage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute top-full right-0 left-0 z-50 shadow-2xl bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-2xl mt-2 overflow-hidden text-right max-h-[420px] overflow-y-auto"
+                  className="absolute top-full right-0 left-0 z-50 shadow-2xl bg-surface/95 backdrop-blur-md border border-line/80 rounded-2xl mt-2 overflow-hidden text-right max-h-[420px] overflow-y-auto"
                 >
                   {/* Real-time Intent & Tool Parser Matching Indicator */}
                   {searchQuery.trim() && searchResults && (
-                    <div className="bg-indigo-50/50 px-4 py-3 border-b border-indigo-100/50 flex flex-wrap items-center gap-2 text-xs text-indigo-700">
-                      <Sparkle className="w-3.5 h-3.5 text-[#6C47FF]" />
+                    <div className="bg-brand-soft/50 px-4 py-3 border-b border-brand/50 flex flex-wrap items-center gap-2 text-xs text-brand">
+                      <Sparkle className="w-3.5 h-3.5 text-brand" />
                       <span className="font-bold">تطبیق هوشمند الگو:</span>
-                      
+
                       {searchResults.matchedTools.map(t => (
-                        <span key={t} onClick={() => { setSelectedTool(t); setShowSuggestions(false); }} className="bg-white px-2 py-0.5 rounded border border-indigo-200 hover:bg-indigo-100 cursor-pointer text-slate-700 font-medium">
+                        <span key={t} onClick={() => { setSelectedTool(t); setShowSuggestions(false); }} className="bg-surface px-2 py-0.5 rounded border border-brand hover:bg-brand-soft cursor-pointer text-primary font-medium">
                           🛠️ ابزار: {getTranslation(t, "tool")}
                         </span>
                       ))}
 
                       {searchResults.matchedIntents.map(i => (
-                        <span key={i} onClick={() => { setSelectedIntent(i); setShowSuggestions(false); }} className="bg-white px-2 py-0.5 rounded border border-indigo-200 hover:bg-indigo-100 cursor-pointer text-slate-700 font-medium">
+                        <span key={i} onClick={() => { setSelectedIntent(i); setShowSuggestions(false); }} className="bg-surface px-2 py-0.5 rounded border border-brand hover:bg-brand-soft cursor-pointer text-primary font-medium">
                           🎯 هدف: {getTranslation(i, "intent")}
                         </span>
                       ))}
 
                       {searchResults.matchedDomains.map(d => (
-                        <span key={d} onClick={() => { setSelectedDomain(d); setShowSuggestions(false); }} className="bg-white px-2 py-0.5 rounded border border-indigo-200 hover:bg-indigo-100 cursor-pointer text-slate-700 font-medium">
+                        <span key={d} onClick={() => { setSelectedDomain(d); setShowSuggestions(false); }} className="bg-surface px-2 py-0.5 rounded border border-brand hover:bg-brand-soft cursor-pointer text-primary font-medium">
                           🌐 حوزه: {getTranslation(d, "domain")}
                         </span>
                       ))}
 
                       {searchResults.matchedTags.map(tag => (
-                        <span key={tag} onClick={() => { setSearchQuery(tag); setShowSuggestions(false); }} className="bg-white px-2 py-0.5 rounded border border-indigo-200 hover:bg-indigo-100 cursor-pointer text-slate-700 font-medium">
+                        <span key={tag} onClick={() => { setSearchQuery(tag); setShowSuggestions(false); }} className="bg-surface px-2 py-0.5 rounded border border-brand hover:bg-brand-soft cursor-pointer text-primary font-medium">
                           🏷️ برچسب: {tag}
                         </span>
                       ))}
 
                       {searchResults.matchedTools.length === 0 && searchResults.matchedIntents.length === 0 && searchResults.matchedDomains.length === 0 && (
-                        <span className="text-slate-400 font-medium">موتور در حال واکاوی معنایی متن است...</span>
+                        <span className="text-muted font-medium">موتور در حال واکاوی معنایی متن است...</span>
                       )}
                     </div>
                   )}
@@ -590,8 +590,8 @@ export default function Homepage() {
                   <div className="p-2 space-y-1">
                     {/* Taxonomy-Aware Autocomplete Suggestions */}
                     {taxonomySuggestions.length > 0 && (
-                      <div className="border-b border-slate-100 pb-2 mb-2">
-                        <div className="text-[10px] text-slate-400 font-bold px-3 py-1 bg-slate-50 rounded mb-1.5">پیشنهادهای هوشمند طبقه‌بندی</div>
+                      <div className="border-b border-line pb-2 mb-2">
+                        <div className="text-[10px] text-muted font-bold px-3 py-1 bg-surface-soft rounded mb-1.5">پیشنهادهای هوشمند طبقه‌بندی</div>
                         <div className="flex flex-wrap gap-2 p-2">
                           {taxonomySuggestions.map((tax) => {
                             let emoji = "🏷";
@@ -617,7 +617,7 @@ export default function Homepage() {
                               <button
                                 key={tax.id}
                                 onClick={() => handleTaxonomySuggestionClick(tax)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-[#6C47FF]/10 text-[#6C47FF] border border-[#6C47FF]/20 hover:border-[#6C47FF]/40 rounded-xl text-xs font-bold transition-all duration-150 shadow-sm"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-soft hover:bg-brand-solid/10 text-brand border border-brand/20 hover:border-brand/40 rounded-xl text-xs font-bold transition-all duration-150 shadow-sm"
                               >
                                 <span className="text-sm">{emoji}</span>
                                 <span>{prefix}: {tax.titleFa}</span>
@@ -629,24 +629,24 @@ export default function Homepage() {
                     )}
                     {searchQuery.trim() && searchResults && searchResults.prompts.length > 0 ? (
                       <div>
-                        <div className="text-[10px] text-slate-400 font-bold px-3 py-1 bg-slate-50 rounded mb-1">پرامپت‌های تطبیق‌یافته ({searchResults.prompts.length})</div>
+                        <div className="text-[10px] text-muted font-bold px-3 py-1 bg-surface-soft rounded mb-1">پرامپت‌های تطبیق‌یافته ({searchResults.prompts.length})</div>
                         {searchResults.prompts.slice(0, 5).map((p, idx) => (
                           <Link
                             key={p.id}
                             to={`/prompts/${p.id}`}
-                            className={`flex items-center justify-between px-3 py-2 rounded-xl transition group text-right ${idx === activeSuggestionIndex ? "bg-indigo-50/80 border-r-4 border-[#6C47FF]" : "hover:bg-slate-50"}`}
+                            className={`flex items-center justify-between px-3 py-2 rounded-xl transition group text-right ${idx === activeSuggestionIndex ? "bg-brand-soft/80 border-r-4 border-brand" : "hover:bg-surface-soft"}`}
                           >
                             <div className="flex items-center gap-2 overflow-hidden">
-                              <Compass className="w-4 h-4 text-slate-400 group-hover:text-[#6C47FF] shrink-0" />
-                              <span className="text-xs font-semibold text-slate-700 group-hover:text-[#6C47FF] truncate">{p.title}</span>
+                              <Compass className="w-4 h-4 text-muted group-hover:text-brand shrink-0" />
+                              <span className="text-xs font-semibold text-primary group-hover:text-brand truncate">{p.title}</span>
                             </div>
-                            <span className="text-[10px] text-slate-400 shrink-0 font-mono bg-slate-100 px-1.5 py-0.5 rounded">{p.tools?.[0] || "عمومی"}</span>
+                            <span className="text-[10px] text-muted shrink-0 font-mono bg-surface-soft px-1.5 py-0.5 rounded">{p.tools?.[0] || "عمومی"}</span>
                           </Link>
                         ))}
                       </div>
                     ) : searchQuery.trim() && (
-                      <div className="px-4 py-6 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
-                        <AlertCircle className="w-5 h-5 text-slate-300" />
+                      <div className="px-4 py-6 text-center text-muted text-xs flex flex-col items-center justify-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-muted" />
                         <span>هیچ پرامپت مستقیمی یافت نشد. می‌توانید جستجو را با کلیدواژه‌های ساده‌تر انجام دهید.</span>
                       </div>
                     )}
@@ -654,15 +654,15 @@ export default function Homepage() {
                     {/* Search history */}
                     {searchHistory.length > 0 && (
                       <div>
-                        <div className="text-[10px] text-slate-400 font-bold px-3 py-1 bg-slate-50 rounded mb-1">جستجوهای اخیر شما</div>
+                        <div className="text-[10px] text-muted font-bold px-3 py-1 bg-surface-soft rounded mb-1">جستجوهای اخیر شما</div>
                         <div className="flex flex-wrap gap-1.5 p-2">
                           {searchHistory.map((hist, idx) => (
                             <button
                               key={idx}
                               onClick={() => selectSuggestion(hist)}
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-xs text-slate-600 rounded-lg transition"
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface-soft hover:bg-surface-soft text-xs text-secondary rounded-lg transition"
                             >
-                              <Clock className="w-3 h-3 text-slate-400" />
+                              <Clock className="w-3 h-3 text-muted" />
                               <span>{hist}</span>
                             </button>
                           ))}
@@ -672,13 +672,13 @@ export default function Homepage() {
 
                     {/* Trending queries */}
                     <div>
-                      <div className="text-[10px] text-slate-400 font-bold px-3 py-1 bg-slate-50 rounded mb-1">بیشترین جستجوهای هفته</div>
+                      <div className="text-[10px] text-muted font-bold px-3 py-1 bg-surface-soft rounded mb-1">بیشترین جستجوهای هفته</div>
                       <div className="flex flex-wrap gap-1.5 p-2">
                         {trendingSearches.map((trend, idx) => (
                           <button
                             key={idx}
                             onClick={() => selectSuggestion(trend)}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#6C47FF]/5 hover:bg-[#6C47FF]/10 text-xs text-[#6C47FF] rounded-lg font-semibold transition"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-brand-solid/5 hover:bg-brand-solid/10 text-xs text-brand rounded-lg font-semibold transition"
                           >
                             <Sparkle className="w-3 h-3" />
                             <span>{trend}</span>
@@ -695,15 +695,15 @@ export default function Homepage() {
       </section>
 
       {/* Advanced Faceted Sidebar/Filter Panel */}
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden p-5 space-y-5">
+      <div className="bg-surface border border-line rounded-2xl shadow-sm overflow-hidden p-5 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-[#6C47FF]/10 text-[#6C47FF] rounded-xl">
+            <div className="p-2 bg-brand-solid/10 text-brand rounded-xl">
               <SlidersHorizontal className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-800">فیلترهای طبقه‌بندی هوشمند</h2>
-              <p className="text-[11px] text-slate-400">بر اساس گراف طبقه‌بندی استاندارد Promty.ir</p>
+              <h2 className="text-base font-black text-primary">فیلترهای طبقه‌بندی هوشمند</h2>
+              <p className="text-[11px] text-muted">بر اساس گراف طبقه‌بندی استاندارد Promty.ir</p>
             </div>
           </div>
 
@@ -711,9 +711,9 @@ export default function Homepage() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                showFilters 
-                  ? "bg-[#6C47FF] text-white shadow-sm" 
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-100"
+                showFilters
+                  ? "bg-brand-solid text-white shadow-sm"
+                  : "bg-surface-soft text-secondary hover:bg-surface-soft border border-line"
               }`}
             >
               <ListFilter className="w-4 h-4" />
@@ -724,7 +724,7 @@ export default function Homepage() {
             {(selectedIntent || selectedTool || selectedDomain || selectedDifficulty || selectedLanguage) && (
               <button
                 onClick={handleClearFilters}
-                className="flex items-center gap-1 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl transition"
+                className="flex items-center gap-1 px-3 py-2 bg-danger-soft hover:bg-danger-soft text-danger-text text-xs font-bold rounded-xl transition"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>حذف فیلترها</span>
@@ -735,13 +735,13 @@ export default function Homepage() {
 
         {/* Quick Filter Chips for AI Tools */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <span className="text-xs font-bold text-slate-400 shrink-0 ml-1">ابزارهای محبوب:</span>
+          <span className="text-xs font-bold text-muted shrink-0 ml-1">ابزارهای محبوب:</span>
           <button
             onClick={() => handleFilterToggle("tool", "", "همه ابزارها")}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 ${
-              selectedTool === "" 
-                ? "bg-[#6C47FF]/10 text-[#6C47FF]" 
-                : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+              selectedTool === ""
+                ? "bg-brand-solid/10 text-brand"
+                : "bg-surface-soft text-secondary hover:bg-surface-soft"
             }`}
           >
             همه ابزارها
@@ -755,11 +755,11 @@ export default function Homepage() {
                 onClick={() => handleFilterToggle("tool", isSelected ? "" : opt.slug, opt.titleFa)}
                 disabled={count === 0 && !isSelected}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 flex items-center gap-1 ${
-                  isSelected 
-                    ? "bg-[#6C47FF] text-white shadow-sm" 
+                  isSelected
+                    ? "bg-brand-solid text-white shadow-sm"
                     : count === 0
-                      ? "bg-slate-50 text-slate-300 opacity-50 cursor-not-allowed border border-slate-100"
-                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-100"
+                      ? "bg-surface-soft text-muted opacity-50 cursor-not-allowed border border-line"
+                      : "bg-surface-soft text-secondary hover:bg-surface-soft border border-line"
                 }`}
               >
                 {isSelected && <Check className="w-3 h-3" />}
@@ -777,13 +777,13 @@ export default function Homepage() {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="overflow-hidden border-t border-slate-50 pt-5"
+              className="overflow-hidden border-t border-line pt-5"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                
+
                 {/* Intent Select */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 block">🎯 هدف پرامپت (Intent)</label>
+                  <label className="text-xs font-bold text-muted block">🎯 هدف پرامپت (Intent)</label>
                   <select
                     value={selectedIntent}
                     onChange={(e) => {
@@ -791,18 +791,18 @@ export default function Homepage() {
                       const opt = intents.find(t => t.slug === val);
                       handleFilterToggle("intent", val, opt ? opt.titleFa : val);
                     }}
-                    className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-right font-medium"
+                    className="w-full text-xs py-2 px-3 bg-surface-soft border border-line rounded-xl focus:border-brand outline-none text-right font-medium"
                   >
                     <option value="">همه اهداف</option>
                     {intents.map(opt => {
                       const count = facets?.intents?.[opt.slug.toLowerCase()] || 0;
                       const isSelected = selectedIntent === opt.slug;
                       return (
-                        <option 
-                          key={opt.slug} 
-                          value={opt.slug} 
+                        <option
+                          key={opt.slug}
+                          value={opt.slug}
                           disabled={count === 0 && !isSelected}
-                          className={count === 0 && !isSelected ? "text-slate-300" : ""}
+                          className={count === 0 && !isSelected ? "text-muted" : ""}
                         >
                           {opt.titleFa} ({count})
                         </option>
@@ -813,7 +813,7 @@ export default function Homepage() {
 
                 {/* Domain Select */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 block">🌐 حوزه موضوعی (Domain)</label>
+                  <label className="text-xs font-bold text-muted block">🌐 حوزه موضوعی (Domain)</label>
                   <select
                     value={selectedDomain}
                     onChange={(e) => {
@@ -821,18 +821,18 @@ export default function Homepage() {
                       const opt = domains.find(t => t.slug === val);
                       handleFilterToggle("domain", val, opt ? opt.titleFa : val);
                     }}
-                    className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-right font-medium"
+                    className="w-full text-xs py-2 px-3 bg-surface-soft border border-line rounded-xl focus:border-brand outline-none text-right font-medium"
                   >
                     <option value="">همه حوزه‌ها</option>
                     {domains.map(opt => {
                       const count = facets?.domains?.[opt.slug.toLowerCase()] || 0;
                       const isSelected = selectedDomain === opt.slug;
                       return (
-                        <option 
-                          key={opt.slug} 
-                          value={opt.slug} 
+                        <option
+                          key={opt.slug}
+                          value={opt.slug}
                           disabled={count === 0 && !isSelected}
-                          className={count === 0 && !isSelected ? "text-slate-300" : ""}
+                          className={count === 0 && !isSelected ? "text-muted" : ""}
                         >
                           {opt.titleFa} ({count})
                         </option>
@@ -843,7 +843,7 @@ export default function Homepage() {
 
                 {/* Difficulty Select */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 block">⚡ سطح سختی پرامپت</label>
+                  <label className="text-xs font-bold text-muted block">⚡ سطح سختی پرامپت</label>
                   <select
                     value={selectedDifficulty}
                     onChange={(e) => {
@@ -851,18 +851,18 @@ export default function Homepage() {
                       const opt = difficulties.find(t => t.slug === val);
                       handleFilterToggle("difficulty", val, opt ? opt.titleFa : val);
                     }}
-                    className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-right font-medium"
+                    className="w-full text-xs py-2 px-3 bg-surface-soft border border-line rounded-xl focus:border-brand outline-none text-right font-medium"
                   >
                     <option value="">همه سطوح</option>
                     {difficulties.map(opt => {
                       const count = facets?.difficulties?.[opt.slug.toLowerCase()] || 0;
                       const isSelected = selectedDifficulty === opt.slug;
                       return (
-                        <option 
-                          key={opt.slug} 
-                          value={opt.slug} 
+                        <option
+                          key={opt.slug}
+                          value={opt.slug}
                           disabled={count === 0 && !isSelected}
-                          className={count === 0 && !isSelected ? "text-slate-300" : ""}
+                          className={count === 0 && !isSelected ? "text-muted" : ""}
                         >
                           {opt.titleFa} ({count})
                         </option>
@@ -873,7 +873,7 @@ export default function Homepage() {
 
                 {/* Language Select */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 block">💬 زبان پرامپت</label>
+                  <label className="text-xs font-bold text-muted block">💬 زبان پرامپت</label>
                   <select
                     value={selectedLanguage}
                     onChange={(e) => {
@@ -881,18 +881,18 @@ export default function Homepage() {
                       const opt = languages.find(t => t.slug === val);
                       handleFilterToggle("language", val, opt ? opt.titleFa : val);
                     }}
-                    className="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#6C47FF] outline-none text-right font-medium"
+                    className="w-full text-xs py-2 px-3 bg-surface-soft border border-line rounded-xl focus:border-brand outline-none text-right font-medium"
                   >
                     <option value="">همه زبان‌ها</option>
                     {languages.map(opt => {
                       const count = facets?.languages?.[opt.slug.toLowerCase()] || 0;
                       const isSelected = selectedLanguage === opt.slug;
                       return (
-                        <option 
-                          key={opt.slug} 
-                          value={opt.slug} 
+                        <option
+                          key={opt.slug}
+                          value={opt.slug}
                           disabled={count === 0 && !isSelected}
-                          className={count === 0 && !isSelected ? "text-slate-300" : ""}
+                          className={count === 0 && !isSelected ? "text-muted" : ""}
                         >
                           {opt.titleFa} ({count})
                         </option>
@@ -908,36 +908,36 @@ export default function Homepage() {
 
         {/* Active Applied Filters Summary */}
         {(selectedIntent || selectedTool || selectedDomain || selectedDifficulty || selectedLanguage) && (
-          <div className="flex flex-wrap items-center gap-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-            <span className="text-[10px] text-slate-400 font-bold ml-1.5">فیلترهای اعمال‌شده:</span>
+          <div className="flex flex-wrap items-center gap-1.5 bg-surface-soft p-2.5 rounded-xl border border-line">
+            <span className="text-[10px] text-muted font-bold ml-1.5">فیلترهای اعمال‌شده:</span>
             {selectedIntent && (
-              <span className="flex items-center gap-1 bg-white text-xs text-slate-700 px-2 py-1 rounded-lg border border-slate-200">
+              <span className="flex items-center gap-1 bg-surface text-xs text-primary px-2 py-1 rounded-lg border border-line">
                 <span>🎯 هدف: {getTranslation(selectedIntent, "intent")}</span>
-                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => handleFilterToggle("intent", "", "")} />
+                <X className="w-3 h-3 text-muted cursor-pointer hover:text-danger-text" onClick={() => handleFilterToggle("intent", "", "")} />
               </span>
             )}
             {selectedTool && (
-              <span className="flex items-center gap-1 bg-white text-xs text-slate-700 px-2 py-1 rounded-lg border border-slate-200">
+              <span className="flex items-center gap-1 bg-surface text-xs text-primary px-2 py-1 rounded-lg border border-line">
                 <span>🛠️ ابزار: {getTranslation(selectedTool, "tool")}</span>
-                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => handleFilterToggle("tool", "", "")} />
+                <X className="w-3 h-3 text-muted cursor-pointer hover:text-danger-text" onClick={() => handleFilterToggle("tool", "", "")} />
               </span>
             )}
             {selectedDomain && (
-              <span className="flex items-center gap-1 bg-white text-xs text-slate-700 px-2 py-1 rounded-lg border border-slate-200">
+              <span className="flex items-center gap-1 bg-surface text-xs text-primary px-2 py-1 rounded-lg border border-line">
                 <span>🌐 حوزه: {getTranslation(selectedDomain, "domain")}</span>
-                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => handleFilterToggle("domain", "", "")} />
+                <X className="w-3 h-3 text-muted cursor-pointer hover:text-danger-text" onClick={() => handleFilterToggle("domain", "", "")} />
               </span>
             )}
             {selectedDifficulty && (
-              <span className="flex items-center gap-1 bg-white text-xs text-slate-700 px-2 py-1 rounded-lg border border-slate-200">
+              <span className="flex items-center gap-1 bg-surface text-xs text-primary px-2 py-1 rounded-lg border border-line">
                 <span>⚡ سطح: {getTranslation(selectedDifficulty, "difficulty")}</span>
-                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => handleFilterToggle("difficulty", "", "")} />
+                <X className="w-3 h-3 text-muted cursor-pointer hover:text-danger-text" onClick={() => handleFilterToggle("difficulty", "", "")} />
               </span>
             )}
             {selectedLanguage && (
-              <span className="flex items-center gap-1 bg-white text-xs text-slate-700 px-2 py-1 rounded-lg border border-slate-200">
+              <span className="flex items-center gap-1 bg-surface text-xs text-primary px-2 py-1 rounded-lg border border-line">
                 <span>💬 زبان: {getTranslation(selectedLanguage, "language")}</span>
-                <X className="w-3 h-3 text-slate-400 cursor-pointer hover:text-rose-500" onClick={() => handleFilterToggle("language", "", "")} />
+                <X className="w-3 h-3 text-muted cursor-pointer hover:text-danger-text" onClick={() => handleFilterToggle("language", "", "")} />
               </span>
             )}
           </div>
@@ -946,16 +946,16 @@ export default function Homepage() {
 
       {/* Prompts Layout Grid */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-              <Compass className="w-5 h-5 text-[#6C47FF]" />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-black text-primary flex items-center gap-2">
+              <Compass className="w-5 h-5 text-brand" />
               <span>آرشیو جامع پرامپت‌ها</span>
             </h2>
             <button
               id="open-contrib-modal-btn"
               onClick={() => setShowSubmitModal(true)}
-              className="flex items-center gap-1 bg-[#6C47FF]/10 hover:bg-[#6C47FF]/20 text-[#6C47FF] font-extrabold text-[11px] py-1.5 px-3 rounded-xl transition cursor-pointer shrink-0 animate-pulse"
+              className="flex items-center gap-1 bg-brand-solid/10 hover:bg-brand-solid/20 text-brand font-extrabold text-[11px] py-1.5 px-3 rounded-xl transition cursor-pointer shrink-0 animate-pulse"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>اشتراک پرامپت شما 💡</span>
@@ -963,17 +963,17 @@ export default function Homepage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-slate-400 text-xs hidden sm:inline">
+            <span className="text-muted text-xs hidden sm:inline">
               {loading ? "در حال دریافت..." : `نمایش ${filteredPrompts.length} پرامپت`}
             </span>
-            
+
             {/* Sort Dropdown */}
             <div className="flex items-center gap-1">
-              <span className="text-xs text-slate-400 font-bold shrink-0">مرتب‌سازی:</span>
+              <span className="text-xs text-muted font-bold shrink-0">مرتب‌سازی:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="text-xs bg-white border border-slate-200 rounded-lg py-1 px-2 outline-none font-bold text-slate-600 focus:border-[#6C47FF] cursor-pointer"
+                className="text-xs bg-surface border border-line rounded-lg py-1 px-2 outline-none font-bold text-secondary focus:border-brand cursor-pointer"
               >
                 <option value="usage">محبوب‌ترین‌ها</option>
                 <option value="latest">جدیدترین‌ها</option>
@@ -984,13 +984,13 @@ export default function Homepage() {
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400 bg-white border border-slate-100 rounded-3xl">
-            <Loader2 className="w-8 h-8 animate-spin text-[#6C47FF]" />
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted bg-surface border border-line rounded-3xl">
+            <Loader2 className="w-8 h-8 animate-spin text-brand" />
             <p className="text-xs font-semibold">موتور در حال واکاوی است...</p>
           </div>
         ) : filteredPrompts.length > 0 ? (
           <div className="space-y-8">
-            <motion.div 
+            <motion.div
               layout
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
             >
@@ -1015,12 +1015,12 @@ export default function Homepage() {
                   id="load-more-btn"
                   onClick={handleLoadMore}
                   disabled={isLoadingMore}
-                  className="px-8 py-3.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#6C47FF] border-2 border-slate-100 hover:border-[#6C47FF]/30 active:border-[#6C47FF] rounded-2xl shadow-sm hover:shadow-md font-bold text-xs transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
+                  className="px-8 py-3.5 bg-surface hover:bg-surface-soft text-primary hover:text-brand border-2 border-line hover:border-brand/30 active:border-brand rounded-2xl shadow-sm hover:shadow-md font-bold text-xs transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
                 >
                   {isLoadingMore ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#6C47FF]" />
+                    <Loader2 className="w-4 h-4 animate-spin text-brand" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-[#6C47FF] group-hover:translate-y-0.5 transition-transform" />
+                    <ChevronDown className="w-4 h-4 text-brand group-hover:translate-y-0.5 transition-transform" />
                   )}
                   <span>{isLoadingMore ? "در حال بارگذاری..." : "نمایش پرامپت‌های بیشتر"}</span>
                 </button>
@@ -1028,24 +1028,24 @@ export default function Homepage() {
             )}
           </div>
         ) : (
-          <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center text-slate-400 space-y-3 shadow-sm">
-            <Sparkle className="w-10 h-10 text-slate-300 mx-auto animate-bounce" />
-            <p className="text-sm font-black text-slate-700">هیچ پرامپتی پیدا نشد.</p>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <div className="bg-surface border border-line rounded-2xl p-12 text-center text-muted space-y-3 shadow-sm">
+            <Sparkle className="w-10 h-10 text-muted mx-auto animate-bounce" />
+            <p className="text-sm font-black text-primary">هیچ پرامپتی پیدا نشد.</p>
+            <p className="text-xs text-muted max-w-sm mx-auto">
               فیلترهای اعمال‌شده بسیار محدود کننده هستند، یا پرامپتی متناسب با عبارت جستجوی شما یافت نشد. برای نتایج بهتر فیلترها را حذف کنید.
             </p>
             {filterHistory.length > 0 ? (
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
                   onClick={handleRemoveLastFilter}
-                  className="px-6 py-2.5 bg-[#6C47FF] hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-6 py-2.5 bg-brand-solid hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>حذف فیلتر [{filterHistory[filterHistory.length - 1].label}]</span>
                 </button>
                 <button
                   onClick={handleClearFilters}
-                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer"
+                  className="px-4 py-2.5 bg-surface-soft hover:bg-surface-inset text-secondary font-bold text-xs rounded-xl transition cursor-pointer"
                 >
                   پاک‌سازی کامل فیلترها
                 </button>
@@ -1053,7 +1053,7 @@ export default function Homepage() {
             ) : (
               <button
                 onClick={handleClearFilters}
-                className="px-4 py-2 bg-[#6C47FF] hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow transition cursor-pointer"
+                className="px-4 py-2 bg-brand-solid hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow transition cursor-pointer"
               >
                 پاک‌سازی کامل فیلترها
               </button>
@@ -1070,36 +1070,36 @@ export default function Homepage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-3xl shadow-xl border border-slate-100 max-w-2xl w-full p-6 md:p-8 space-y-6 relative my-8"
+              className="bg-surface rounded-3xl shadow-xl border border-line max-w-2xl w-full p-6 md:p-8 space-y-6 relative my-8"
             >
               <button
                 onClick={() => { setShowSubmitModal(false); setSubmitSuccess(false); }}
-                className="absolute left-4 top-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+                className="absolute left-4 top-4 p-2 text-muted hover:text-secondary rounded-full hover:bg-surface-soft transition"
               >
                 <X className="w-5 h-5" />
               </button>
 
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#6C47FF]/10 text-[#6C47FF] rounded-full text-[10px] font-black">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-brand-solid/10 text-brand rounded-full text-[10px] font-black">
                   <Sparkles className="w-3 h-3" />
                   <span>مشارکت در پایگاه دانش</span>
                 </div>
-                <h3 className="text-lg md:text-xl font-black text-slate-800">ارسال و اشتراک‌گذاری پرامپت شما 💡</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <h3 className="text-lg md:text-xl font-black text-primary">ارسال و اشتراک‌گذاری پرامپت شما 💡</h3>
+                <p className="text-xs text-muted leading-relaxed">
                   پرامپت خلاقانه خود را ثبت کنید. پرامپت شما پس از تایید توسط تیم ادمین در آرشیو عمومی منتشر خواهد شد.
                 </p>
               </div>
 
               {submitSuccess ? (
-                <div className="p-8 text-center space-y-4 bg-emerald-50 rounded-2xl border border-emerald-100 animate-fade-in">
-                  <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-                  <h4 className="text-base font-black text-slate-800">ارسال موفقیت‌آمیز پرامپت!</h4>
-                  <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                <div className="p-8 text-center space-y-4 bg-success-soft rounded-2xl border border-success-text animate-fade-in">
+                  <CheckCircle2 className="w-12 h-12 text-success-text mx-auto" />
+                  <h4 className="text-base font-black text-primary">ارسال موفقیت‌آمیز پرامپت!</h4>
+                  <p className="text-xs text-muted max-w-md mx-auto leading-relaxed">
                     با تشکر از همکاری ارزشمند شما! پرامپت شما به صف بررسی ادمین‌های Promty.ir منتقل شد. پس از بازبینی و طبقه‌بندی هوشمند، در صفحه اول پلتفرم نمایش داده خواهد شد.
                   </p>
                   <button
                     onClick={() => { setShowSubmitModal(false); setSubmitSuccess(false); }}
-                    className="px-5 py-2 bg-[#6C47FF] hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow transition"
+                    className="px-5 py-2 bg-brand-solid hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow transition"
                   >
                     متوجه شدم
                   </button>
@@ -1107,27 +1107,27 @@ export default function Homepage() {
               ) : (
                 <form onSubmit={handleContributionSubmit} className="space-y-4 text-right">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    
+
                     {/* Title */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-600">عنوان پرامپت <span className="text-rose-500">*</span></label>
+                      <label className="text-xs font-bold text-secondary">عنوان پرامپت <span className="text-danger-text">*</span></label>
                       <input
                         type="text"
                         placeholder="مثال: تولید لوگوی مینیمال"
                         value={subTitle}
                         onChange={(e) => setSubTitle(e.target.value)}
-                        className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition font-medium"
+                        className="w-full text-xs p-3 bg-surface-soft border border-line focus:bg-surface focus:border-brand rounded-xl outline-none transition font-medium"
                         required
                       />
                     </div>
 
                     {/* Tool */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-600">ابزار هوش مصنوعی اصلی</label>
+                      <label className="text-xs font-bold text-secondary">ابزار هوش مصنوعی اصلی</label>
                       <select
                         value={subTool}
                         onChange={(e) => setSubTool(e.target.value)}
-                        className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition cursor-pointer font-bold"
+                        className="w-full text-xs p-3 bg-surface-soft border border-line focus:bg-surface focus:border-brand rounded-xl outline-none transition cursor-pointer font-bold"
                       >
                         {tools.map(opt => (
                           <option key={opt.slug} value={opt.slug}>{opt.titleFa}</option>
@@ -1137,11 +1137,11 @@ export default function Homepage() {
 
                     {/* Domain */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-600">حوزه کاربرد موضوعی</label>
+                      <label className="text-xs font-bold text-secondary">حوزه کاربرد موضوعی</label>
                       <select
                         value={subDomain}
                         onChange={(e) => setSubDomain(e.target.value)}
-                        className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition cursor-pointer font-bold"
+                        className="w-full text-xs p-3 bg-surface-soft border border-line focus:bg-surface focus:border-brand rounded-xl outline-none transition cursor-pointer font-bold"
                       >
                         {domains.map(opt => (
                           <option key={opt.slug} value={opt.slug}>{opt.titleFa}</option>
@@ -1151,11 +1151,11 @@ export default function Homepage() {
 
                     {/* Language */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-600">زبان اصلی پرامپت</label>
+                      <label className="text-xs font-bold text-secondary">زبان اصلی پرامپت</label>
                       <select
                         value={subLang}
                         onChange={(e) => setSubLang(e.target.value)}
-                        className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition cursor-pointer font-bold"
+                        className="w-full text-xs p-3 bg-surface-soft border border-line focus:bg-surface focus:border-brand rounded-xl outline-none transition cursor-pointer font-bold"
                       >
                         {languages.map(opt => (
                           <option key={opt.slug} value={opt.slug}>{opt.titleFa}</option>
@@ -1167,46 +1167,46 @@ export default function Homepage() {
 
                   {/* Description */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-600">توضیح کوتاه پرامپت (راهنمایی برای کاربر)</label>
+                    <label className="text-xs font-bold text-secondary">توضیح کوتاه پرامپت (راهنمایی برای کاربر)</label>
                     <input
                       type="text"
                       placeholder="توضیح کوتاهی درباره خروجی این پرامپت و مدل مناسب بنویسید..."
                       value={subDesc}
                       onChange={(e) => setSubDesc(e.target.value)}
-                      className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition font-medium"
+                      className="w-full text-xs p-3 bg-surface-soft border border-line focus:bg-surface focus:border-brand rounded-xl outline-none transition font-medium"
                     />
                   </div>
 
                   {/* Body Textarea */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-600">متن کامل و خام پرامپت <span className="text-rose-500">*</span></label>
+                      <label className="text-xs font-bold text-secondary">متن کامل و خام پرامپت <span className="text-danger-text">*</span></label>
                       <button
                         type="button"
                         onClick={handleAutoAnalyzePublic}
                         disabled={isAnalyzingPublic}
-                        className="text-[11px] font-black text-[#6C47FF] hover:text-indigo-700 transition flex items-center gap-1 cursor-pointer bg-slate-50 hover:bg-[#6C47FF]/10 px-2.5 py-1 rounded-lg border border-slate-200"
+                        className="text-[11px] font-black text-brand hover:text-brand transition flex items-center gap-1 cursor-pointer bg-surface-soft hover:bg-brand-solid/10 px-2.5 py-1 rounded-lg border border-line"
                       >
                         {isAnalyzingPublic ? (
                           <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6C47FF]" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
                             <span>در حال استخراج معنایی...</span>
                           </>
                         ) : (
                           <>
-                            <Sparkles className="w-3.5 h-3.5 text-[#6C47FF]" />
+                            <Sparkles className="w-3.5 h-3.5 text-brand" />
                             <span>آنالیز هوشمند و پر کردن خودکار فرم ✨</span>
                           </>
                         )}
                       </button>
                     </div>
-                    {analyzePublicError && <p className="text-[10px] text-rose-500 font-bold">{analyzePublicError}</p>}
+                    {analyzePublicError && <p className="text-[10px] text-danger-text font-bold">{analyzePublicError}</p>}
                     <textarea
                       rows={5}
                       placeholder="متن کامل انگلیسی یا فارسی پرامپت خود را همراه با متغیرها به صورت [variable] بنویسید..."
                       value={subBody}
                       onChange={(e) => setSubBody(e.target.value)}
-                      className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition font-mono leading-relaxed"
+                      className="w-full text-xs p-3 bg-surface-soft border border-line focus:bg-surface focus:border-brand rounded-xl outline-none transition font-mono leading-relaxed"
                       style={{ direction: "ltr" }}
                       required
                     />
@@ -1214,13 +1214,13 @@ export default function Homepage() {
 
                   {/* Tags */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-600">برچسب‌ها (جدا شده با ویرگول فارسی یا انگلیسی)</label>
+                    <label className="text-xs font-bold text-secondary">برچسب‌ها (جدا شده با ویرگول فارسی یا انگلیسی)</label>
                     <input
                       type="text"
                       placeholder="مثال: لوگو, مینیمال, برندینگ, midjourney"
                       value={subTags}
                       onChange={(e) => setSubTags(e.target.value)}
-                      className="w-full text-xs p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#6C47FF] rounded-xl outline-none transition"
+                      className="w-full text-xs p-3 bg-surface-soft border border-line focus:bg-surface focus:border-brand rounded-xl outline-none transition"
                     />
                   </div>
 
@@ -1228,14 +1228,14 @@ export default function Homepage() {
                     <button
                       type="button"
                       onClick={() => setShowSubmitModal(false)}
-                      className="px-5 py-3 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition cursor-pointer"
+                      className="px-5 py-3 text-xs bg-surface-soft hover:bg-surface-inset text-secondary font-bold rounded-xl transition cursor-pointer"
                     >
                       انصراف
                     </button>
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="px-6 py-3 text-xs bg-[#6C47FF] hover:bg-indigo-600 disabled:bg-slate-300 text-white font-bold rounded-xl shadow-md shadow-[#6C47FF]/10 transition cursor-pointer flex items-center gap-1"
+                      className="px-6 py-3 text-xs bg-brand-solid hover:bg-indigo-600 disabled:bg-surface-inset text-white font-bold rounded-xl shadow-md shadow-brand/10 transition cursor-pointer flex items-center gap-1"
                     >
                       {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>ارسال جهت بازبینی ادمین 🚀</span>}
                     </button>
