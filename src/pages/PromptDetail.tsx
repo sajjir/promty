@@ -529,6 +529,7 @@ export default function PromptDetail() {
     );
   };
 
+  const [showFullPrompt, setShowFullPrompt] = useState(false);
   const isAdmin = !!localStorage.getItem("promty_admin_token");
 
   const handleRunExternal = async (textToRun: string, overrideTool?: string) => {
@@ -690,9 +691,9 @@ export default function PromptDetail() {
           const data = await res.json();
           currentPrompt = data.prompt;
           setPrompt(data.prompt);
-          const initialLang = data.prompt.bodyFa ? "fa" : "en";
+          const initialLang = "en";
           setPromptLang(initialLang);
-          const initialBody = initialLang === "fa" && data.prompt.bodyFa ? data.prompt.bodyFa : data.prompt.body;
+          const initialBody = data.prompt.body;
           setRenderedBody(initialBody);
           setRefineHistory([
             {
@@ -742,11 +743,19 @@ export default function PromptDetail() {
     }
   }, [id]);
 
+  const displayValues = { ...liveValues };
+  if (promptLang === 'fa') {
+    for (const field of prompt?.fieldsSchema || []) {
+      const option = field.options?.find(value => value.split('|')[0].trim() === liveValues[field.key]);
+      if (option?.includes('|') && !/^\d+(?::\d+)?$/.test(liveValues[field.key] || '')) displayValues[field.key] = option.split('|')[1].trim();
+    }
+  }
+
   // Sync final rendered body with live template and wizard inputs
   useEffect(() => {
     if (prompt) {
       const baseTemplate = refinedPrompt || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body);
-      const finalRenderedText = renderPrompt(baseTemplate, liveValues);
+      const finalRenderedText = renderPrompt(baseTemplate, displayValues);
       setRenderedBody(finalRenderedText);
     }
   }, [liveValues, refinedPrompt, prompt, promptLang]);
@@ -799,7 +808,7 @@ export default function PromptDetail() {
   });
 
   return (
-    <div className="space-y-8 pb-16 animate-fade-in text-right" dir="rtl">
+    <div className="space-y-8 pb-32 lg:pb-16 animate-fade-in text-right" dir="rtl">
 
       {/* Top Breadcrumb Nav */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-surface p-4 border border-line rounded-2xl shadow-xs">
@@ -863,43 +872,6 @@ export default function PromptDetail() {
           {/* Main Visual/Image Card */}
           <div className="bg-surface rounded-3xl overflow-hidden border border-line shadow-sm p-5 space-y-4">
             <div className="space-y-3">
-              {/* Language toggle at top of the card */}
-              {prompt.bodyFa && (
-                <div className="flex items-center gap-2 p-1 bg-surface-soft border border-line rounded-xl w-fit">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPromptLang("fa");
-                      setRefinedPrompt(null);
-                    }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
-                      promptLang === "fa"
-                        ? "bg-brand-solid text-white shadow-xs"
-                        : "text-muted hover:text-primary hover:bg-surface-soft/50"
-                    }`}
-                  >
-                    <span>🇮🇷</span>
-                    <span>فارسی</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPromptLang("en");
-                      setRefinedPrompt(null);
-                    }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
-                      promptLang === "en"
-                        ? "bg-brand-solid text-white shadow-xs"
-                        : "text-muted hover:text-primary hover:bg-surface-soft/50"
-                    }`}
-                  >
-                    <span>🇬🇧</span>
-                    <span>English</span>
-                    <span className="text-[9px] font-bold opacity-80">(پیشنهاد شده)</span>
-                  </button>
-                </div>
-              )}
-
               <div className="flex items-center gap-1.5 text-xs text-brand font-black">
                 <IconComponent className="w-4 h-4" />
                 <span>دسته‌بندی: {prompt.category || "عمومی"}</span>
@@ -922,6 +894,7 @@ export default function PromptDetail() {
               </p>
             </div>
 
+            {(prompt.coverImage || prompt.sampleImage) && (
             <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-surface-soft border border-line">
               {prompt.coverImage ? (
                 <img
@@ -949,6 +922,7 @@ export default function PromptDetail() {
                 </span>
               )}
             </div>
+            )}
           </div>
 
           {/* Smart Media Gallery Section */}
@@ -992,6 +966,145 @@ export default function PromptDetail() {
             <TaxonomyBlock prompt={prompt} />
           </div>
 
+
+        </div>
+
+        {/* Right Side: Core Interactive Textbox, Versioning, Dynamic Wizard, Mock Outputs */}
+        <div className="lg:col-span-7 space-y-6">
+
+          {/* Main prompt code block */}
+          <div className="bg-surface rounded-3xl p-6 border border-line shadow-sm flex flex-col gap-5 z-10">
+
+            {/* Live Wizard Form */}
+            {prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
+              <div className="order-1 lg:order-3 pt-2" ref={wizardRef}>
+                <PromptWizard
+                  showCopyButton={false}
+                  fields={prompt.fieldsSchema}
+                  promptBody={refinedPrompt || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body)}
+                  onRendered={() => { /* Page renders the selected language centrally. */ }}
+                  promptId={prompt.id}
+                  activePresetId={activePresetId}
+                  setActivePresetId={setActivePresetId}
+                  values={wizardValues}
+                  setValues={setWizardValues}
+                  onPresetSavedOrUpdated={fetchPresets}
+                  onValuesChange={setLiveValues}
+                />
+              </div>
+            )}
+            {/* Prompt Textbox */}
+            <div className="order-2 lg:order-1 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <label htmlFor="prompt-box-area" className="text-xs font-black text-muted">متن پرامپت نهایی:</label>
+                </div>
+                <span className="text-[10px] font-mono text-muted bg-surface-soft px-2.5 py-1 rounded-md">
+                  {prompt.usageCount} کپی و بررسی موفقیت‌آمیز
+                </span>
+              </div>
+
+              <div role="group" aria-label="زبان نسخه پرامپت" className="grid grid-cols-2 gap-2 rounded-xl bg-surface-soft p-1 border border-line">
+                <button type="button" aria-pressed={promptLang === 'fa'} disabled={!prompt.bodyFa} title={!prompt.bodyFa ? 'نسخه پارسی هنوز ثبت نشده است' : 'نسخه پارسی'} onClick={() => { setPromptLang('fa'); setRefinedPrompt(null); setIsManualEditMode(false); }} className={`flex min-h-11 items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold disabled:opacity-40 ${promptLang === 'fa' ? 'bg-brand-solid text-white' : 'text-secondary'}`}>
+                  <svg viewBox="0 0 48 48" className="h-7 w-7 shrink-0" fill="currentColor" aria-hidden="true"><path d="M9 5l7 4 6-2 5 6 8 1 2 6 5 5-3 5 4 8-8 2-7-4-6 1-5-6-7-2-2-7-4-5 5-5z" /></svg><span>نسخه پارسی</span>
+                </button>
+                <button type="button" aria-pressed={promptLang === 'en'} onClick={() => { setPromptLang('en'); setRefinedPrompt(null); setIsManualEditMode(false); }} className={`flex min-h-11 flex-wrap items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold ${promptLang === 'en' ? 'bg-brand-solid text-white' : 'text-secondary'}`}><span aria-hidden="true">EN</span><span>English</span><small className="text-[9px]">(نسخه پیشنهادی)</small></button>
+              </div>
+              {!prompt.bodyFa && <p className="text-[11px] text-muted">نسخه پارسی هنوز ثبت نشده است.</p>}
+              <div className="relative">
+                {isManualEditMode ? (
+                  <textarea
+                    id="prompt-box-area"
+                    rows={9}
+                    value={renderedBody}
+                    onChange={(e) => setRenderedBody(e.target.value)}
+                    className={`w-full p-4.5 pt-11 bg-slate-900 text-muted text-[13px] leading-relaxed rounded-2xl ring-4 ring-line-strong/5 focus:outline-none focus:ring-4 focus:ring-brand/20 ${
+                      promptLang === "fa" ? "text-right font-sans" : "text-left font-mono"
+                    }`}
+                    style={{ direction: promptLang === "fa" ? "rtl" : "ltr" }}
+                  />
+                ) : (
+                  <div
+                    id="prompt-display"
+                    className={`w-full p-4 pt-12 bg-surface-inset text-primary text-sm leading-7 rounded-2xl whitespace-pre-wrap ${showFullPrompt ? "" : "max-h-[240px] overflow-hidden"} ${
+                      promptLang === "fa" ? "text-right font-sans" : "text-left font-mono"
+                    }`}
+                    style={{ direction: promptLang === "fa" ? "rtl" : "ltr" }}
+                  >
+                    {renderHighlightedNodes(refinedPrompt || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body), displayValues)}
+                  </div>
+                )}
+
+                {/* دکمه کپی داخل خود باکس، بالا-گوشه (استاندارد گیت‌هاب/ChatGPT) */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(renderedBody);
+                    handleTrackCopy?.();
+                    setBoxCopied(true);
+                    setTimeout(() => setBoxCopied(false), 2000);
+                  }}
+                  className={`hidden lg:flex absolute top-3 ${promptLang === "fa" ? "left-3" : "right-3"} flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-muted text-[10px] font-bold rounded-lg transition cursor-pointer z-20`}
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>{boxCopied ? "کپی شد! 🎉" : "کپی"}</span>
+                </button>
+
+                {/* دکمه سوئیچ حالت ویرایش دستی */}
+                <button
+                  type="button"
+                  onClick={() => setIsManualEditMode(v => !v)}
+                  className={`absolute top-3 ${promptLang === "fa" ? "right-3" : "left-3"} text-[10px] text-muted hover:text-muted font-bold transition cursor-pointer z-20`}
+                >
+                  {isManualEditMode ? "پایان ویرایش دستی" : "✏️ ویرایش دستی متن"}
+                </button>
+              </div>
+              {!isManualEditMode && <button type="button" aria-expanded={showFullPrompt} aria-controls="prompt-display" className="text-xs font-bold text-brand min-h-11" onClick={() => setShowFullPrompt(v => !v)}>{showFullPrompt ? 'نمایش خلاصه' : 'نمایش کامل متن پرامپت'}</button>}
+            </div>
+
+             {/* Buttons Row */}
+             <div className="order-3 lg:order-2 flex items-center justify-between pt-2">
+               <div>
+                 {/* Left side empty or metadata */}
+               </div>
+
+               {prompt.tools && prompt.tools.length > 1 ? (
+                 <div className="flex items-center bg-surface-soft hover:bg-surface-inset rounded-lg text-secondary overflow-hidden transition-all text-xs shrink-0 border border-line shadow-xs">
+                   <button
+                     onClick={() => handleRunExternal(renderedBody, selectedRunTool)}
+                     className="flex items-center gap-1 px-3 py-2 font-bold cursor-pointer border-l border-line-strong"
+                   >
+                     <span>▶️ {selectedRunTool}</span>
+                   </button>
+                   <select
+                     value={selectedRunTool}
+                     onChange={(e) => setSelectedRunTool(e.target.value)}
+                     className="bg-transparent text-muted text-[10px] font-bold py-2 px-2 outline-none cursor-pointer border-none"
+                   >
+                     {prompt.tools.map((t) => (<option key={t} value={t}>{t}</option>))}
+                   </select>
+                 </div>
+               ) : (
+                 <button onClick={() => handleRunExternal(renderedBody)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-secondary bg-surface-soft hover:bg-surface-inset rounded-lg border border-line shadow-xs cursor-pointer shrink-0">
+                   <span>▶️ {prompt.tools?.[0] || "اجرا"}</span>
+                 </button>
+               )}
+             </div>
+
+
+          </div>
+
+          {/* My Saved Presets Section */}
+          {renderPresetsSection()}
+
+          {/* Mobile Taxonomy block */}
+          <div className="block lg:hidden mt-6">
+            <TaxonomyBlock prompt={prompt} />
+          </div>
+
+          <details className="rounded-3xl border border-line bg-surface p-4">
+            <summary className="cursor-pointer text-sm font-bold text-secondary">گزینه‌های پیشرفته و تاریخچه</summary>
+            <div className="space-y-6 pt-4">
           {/* SEO Performance Visual Card Accordion */}
           {isAdmin && (
             <div className="bg-slate-900 border border-line-strong rounded-3xl overflow-hidden shadow-lg transition-all duration-300">
@@ -1037,130 +1150,6 @@ export default function PromptDetail() {
               )}
             </div>
           )}
-
-        </div>
-
-        {/* Right Side: Core Interactive Textbox, Versioning, Dynamic Wizard, Mock Outputs */}
-        <div className="lg:col-span-7 space-y-6">
-
-          {/* Main prompt code block */}
-          <div className="bg-surface rounded-3xl p-6 border border-line shadow-sm space-y-5 lg:sticky lg:top-6 lg:self-start z-10">
-
-            {/* Prompt Textbox */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <label htmlFor="prompt-box-area" className="text-xs font-black text-muted">متن پرامپت نهایی:</label>
-                </div>
-                <span className="text-[10px] font-mono text-muted bg-surface-soft px-2.5 py-1 rounded-md">
-                  {prompt.usageCount} کپی و بررسی موفقیت‌آمیز
-                </span>
-              </div>
-
-              <div className="relative">
-                {isManualEditMode ? (
-                  <textarea
-                    id="prompt-box-area"
-                    rows={9}
-                    value={renderedBody}
-                    onChange={(e) => setRenderedBody(e.target.value)}
-                    className={`w-full p-4.5 pt-11 bg-slate-900 text-muted text-[13px] leading-relaxed rounded-2xl ring-4 ring-line-strong/5 focus:outline-none focus:ring-4 focus:ring-brand/20 ${
-                      promptLang === "fa" ? "text-right font-sans" : "text-left font-mono"
-                    }`}
-                    style={{ direction: promptLang === "fa" ? "rtl" : "ltr" }}
-                  />
-                ) : (
-                  <div
-                    className={`w-full p-4.5 pt-11 bg-slate-900 text-muted text-[13px] leading-relaxed rounded-2xl ring-4 ring-line-strong/5 whitespace-pre-wrap min-h-[220px] max-h-[420px] overflow-y-auto ${
-                      promptLang === "fa" ? "text-right font-sans" : "text-left font-mono"
-                    }`}
-                    style={{ direction: promptLang === "fa" ? "rtl" : "ltr" }}
-                  >
-                    {renderHighlightedNodes(refinedPrompt || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body), liveValues)}
-                  </div>
-                )}
-
-                {/* دکمه کپی داخل خود باکس، بالا-گوشه (استاندارد گیت‌هاب/ChatGPT) */}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(renderedBody);
-                    handleTrackCopy?.();
-                    setBoxCopied(true);
-                    setTimeout(() => setBoxCopied(false), 2000);
-                  }}
-                  className={`absolute top-3 ${promptLang === "fa" ? "left-3" : "right-3"} flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-muted text-[10px] font-bold rounded-lg transition cursor-pointer z-20`}
-                >
-                  <Copy className="w-3 h-3" />
-                  <span>{boxCopied ? "کپی شد! 🎉" : "کپی"}</span>
-                </button>
-
-                {/* دکمه سوئیچ حالت ویرایش دستی */}
-                <button
-                  type="button"
-                  onClick={() => setIsManualEditMode(v => !v)}
-                  className={`absolute top-3 ${promptLang === "fa" ? "right-3" : "left-3"} text-[10px] text-muted hover:text-muted font-bold transition cursor-pointer z-20`}
-                >
-                  {isManualEditMode ? "پایان ویرایش دستی" : "✏️ ویرایش دستی متن"}
-                </button>
-              </div>
-            </div>
-
-             {/* Buttons Row */}
-             <div className="flex items-center justify-between pt-2">
-               <div>
-                 {/* Left side empty or metadata */}
-               </div>
-
-               {prompt.tools && prompt.tools.length > 1 ? (
-                 <div className="flex items-center bg-surface-soft hover:bg-surface-inset rounded-lg text-secondary overflow-hidden transition-all text-xs shrink-0 border border-line shadow-xs">
-                   <button
-                     onClick={() => handleRunExternal(renderedBody, selectedRunTool)}
-                     className="flex items-center gap-1 px-3 py-2 font-bold cursor-pointer border-l border-line-strong"
-                   >
-                     <span>▶️ {selectedRunTool}</span>
-                   </button>
-                   <select
-                     value={selectedRunTool}
-                     onChange={(e) => setSelectedRunTool(e.target.value)}
-                     className="bg-transparent text-muted text-[10px] font-bold py-2 px-2 outline-none cursor-pointer border-none"
-                   >
-                     {prompt.tools.map((t) => (<option key={t} value={t}>{t}</option>))}
-                   </select>
-                 </div>
-               ) : (
-                 <button onClick={() => handleRunExternal(renderedBody)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-secondary bg-surface-soft hover:bg-surface-inset rounded-lg border border-line shadow-xs cursor-pointer shrink-0">
-                   <span>▶️ {prompt.tools?.[0] || "اجرا"}</span>
-                 </button>
-               )}
-             </div>
-
-            {/* Live Wizard Form */}
-            {prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
-              <div className="pt-2" ref={wizardRef}>
-                <PromptWizard
-                  fields={prompt.fieldsSchema}
-                  promptBody={refinedPrompt || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body)}
-                  onRendered={(rendered) => setRenderedBody(rendered)}
-                  promptId={prompt.id}
-                  activePresetId={activePresetId}
-                  setActivePresetId={setActivePresetId}
-                  values={wizardValues}
-                  setValues={setWizardValues}
-                  onPresetSavedOrUpdated={fetchPresets}
-                  onValuesChange={setLiveValues}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* My Saved Presets Section */}
-          {renderPresetsSection()}
-
-          {/* Mobile Taxonomy block */}
-          <div className="block lg:hidden mt-6">
-            <TaxonomyBlock prompt={prompt} />
-          </div>
 
           {/* AI Refinement Panel */}
           <div className="bg-gradient-to-r from-brand-solid/10 to-brand-soft/20 border border-brand/20 rounded-2xl p-5 space-y-4 shadow-sm">
@@ -1365,6 +1354,9 @@ export default function PromptDetail() {
             </ul>
           </div>
 
+            </div>
+          </details>
+
         </div>
 
       </div>
@@ -1421,7 +1413,7 @@ export default function PromptDetail() {
       )}
 
       {/* Mobile Floating Sticky Bar (1:3 Ratio) */}
-      <div className="fixed bottom-4 inset-x-4 z-40 lg:hidden">
+      <div className="fixed bottom-0 inset-x-0 px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] z-40 lg:hidden">
         <div className="flex items-center gap-2 w-full p-2 bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/10">
           {/* Bookmark Button (25% width) */}
           <button
@@ -1451,7 +1443,7 @@ export default function PromptDetail() {
             ) : (
               <>
                 <Copy className="w-4 h-4 text-white" />
-                <span>کپی سریع پرامپت</span>
+                <span>کپی نسخه {promptLang === "fa" ? "پارسی" : "انگلیسی"}</span>
               </>
             )}
           </button>

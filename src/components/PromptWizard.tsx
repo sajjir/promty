@@ -20,6 +20,7 @@ function parseOption(opt: string) {
 }
 
 interface PromptWizardProps {
+  showCopyButton?: boolean;
   fields: FieldSchema[];
   promptBody: string;
   onRendered: (rendered: string) => void;
@@ -33,6 +34,7 @@ interface PromptWizardProps {
 }
 
 export default function PromptWizard({
+  showCopyButton = true,
   fields,
   promptBody,
   onRendered,
@@ -470,6 +472,7 @@ export default function PromptWizard({
       </div>
 
       {/* Glowing Final Copy Button */}
+      {showCopyButton && (
       <button
         type="button"
         onClick={async () => {
@@ -483,6 +486,7 @@ export default function PromptWizard({
         <Copy className="w-4 h-4" />
         <span>{wizardCopied ? "کپی شد! 🎉" : "✅ کپی پرامپت نهایی شخصی‌سازی‌شده"}</span>
       </button>
+      )}
 
       {/* Preset Customizer Controls */}
       {promptId && (
