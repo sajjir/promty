@@ -47,8 +47,10 @@ interface AdminUserItem {
 }
 
 export default function AdminDashboard() {
+  const [promptPage, setPromptPage] = useState(1);
   const { setSiteTitle, user, isSuperAdmin, assignUserRole, refetchBranding } = useAuth();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
+  useEffect(() => { setPromptPage(p => Math.min(p, Math.max(1, Math.ceil(prompts.length / 20)))); }, [prompts.length]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"prompts" | "taxonomies" | "graph" | "branding" | "ai" | "roles">("prompts");
@@ -154,11 +156,18 @@ export default function AdminDashboard() {
       const statsData = await statsRes.json();
 
       // Fetch ALL prompts (including inactive)
-      const promptsRes = await fetch("/api/prompts", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const promptsData = await promptsRes.json();
-      const promptsList = promptsData.data || promptsData.prompts || [];
+      const promptsList: Prompt[] = [];
+      let promptsData: any = {};
+      for (let page = 1; ; page++) {
+        const promptsRes = await fetch(`/api/prompts?page=${page}&limit=100`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!promptsRes.ok) throw new Error("دریافت فهرست مدیریت ناموفق بود");
+        promptsData = await promptsRes.json();
+        const batch = promptsData.data || [];
+        promptsList.push(...batch);
+        if (!batch.length || promptsList.length >= (promptsData.pagination?.total || 0)) break;
+      }
       setPrompts(promptsList);
 
       if (promptsData.pagination && typeof promptsData.pagination.total === "number") {
@@ -960,7 +969,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
-                      {prompts.map((p) => (
+                      {prompts.slice((promptPage - 1) * 20, promptPage * 20).map((p) => (
                         <tr key={p.id} className="hover:bg-surface-soft transition duration-150">
                           <td className="px-6 py-4 font-bold text-primary max-w-sm">
                             <div className="flex items-center gap-2">
@@ -1018,6 +1027,11 @@ export default function AdminDashboard() {
                       ))}
                     </tbody>
                   </table>
+                  <nav aria-label="صفحه‌بندی مدیریت پرامپت‌ها" className="flex items-center justify-between gap-3 p-4">
+                    <button disabled={promptPage <= 1} onClick={() => setPromptPage(p => p - 1)}>صفحه قبل</button>
+                    <span>صفحه {promptPage} از {Math.max(1, Math.ceil(prompts.length / 20))}</span>
+                    <button disabled={promptPage * 20 >= prompts.length} onClick={() => setPromptPage(p => p + 1)}>صفحه بعد</button>
+                  </nav>
                 </div>
               ) : (
                 <div className="p-12 text-center text-muted bg-surface-soft rounded-2xl border border-dashed border-line">

@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import { filterPrompts, paginatePrompts } from './filterPrompts.ts';
+import { SearchService } from '../services/SearchService.ts';
+const prompts = Array.from({length: 65}, (_, i) => ({id:String(i).padStart(3,'0'),title:i===64?'طراحی پوستر مینیمال':'عنوان '+i,description:'نمونه',body:'text',category:'general',tags:[],tools:i>=40?['claude']:['chatgpt'],domains:['art'],intent:'visual-generation',language:'english',difficulty:'beginner',isActive:i!==63,createdAt:new Date(2026,0,i+1).toISOString(),usageCount:i,fieldsSchema:[],updatedAt:'',isPremium:false}));
+const all = filterPrompts(prompts as any,{isActive:true,tool:'claude',sort:'usage'});
+assert.equal(all.length,24); assert.equal(all[0].id,'064');
+const page1=paginatePrompts(all,{page:1,limit:20}); const page2=paginatePrompts(all,{page:2,limit:20});
+assert.equal(page1.totalCount,24); assert.equal(page2.prompts.length,4);
+assert.equal(new Set([...page1.prompts,...page2.prompts].map(p=>p.id)).size,24);
+assert.equal(filterPrompts(prompts as any,{q:'طراحي پوستر مينيمال',isActive:true})[0].id,'064');
+assert.equal(filterPrompts(prompts as any,{q:'no-matches-ever',isActive:true}).length,0);
+assert.equal(filterPrompts(prompts as any,{isActive:true}).length,64);
+assert.equal(filterPrompts(prompts as any,{}).length,65);
+assert.equal(SearchService.search(prompts as any,'claude').prompts.length,25);
+SearchService.recordSearch('private user one'); SearchService.recordSearch('private user two');
+assert.deepEqual(SearchService.getSearchHistory(),[]);
+console.log('PASS: 65-row whole archive filtering, page2, Persian normalization, no match, drafts, tool search, no shared personal history');
+
+const latestSearch = filterPrompts(prompts as any, {q:'عنوان',sort:'latest',isActive:true});
+assert.equal(latestSearch[0].id,'062');
+assert.equal(paginatePrompts(latestSearch,{page:2,limit:20}).prompts.length,20);

@@ -1,3 +1,4 @@
+import { getPromptCopyError } from "./PromptWizard";
 import { usePromptLanguage } from "../lib/usePromptLanguage";
 import React from "react";
 import { Link } from "react-router-dom";
@@ -109,7 +110,10 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
     e.preventDefault();
     e.stopPropagation();
     try {
-      await navigator.clipboard.writeText(language === "fa" && prompt.bodyFa ? prompt.bodyFa : prompt.body);
+      const text = language === "fa" && prompt.bodyFa ? prompt.bodyFa : prompt.body;
+      const error = getPromptCopyError(text);
+      if (error) { setFeedback(error + " صفحه پرامپت را باز کنید."); return; }
+      await navigator.clipboard.writeText(text);
       setIsCopied(true);
       setFeedback("پرامپت کپی شد");
       setTimeout(() => setIsCopied(false), 2000);

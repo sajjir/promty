@@ -1,9 +1,14 @@
 // src/server/repositories/IPromptRepository.ts
 import { Prompt } from "../../types";
 
+export interface PromptFilters {
+  category?: string; isActive?: boolean; page?: number; limit?: number;
+  q?: string; tool?: string; domain?: string; intent?: string; difficulty?: string; language?: string;
+  sort?: string;
+}
 export interface IPromptRepository {
   getById(id: string): Promise<Prompt | null>;
-  getAll(filters?: { category?: string; isActive?: boolean; page?: number; limit?: number }): Promise<{ prompts: Prompt[]; totalCount: number }>;
+  getAll(filters?: PromptFilters): Promise<{ prompts: Prompt[]; totalCount: number }>;
   create(prompt: Omit<Prompt, "id" | "createdAt" | "updatedAt" | "usageCount">): Promise<Prompt>;
   update(id: string, prompt: Partial<Prompt>): Promise<Prompt>;
   delete(id: string): Promise<boolean>;

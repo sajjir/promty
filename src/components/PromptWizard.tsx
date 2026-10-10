@@ -19,6 +19,17 @@ function parseOption(opt: string) {
   };
 }
 
+// Validate both schema requirements and template variables before clipboard writes.
+export function getPromptCopyError(text: string, fields: FieldSchema[] = [], values?: Record<string, string>, template = text): string | null {
+  const missing = fields.filter(field => field.required && values !== undefined && !values[field.key]?.trim());
+  if (missing.length) return `لطفاً فیلدهای اجباری را تکمیل کنید: ${missing.map(field => field.label).join("، ")}`;
+  const variables = Array.from(template.matchAll(/\{\{(\w+)\}\}|\[\[(\w+)\]\]/g), match => match[1] || match[2]);
+  const unresolved = Array.from(new Set(variables.filter(key => !values || !values[key]?.trim())));
+  if (unresolved.length || /\{\{\w+\}\}|\[\[\w+\]\]/.test(text)) return "پیش از کپی، مقادیر متغیرهای پرامپت را در بخش شخصی‌سازی تکمیل کنید.";
+  if (!text.trim()) return "متن پرامپت برای کپی خالی است.";
+  return null;
+}
+
 interface PromptWizardProps {
   showCopyButton?: boolean;
   fields: FieldSchema[];
@@ -480,7 +491,11 @@ export default function PromptWizard({
         type="button"
         onClick={async () => {
           const finalRenderedText = renderPrompt(promptBody, finalValues);
-          await navigator.clipboard.writeText(finalRenderedText);
+          const error = getPromptCopyError(finalRenderedText, fields, finalValues, promptBody);
+          if (error) { setErrorMessage(error); return; }
+          try { await navigator.clipboard.writeText(finalRenderedText); }
+          catch { setErrorMessage("کپی انجام نشد؛ دسترسی کلیپ‌بورد را بررسی کنید."); return; }
+          setErrorMessage(null);
           setWizardCopied(true);
           setTimeout(() => setWizardCopied(false), 2000);
         }}

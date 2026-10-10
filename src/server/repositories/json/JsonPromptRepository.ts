@@ -1,7 +1,8 @@
+import { filterPrompts, paginatePrompts } from "../filterPrompts";
 // src/server/repositories/json/JsonPromptRepository.ts
 import fs from "fs";
 import path from "path";
-import { IPromptRepository } from "../IPromptRepository";
+import { IPromptRepository, PromptFilters } from "../IPromptRepository";
 import { Prompt } from "../../../types";
 
 const DB_FILE = path.join(process.cwd(), "db.json");
@@ -25,29 +26,9 @@ export class JsonPromptRepository implements IPromptRepository {
     return prompt || null;
   }
 
-  public async getAll(filters?: { category?: string; isActive?: boolean; page?: number; limit?: number }): Promise<{ prompts: Prompt[]; totalCount: number }> {
-    const db = this.readDB();
-    let list: Prompt[] = db.prompts || [];
-
-    if (filters) {
-      if (filters.isActive !== undefined) {
-        list = list.filter((p) => p.isActive === filters.isActive);
-      }
-      if (filters.category) {
-        list = list.filter((p) => p.category === filters.category);
-      }
-    }
-
-    const totalCount = list.length;
-
-    if (filters && filters.page && filters.limit) {
-      const page = filters.page;
-      const limit = filters.limit;
-      const skip = (page - 1) * limit;
-      list = list.slice(skip, skip + limit);
-    }
-
-    return { prompts: list, totalCount };
+  public async getAll(filters?: PromptFilters): Promise<{ prompts: Prompt[]; totalCount: number }> {
+    const list = (this.readDB().prompts || []);
+    return paginatePrompts(filterPrompts(list, filters), filters);
   }
 
   public async create(promptData: Omit<Prompt, "id" | "createdAt" | "updatedAt" | "usageCount">): Promise<Prompt> {
@@ -115,29 +96,7 @@ export class JsonPromptRepository implements IPromptRepository {
     languages: Record<string, number>;
   }> {
     const db = this.readDB();
-    let list: Prompt[] = db.prompts || [];
-
-    if (filters) {
-      if (filters.q) {
-        const keyword = filters.q.toLowerCase();
-        list = list.filter(p => p.title.toLowerCase().includes(keyword) || (p.body && p.body.toLowerCase().includes(keyword)));
-      }
-      if (filters.tool) {
-        list = list.filter(p => (p.tools || []).some(t => t.toLowerCase() === filters.tool!.toLowerCase()));
-      }
-      if (filters.domain) {
-        list = list.filter(p => (p.domains || []).some(d => d.toLowerCase() === filters.domain!.toLowerCase()));
-      }
-      if (filters.intent) {
-        list = list.filter(p => p.intent?.toLowerCase() === filters.intent!.toLowerCase());
-      }
-      if (filters.difficulty) {
-        list = list.filter(p => p.difficulty?.toLowerCase() === filters.difficulty!.toLowerCase());
-      }
-      if (filters.language) {
-        list = list.filter(p => p.language?.toLowerCase() === filters.language!.toLowerCase());
-      }
-    }
+    const list = filterPrompts(db.prompts || [], { ...filters, isActive: true });
 
     const aggregated = {
       tools: {} as Record<string, number>,

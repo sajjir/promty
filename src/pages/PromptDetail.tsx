@@ -3,9 +3,8 @@ import IranIcon from "../components/IranIcon";
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Prompt } from "../types";
-import PromptWizard from "../components/PromptWizard";
+import PromptWizard, { getPromptCopyError } from "../components/PromptWizard";
 import { renderPrompt } from "../lib/renderPrompt";
-import CopyButton from "../components/CopyButton";
 import PromptCard from "../components/PromptCard";
 import { useAuth } from "../components/AuthContext";
 import { Z } from "../lib/zIndex";
@@ -259,7 +258,7 @@ export default function PromptDetail() {
     if (prompt?.tools && prompt.tools.length > 0) {
       setSelectedRunTool(prompt.tools[0]);
     }
-  }, [prompt]);
+  }, [prompt?.id]);
 
   useEffect(() => {
     if (!user || !id) {
@@ -381,7 +380,7 @@ export default function PromptDetail() {
       setLiveValues(initial);
       setActivePresetId(null);
     }
-  }, [prompt]);
+  }, [prompt?.id]);
 
   const handleLoadPreset = (preset: any) => {
     setActivePresetId(preset.id);
@@ -557,17 +556,22 @@ export default function PromptDetail() {
   const [showFullPrompt, setShowFullPrompt] = useState(false);
   const isAdmin = !!localStorage.getItem("promty_admin_token");
 
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const copyPromptText = async (text: string) => {
+    const template = refinedPrompt || (promptLang === "fa" && prompt?.bodyFa ? prompt.bodyFa : prompt?.body || "");
+    const error = getPromptCopyError(text, prompt?.fieldsSchema || [], liveValues, template);
+    if (error) { setCopyError(error); return false; }
+    try { await navigator.clipboard.writeText(text); }
+    catch { setCopyError("کپی انجام نشد؛ دسترسی کلیپ‌بورد را بررسی کنید."); return false; }
+    setCopyError(null);
+    void handleTrackCopy();
+    return true;
+  };
+
   const handleRunExternal = async (textToRun: string, overrideTool?: string) => {
     if (!textToRun) return;
 
-    // 1. Copy to clipboard
-    try {
-      await navigator.clipboard.writeText(textToRun);
-      // Track copy count in database
-      handleTrackCopy();
-    } catch (err) {
-      console.error("Failed to copy to clipboard:", err);
-    }
+    if (!await copyPromptText(textToRun)) return;
 
     // 2. Determine target tool and URL
     const targetTool = overrideTool || (prompt?.tools && prompt.tools.length > 0 ? prompt.tools[0] : "");
@@ -643,19 +647,15 @@ export default function PromptDetail() {
   }, []);
 
   const handleRefinePrompt = async () => {
+    const error = getPromptCopyError(renderedBody, prompt?.fieldsSchema || [], liveValues, promptLang === "fa" && prompt?.bodyFa ? prompt.bodyFa : prompt?.body || "");
+    if (error) { setCopyError(error); return; }
     try {
       setRefineLoading(true);
       setRefinedPrompt(null);
       setRefineMessage(null);
       setOriginalBeforeRefining(renderedBody);
 
-      const steps = [
-        "در حال فراخوانی عامل هوش مصنوعی (AI Agent)...",
-        "در حال مهندسی و بازنویسی متغیرها تحت گایدلاین‌ها...",
-        "بهینه‌سازی کلمات کلیدی، پرسپکتیو و فریم‌ورک‌های رندر...",
-        "افزودن تنظیمات کیفیت بالا (Photorealistic & 8K Directives)...",
-        "اعمال ویژگی‌های اختصاصی سبک و نورپردازی حرفه‌ای سینمایی..."
-      ];
+      const steps = ["در حال ارسال درخواست بهبود...", "در انتظار پاسخ سرویس..."];
 
       let stepIndex = 0;
       setLoadingStep(steps[0]);
@@ -731,7 +731,7 @@ export default function PromptDetail() {
         const allRes = await fetch("/api/prompts");
         if (allRes.ok) {
           const allData = await allRes.json();
-          const list = allData.prompts || [];
+          const list = allData.data || [];
           setAllPrompts(list);
 
           if (currentPrompt) {
@@ -1024,7 +1024,7 @@ export default function PromptDetail() {
                   <label htmlFor="prompt-box-area" className="text-xs font-black text-muted">متن پرامپت نهایی:</label>
                 </div>
                 <span className="text-[10px] font-mono text-muted bg-surface-soft px-2.5 py-1 rounded-md">
-                  {prompt.usageCount} کپی و بررسی موفقیت‌آمیز
+                  {prompt.usageCount} بار کپی
                 </span>
               </div>
 
@@ -1064,8 +1064,7 @@ export default function PromptDetail() {
                 <button
                   type="button"
                   onClick={async () => {
-                    await navigator.clipboard.writeText(renderedBody);
-                    handleTrackCopy?.();
+                    if (!await copyPromptText(renderedBody)) return;
                     setBoxCopied(true);
                     setTimeout(() => setBoxCopied(false), 2000);
                   }}
@@ -1262,6 +1261,7 @@ export default function PromptDetail() {
             </div>
           )}
 
+          {refineMessage && <p role="status" className="rounded-xl border border-line bg-surface p-3 text-sm text-muted">{refineMessage}</p>}
           {/* Side by side comparison (Before & After) */}
           {refinedPrompt && (
             <div className="bg-surface border border-brand/20 rounded-3xl p-6 space-y-6 shadow-sm animate-fade-in text-right">
@@ -1271,7 +1271,7 @@ export default function PromptDetail() {
                     <span>🔮</span>
                     <span>مقایسه نهایی قبل و بعد پرامپت هوشمند</span>
                   </h3>
-                  <p className="text-[11px] text-muted font-semibold">دستیار هوشمند کلمات کلیدی، جزئیات پس‌زمینه و ابزارهای حرفه‌ای عکاسی را به پرامپت شما افزوده است</p>
+                  <p className="text-[11px] text-muted font-semibold">خروجی پیشنهادی را پیش از استفاده بررسی کنید؛ تولید خروجی تضمین کیفیت نیست.</p>
                 </div>
                 <span className="text-[10px] text-brand bg-brand-solid/10 px-2.5 py-1 rounded-full font-bold shrink-0">
                   عامل بهینه‌سازی فعال
@@ -1286,7 +1286,7 @@ export default function PromptDetail() {
                       {originalBeforeRefining}
                     </div>
                   </div>
-                  <CopyButton text={originalBeforeRefining} label="کپی پرامپت اولیه" className="w-full text-xs py-2 bg-surface-inset hover:bg-surface-inset text-primary" />
+                  <button onClick={() => copyPromptText(originalBeforeRefining || "")} className="w-full text-xs py-2 bg-surface-inset text-primary">کپی پرامپت اولیه</button>
                 </div>
 
                 <div className="bg-slate-900 border-2 border-brand/30 rounded-2xl p-4 space-y-3 flex flex-col justify-between relative overflow-hidden shadow-sm">
@@ -1299,7 +1299,7 @@ export default function PromptDetail() {
                       {refinedPrompt}
                     </div>
                   </div>
-                  <CopyButton text={refinedPrompt} label="کپی پرامپت بهبودیافته" className="w-full text-xs py-2.5 bg-brand-solid hover:bg-brand-solid text-white shadow-md font-bold" />
+                  <button onClick={() => copyPromptText(refinedPrompt)} className="w-full text-xs py-2.5 bg-brand-solid text-white font-bold">کپی پرامپت بهبودیافته</button>
                 </div>
               </div>
             </div>
@@ -1437,6 +1437,7 @@ export default function PromptDetail() {
         </div>
       )}
 
+      {copyError && <div role="alert" className="fixed bottom-24 inset-x-4 z-50 rounded-xl border border-danger-text bg-surface p-3 text-sm text-danger-text">{copyError}<button className="mr-3 underline" onClick={() => setCopyError(null)}>بستن</button></div>}
       {/* Mobile Floating Sticky Bar (1:3 Ratio) */}
       <div className="fixed bottom-0 inset-x-0 px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] z-40 lg:hidden">
         <div className="flex items-center gap-2 w-full p-2 bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/10">
@@ -1453,8 +1454,7 @@ export default function PromptDetail() {
           {/* Copy Button (75% width) */}
           <button
             onClick={async () => {
-              await navigator.clipboard.writeText(renderedBody);
-              handleTrackCopy?.();
+              if (!await copyPromptText(renderedBody)) return;
               document.getElementById('prompt-text-section')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
               setMobileCopied(true);
               setTimeout(() => setMobileCopied(false), 2000);

@@ -245,7 +245,14 @@ export default function Homepage() {
 
   // Advanced Filters State
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState<"usage" | "latest" | "title">("usage");
+  const sortBy = (searchParams.get("sort") || "usage") as "usage" | "latest" | "title";
+  const setSortBy = (value: string) => updateFilter("sort", value);
+  const requestVersion = useRef(0);
+  const historyKey = `promty-search-history:${user?.id || "guest"}`;
+  useEffect(() => {
+    try { setSearchHistory(JSON.parse(sessionStorage.getItem(historyKey) || "[]")); }
+    catch { setSearchHistory([]); }
+  }, [historyKey]);
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -255,6 +262,7 @@ export default function Homepage() {
   const suggestionRef = useRef<HTMLDivElement>(null);
 
   const loadPrompts = async (pageNum: number, append: boolean = false) => {
+    const version = ++requestVersion.current;
     try {
       if (pageNum === 1) {
         setLoading(true);
@@ -263,8 +271,12 @@ export default function Homepage() {
       }
 
       const limit = 20;
-      const res = await fetch(`/api/prompts?page=${pageNum}&limit=${limit}`);
+      const params = new URLSearchParams(searchParams);
+      params.set("page", String(pageNum)); params.set("limit", String(limit)); params.set("sort", sortBy);
+      const res = await fetch(`/api/prompts?${params}`);
       const response = await res.json();
+      if (version !== requestVersion.current) return;
+      if (!res.ok) throw new Error("Archive request failed");
 
       const newPrompts = response.data || [];
       const total = response.pagination?.total || 0;
@@ -282,7 +294,7 @@ export default function Homepage() {
       setTotalPromptsCount(total);
       setPage(pageNum);
 
-      const currentLoadedCount = append ? prompts.length + newPrompts.length : newPrompts.length;
+      const currentLoadedCount = pageNum * limit;
       if (currentLoadedCount >= total) {
         setHasMore(false);
       } else {
@@ -291,8 +303,7 @@ export default function Homepage() {
     } catch (err) {
       console.error("Error loading paginated prompts:", err);
     } finally {
-      setLoading(false);
-      setIsLoadingMore(false);
+      if (version === requestVersion.current) { setLoading(false); setIsLoadingMore(false); }
     }
   };
 
@@ -315,7 +326,7 @@ export default function Homepage() {
   useEffect(() => {
     async function init() {
       try {
-        await loadPrompts(1, false);
+
 
         // Fetch dynamic taxonomies from DB
         const taxRes = await fetch("/api/taxonomies");
@@ -324,11 +335,6 @@ export default function Homepage() {
           setDbTaxonomies(taxData.terms || []);
         }
 
-        // Fetch history and trends
-        const histRes = await fetch("/api/search/history");
-        const histData = await histRes.json();
-        setSearchHistory(histData.history || []);
-        setTrendingSearches(histData.trending || []);
       } catch (e) {
         console.error("Error fetching homepage initial data:", e);
       }
@@ -336,22 +342,13 @@ export default function Homepage() {
     init();
   }, []);
 
-  // Fetch available facets on any search parameter change (progressive narrowing)
+  // One server contract handles search, filters, sorting and pagination.
   useEffect(() => {
-    const fetchFacets = async () => {
-      try {
-        const queryParams = searchParams.toString();
-        const res = await fetch(`/api/facets?${queryParams}`);
-        const data = await res.json();
-        if (data.success && data.facets) {
-          setAvailableFacets(data.facets);
-        }
-      } catch (err) {
-        console.error("Error fetching facets:", err);
-      }
-    };
-    fetchFacets();
-  }, [searchParams]);
+    ++requestVersion.current;
+    setPrompts([]); setHasMore(false); setLoading(true);
+    const timer = setTimeout(() => loadPrompts(1), searchQuery.trim() ? 300 : 0);
+    return () => { clearTimeout(timer); ++requestVersion.current; };
+  }, [searchParams.toString()]);
 
   // Sync route parameters (toolSlug, domainSlug) with active filter states
   useEffect(() => {
@@ -418,27 +415,32 @@ export default function Homepage() {
       return;
     }
 
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`, { signal: controller.signal });
         const data = await res.json();
         if (data.success) {
           setSearchResults({
-            prompts: data.results || [],
+            prompts: data.prompts || [],
             matchedIntents: data.matchedIntents || [],
             matchedDomains: data.matchedDomains || [],
             matchedTools: data.matchedTools || [],
             matchedTags: data.matchedTags || []
           });
-          setSearchHistory(data.history || []);
+          try {
+            const previous = JSON.parse(sessionStorage.getItem(historyKey) || "[]") as string[];
+            const history = [searchQuery.trim(), ...previous.filter(q => q !== searchQuery.trim())].slice(0, 10);
+            sessionStorage.setItem(historyKey, JSON.stringify(history)); setSearchHistory(history);
+          } catch { /* Storage is optional. */ }
         }
       } catch (err) {
         console.error("Failed to query advanced search:", err);
       }
     }, 300); // 300ms debounce
 
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [searchQuery, historyKey]);
 
   // Handle outside click to close suggestions dropdown
   useEffect(() => {
@@ -451,31 +453,7 @@ export default function Homepage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Compute final filtered list
-  const displayPrompts = searchQuery.trim()
-    ? (searchResults ? searchResults.prompts : [])
-    : prompts;
-
-  const filteredPrompts = displayPrompts.filter((p) => {
-    if (selectedIntent) {
-      const pIntents = Array.isArray(p.intents) ? p.intents : (p.intent ? [p.intent] : []);
-      const matched = pIntents.some(i => i.toLowerCase() === selectedIntent.toLowerCase());
-      if (!matched) return false;
-    }
-    if (selectedTool && !(p.tools || []).some(t => t.toLowerCase() === selectedTool.toLowerCase())) return false;
-    if (selectedDomain && !(p.domains || []).some(d => d.toLowerCase() === selectedDomain.toLowerCase())) return false;
-    if (selectedDifficulty && p.difficulty?.toLowerCase() !== selectedDifficulty.toLowerCase()) return false;
-    if (selectedLanguage && p.language?.toLowerCase() !== selectedLanguage.toLowerCase()) return false;
-    return true;
-  }).sort((a, b) => {
-    if (sortBy === "usage") {
-      return (b.usageCount || 0) - (a.usageCount || 0);
-    } else if (sortBy === "latest") {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    } else {
-      return a.title.localeCompare(b.title, "fa");
-    }
-  });
+  const filteredPrompts = prompts;
 
   // Handler for quick suggestions selection
   const selectSuggestion = (query: string) => {
@@ -485,7 +463,7 @@ export default function Homepage() {
 
   const handleClearFilters = () => {
     setSearchParams(new URLSearchParams());
-    setSortBy("usage");
+
   };
 
   return (
@@ -515,7 +493,7 @@ export default function Homepage() {
           </h1>
 
           <p className="text-muted text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
-            {branding.heroDescription || "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید."}
+            {branding.heroDescription || "مرجع جستجو و شخصی‌سازی پرامپت. با جستجو، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید."}
           </p>
 
           {/* Core Search Input Container */}
@@ -672,8 +650,8 @@ export default function Homepage() {
                       </div>
                     )}
 
-                    {/* Trending queries */}
-                    <div>
+                    {/* Only display measured aggregate trends when supplied */}
+                    {trendingSearches.length > 0 && <div>
                       <div className="text-[10px] text-muted font-bold px-3 py-1 bg-surface-soft rounded mb-1">بیشترین جستجوهای هفته</div>
                       <div className="flex flex-wrap gap-1.5 p-2">
                         {trendingSearches.map((trend, idx) => (
@@ -687,7 +665,7 @@ export default function Homepage() {
                           </button>
                         ))}
                       </div>
-                    </div>
+                    </div>}
                   </div>
                 </motion.div>
               )}
@@ -966,7 +944,7 @@ export default function Homepage() {
 
           <div className="flex items-center gap-3">
             <span className="text-muted text-xs hidden sm:inline">
-              {loading ? "در حال دریافت..." : `نمایش ${filteredPrompts.length} پرامپت`}
+              {loading ? "در حال دریافت..." : `نمایش ${filteredPrompts.length} از ${totalPromptsCount} پرامپت`}
             </span>
 
             {/* Sort Dropdown */}
@@ -1011,7 +989,7 @@ export default function Homepage() {
             </motion.div>
 
             {/* Load More Button */}
-            {hasMore && !searchQuery.trim() && (
+            {hasMore && (
               <div className="flex justify-center pt-4">
                 <button
                   id="load-more-btn"
