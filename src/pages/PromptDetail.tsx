@@ -1,3 +1,4 @@
+import IranIcon from "../components/IranIcon";
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Prompt } from "../types";
@@ -1006,7 +1007,7 @@ export default function PromptDetail() {
 
               <div role="group" aria-label="زبان نسخه پرامپت" className="grid grid-cols-2 gap-2 rounded-xl bg-surface-soft p-1 border border-line">
                 <button type="button" aria-pressed={promptLang === 'fa'} disabled={!prompt.bodyFa} title={!prompt.bodyFa ? 'نسخه پارسی هنوز ثبت نشده است' : 'نسخه پارسی'} onClick={() => { setPromptLang('fa'); setRefinedPrompt(null); setIsManualEditMode(false); }} className={`flex min-h-11 items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold disabled:opacity-40 ${promptLang === 'fa' ? 'bg-brand-solid text-white' : 'text-secondary'}`}>
-                  <svg viewBox="0 0 48 48" className="h-7 w-7 shrink-0" fill="currentColor" aria-hidden="true"><path d="M9 5l7 4 6-2 5 6 8 1 2 6 5 5-3 5 4 8-8 2-7-4-6 1-5-6-7-2-2-7-4-5 5-5z" /></svg><span>نسخه پارسی</span>
+                  <IranIcon /><span>نسخه پارسی</span>
                 </button>
                 <button type="button" aria-pressed={promptLang === 'en'} onClick={() => { setPromptLang('en'); setRefinedPrompt(null); setIsManualEditMode(false); }} className={`flex min-h-11 flex-wrap items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold ${promptLang === 'en' ? 'bg-brand-solid text-white' : 'text-secondary'}`}><span aria-hidden="true">EN</span><span>English</span><small className="text-[9px]">(نسخه پیشنهادی)</small></button>
               </div>

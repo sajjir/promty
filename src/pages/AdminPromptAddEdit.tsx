@@ -40,6 +40,7 @@ export default function AdminPromptAddEdit() {
   const [requiresReferenceImage, setRequiresReferenceImage] = useState(false);
   const [tagsInput, setTagsInput] = useState("");
   const [body, setBody] = useState("");
+  const [bodyFa, setBodyFa] = useState("");
   const [schemaJson, setSchemaJson] = useState("");
   const [sampleImage, setSampleImage] = useState("");
   const [isPremium, setIsPremium] = useState(false);
@@ -133,6 +134,7 @@ export default function AdminPromptAddEdit() {
             setRequiresReferenceImage(p.requiresReferenceImage || false);
             setTagsInput(p.tags ? p.tags.join(", ") : "");
             setBody(p.body);
+            setBodyFa(p.bodyFa || "");
             setSchemaJson(JSON.stringify(p.fieldsSchema, null, 2));
             setSampleImage(p.sampleImage || "");
             setExistingCover(p.coverImage || "");
@@ -166,6 +168,7 @@ export default function AdminPromptAddEdit() {
             setRequiresReferenceImage(p.requiresReferenceImage || false);
             setTagsInput(p.tags ? p.tags.join(", ") : "");
             setBody(p.body);
+            setBodyFa(p.bodyFa || "");
             setSchemaJson(JSON.stringify(p.fieldsSchema || [], null, 2));
             setSampleImage(p.sampleImage || "");
             setIsPremium(p.isPremium);
@@ -258,6 +261,8 @@ export default function AdminPromptAddEdit() {
         setOutputFormats(Array.isArray(parsed.outputFormats) ? parsed.outputFormats : (parsed.outputFormat ? [parsed.outputFormat] : ["Text"]));
         setTagsInput(parsed.tags ? parsed.tags.join(", ") : "");
         setBody(parsed.body || "");
+        setBodyFa((parsed.bodyFa || "").replace(/\[\[(.*?)\]\]/g, "{{$1}}"));
+        setRequiresReferenceImage(!!parsed.requiresReferenceImage);
         setSchemaJson(JSON.stringify(parsed.fieldsSchema || [], null, 2));
         setAnalysisSuccess(true);
       } else {
@@ -305,6 +310,7 @@ export default function AdminPromptAddEdit() {
       requiresReferenceImage,
       tags,
       body,
+      bodyFa,
       fieldsSchema: parsedSchema,
       sampleImage,
       isPremium,
@@ -785,6 +791,12 @@ export default function AdminPromptAddEdit() {
             <span className="text-[10px] text-muted">
               راهنما: حتماً فیلدهای شخصی‌سازی را بدین شکل قرار دهید: <span className="font-mono text-brand block md:inline font-bold">{"{{product_name}}"}</span> یا <span className="font-mono text-brand block md:inline font-bold">{"{{tone}}"}</span> تا با مقادیر Wizard جایگزین شوند.
             </span>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="prompt-body-fa" className="text-xs font-bold text-secondary">نسخه پارسی پرامپت (اختیاری)</label>
+            <textarea id="prompt-body-fa" rows={6} value={bodyFa} onChange={event => setBodyFa(event.target.value)} dir="rtl" className="w-full p-4 bg-surface-inset text-primary text-sm leading-relaxed rounded-xl border border-line focus:border-brand" placeholder="ترجمه پارسی با همان متغیرهای نسخه اصلی" />
+            <p className="text-[11px] text-muted">این متن در صفحه پرامپت با انتخاب «نسخه پارسی» نمایش داده می‌شود. نام متغیرها را مانند نسخه اصلی نگه دارید.</p>
           </div>
 
           {/* Checkboxes Row */}
