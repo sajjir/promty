@@ -31,7 +31,7 @@ function parseOption(opt: string) {
   };
 }
 
-function renderHighlightedNodes(body: string, values: Record<string, string>): React.ReactNode[] {
+function renderHighlightedNodes(body: string, values: Record<string, string>, changedKey?: string | null): React.ReactNode[] {
   const regex = /\{\{(\w+)\}\}|\[\[(\w+)\]\]/g;
   const nodes: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -47,7 +47,8 @@ function renderHighlightedNodes(body: string, values: Record<string, string>): R
       nodes.push(
         <span
           key={key++}
-          className="text-caution-text border-b border-dashed border-caution-text/70"
+          data-prompt-field={placeholderKey}
+          className={`scroll-mt-28 rounded px-0.5 text-caution-text border-b border-dashed border-caution-text/70 ${changedKey === placeholderKey ? 'bg-brand-solid/20 ring-2 ring-brand font-bold' : ''}`}
           title="این بخش قابل شخصی‌سازی است"
         >
           {value}
@@ -532,6 +533,27 @@ export default function PromptDetail() {
     );
   };
 
+  const [fieldChange, setFieldChange] = useState<{ key: string; type: string; sequence: number } | null>(null);
+  const [highlightedField, setHighlightedField] = useState<string | null>(null);
+  useEffect(() => {
+    if (!fieldChange) return;
+    const delay = ['select', 'radio', 'switch', 'color'].includes(fieldChange.type) ? 100 : 700;
+    const scrollTimer = window.setTimeout(() => {
+      setShowFullPrompt(true);
+      setIsManualEditMode(false);
+      setHighlightedField(fieldChange.key);
+    }, delay);
+    return () => window.clearTimeout(scrollTimer);
+  }, [fieldChange]);
+  useEffect(() => {
+    if (!highlightedField) return;
+    const frame = requestAnimationFrame(() => {
+      const target = Array.from(document.querySelectorAll<HTMLElement>('[data-prompt-field]')).find(element => element.dataset.promptField === highlightedField);
+      (target || document.getElementById('prompt-text-section'))?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    });
+    const clearTimer = window.setTimeout(() => setHighlightedField(null), 3500);
+    return () => { cancelAnimationFrame(frame); window.clearTimeout(clearTimer); };
+  }, [highlightedField, fieldChange]);
   const [showFullPrompt, setShowFullPrompt] = useState(false);
   const isAdmin = !!localStorage.getItem("promty_admin_token");
 
@@ -990,6 +1012,7 @@ export default function PromptDetail() {
                   values={wizardValues}
                   setValues={setWizardValues}
                   onPresetSavedOrUpdated={fetchPresets}
+                  onFieldChange={(key, type) => { setHighlightedField(null); setFieldChange(previous => ({ key, type, sequence: (previous?.sequence || 0) + 1 })); }}
                   onValuesChange={setLiveValues}
                 />
               </div>
@@ -1005,6 +1028,7 @@ export default function PromptDetail() {
                 </span>
               </div>
 
+              <p role="status" aria-live="polite" className={highlightedField ? "text-xs text-brand font-bold" : "sr-only"}>{highlightedField ? `مقدار «${prompt.fieldsSchema?.find(field => field.key === highlightedField)?.label || highlightedField}» در متن اعمال شد.` : ""}</p>
               <div role="group" aria-label="زبان نسخه پرامپت" className="grid grid-cols-2 gap-2 rounded-xl bg-surface-soft p-1 border border-line">
                 <button type="button" aria-pressed={promptLang === 'fa'} disabled={!prompt.bodyFa} title={!prompt.bodyFa ? 'نسخه پارسی هنوز ثبت نشده است' : 'نسخه پارسی'} onClick={() => { setPromptLang('fa'); setRefinedPrompt(null); setIsManualEditMode(false); }} className={`flex min-h-11 items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold disabled:opacity-40 ${promptLang === 'fa' ? 'bg-brand-solid text-white' : 'text-secondary'}`}>
                   <IranIcon /><span>نسخه پارسی</span>
@@ -1032,7 +1056,7 @@ export default function PromptDetail() {
                     }`}
                     style={{ direction: promptLang === "fa" ? "rtl" : "ltr" }}
                   >
-                    {renderHighlightedNodes(refinedPrompt || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body), displayValues)}
+                    {renderHighlightedNodes(refinedPrompt || ((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body), displayValues, highlightedField)}
                   </div>
                 )}
 

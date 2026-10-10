@@ -30,6 +30,7 @@ interface PromptWizardProps {
   values?: Record<string, string>;
   setValues?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   onPresetSavedOrUpdated?: () => void;
+  onFieldChange?: (key: string, type: string) => void;
   onValuesChange?: (values: Record<string, string>) => void;
 }
 
@@ -44,6 +45,7 @@ export default function PromptWizard({
   values,
   setValues,
   onPresetSavedOrUpdated,
+  onFieldChange,
   onValuesChange
 }: PromptWizardProps) {
   const { user, setPhoneModalOpen } = useAuth();
@@ -141,6 +143,7 @@ export default function PromptWizard({
 
   const handleInputChange = (key: string, value: string) => {
     updateValues((prev) => ({ ...prev, [key]: value }));
+    onFieldChange?.(key, fields.find(field => field.key === key)?.type || "text");
   };
 
   const resetForm = () => {
