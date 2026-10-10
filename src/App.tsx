@@ -1,88 +1,55 @@
-import React, { useState, useEffect, useRef } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Homepage from "./pages/Homepage";
 import PromptDetail from "./pages/PromptDetail";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPromptAddEdit from "./pages/AdminPromptAddEdit";
 import UserDashboard from "./pages/UserDashboard";
-import { 
-  Sparkles, LayoutDashboard, Home, Check, Bookmark, 
-  ShieldCheck, Shield, ChevronDown, LogOut, User as UserIcon, LogIn
-} from "lucide-react";
+import { Sparkles, Check } from "lucide-react";
 import { AuthProvider, useAuth } from "./components/AuthContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import PhoneLoginModal from "./components/PhoneLoginModal";
-import { Z } from "./lib/zIndex";
+import SiteHeader from "./components/SiteHeader";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 function SeoFooter() {
   const { branding, siteTitle } = useAuth();
-  const [popularTools, setPopularTools] = useState<{ slug: string; titleFa: string }[]>([]);
-  const [popularDomains, setPopularDomains] = useState<{ slug: string; titleFa: string }[]>([]);
-
-  useEffect(() => {
-    fetch("/api/taxonomies")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!data?.success) return;
-        const list = data.terms || data.taxonomies || [];
-        setPopularTools(list.filter((t: any) => t.type === "tool").slice(0, 6));
-        setPopularDomains(list.filter((t: any) => t.type === "domain").slice(0, 6));
-      })
-      .catch(() => {});
-  }, []);
+  const trending = ['ساخت تصویر سینمایی', 'سناریوی ویدیوی کوتاه', 'برنامه بازاریابی کسب‌وکار', 'تقویم محتوای شبکه‌های اجتماعی', 'برنامه‌ریزی یادگیری', 'خلاصه‌سازی و تحلیل متن'];
+  const lessons = ['پرامپت چیست و چگونه کار می‌کند؟', 'نوشتن اولین پرامپت مؤثر', 'نقش، زمینه و هدف در پرامپت', 'ساخت تصویر با هوش مصنوعی', 'پرامپت‌نویسی برای کسب‌وکار', 'ارزیابی و بهبود پاسخ‌های AI'];
 
   return (
-    <footer className="bg-white border-t border-slate-100 pt-12 pb-8 mt-12 text-xs text-slate-500 font-sans" dir="rtl">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-right">
+    <footer className="bg-surface border-t border-line pt-12 pb-8 mt-12 text-xs text-muted font-sans" dir="rtl">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 grid grid-cols-2 md:grid-cols-3 gap-8 text-right">
         {/* ستون ۱: برند */}
-        <div className="space-y-3">
+        <div className="space-y-3 col-span-2 md:col-span-1">
           <div className="flex items-center gap-2">
             {branding.siteLogo ? (
               <img src={branding.siteLogo} alt={siteTitle} className="w-8 h-8 rounded-lg object-contain" />
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#6C47FF] to-violet-500 flex items-center justify-center text-white shadow-sm shadow-[#6C47FF]/20">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-solid to-violet-500 flex items-center justify-center text-white shadow-sm shadow-brand/20">
                 <Sparkles className="w-4 h-4" />
               </div>
             )}
-            <span className="text-sm font-black text-slate-800">{siteTitle}</span>
+            <span className="text-sm font-black text-primary">{siteTitle}</span>
           </div>
-          <p className="leading-relaxed text-slate-400 max-w-xs">
+          <p className="leading-relaxed text-muted max-w-xs">
             {branding.footerAbout || "همه‌چیز، با یک پرامپت آغاز می‌شود. آرشیو و شخصی‌سازی پرامپت‌های آماده‌ی هوش مصنوعی."}
           </p>
         </div>
 
-        {/* ستون ۲: دسته‌بندی‌ها */}
-        <div className="space-y-2">
-          <h4 className="text-slate-700 font-bold mb-2">پرامپت‌ها بر اساس ابزار</h4>
-          <div className="flex flex-col gap-1.5">
-            {popularTools.map((t) => (
-              <Link key={t.slug} to={`/tool/${t.slug}`} className="hover:text-[#6C47FF] transition">
-                پرامپت‌های {t.titleFa}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* ستون ۳: لینک‌های مفید */}
-        <div className="space-y-2">
-          <h4 className="text-slate-700 font-bold mb-2">دسته‌بندی‌های پرکاربرد</h4>
-          <div className="flex flex-col gap-1.5">
-            {popularDomains.map((d) => (
-              <Link key={d.slug} to={`/domain/${d.slug}`} className="hover:text-[#6C47FF] transition">
-                پرامپت‌های {d.titleFa}
-              </Link>
-            ))}
-            <Link to="/dashboard" className="hover:text-[#6C47FF] transition">داشبورد</Link>
-          </div>
-        </div>
+        {[{title:'پرامپت‌های ترند', items:trending}, {title:'آکادمی پرامپتی', items:lessons}].map(({title,items}) => <div key={title} className="min-w-0 space-y-3">
+          <h4 className="text-primary font-bold">{title}</h4>
+          <ul className="space-y-2.5 leading-relaxed">{items.map(item => <li key={item}><span aria-disabled="true" className="text-muted">{item}</span></li>)}</ul>
+          <p className="text-[10px] text-muted">به‌زودی</p>
+        </div>)}
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 mt-10 pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-slate-400">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 mt-10 pt-6 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-muted">
         <span>{branding.footerCopyright || `کلیه حقوق برای ${siteTitle} محفوظ است.`}</span>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
-            <Check className="w-3.5 h-3.5 text-emerald-500" />
+            <Check className="w-3.5 h-3.5 text-success-text" />
             <span>توسعه‌یافته با بالاترین استانداردهای مهندسی و کاربری</span>
           </span>
         </div>
@@ -92,206 +59,12 @@ function SeoFooter() {
 }
 
 function AppContent() {
-  const { user, logout, siteTitle, branding, setPhoneModalOpen, isAdmin, isSuperAdmin } = useAuth();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const getRoleBadge = () => {
-    if (isSuperAdmin) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-indigo-500/15 text-amber-700 border border-amber-300/60 shadow-xs">
-          <ShieldCheck className="w-3 h-3 text-amber-600" />
-          <span>مدیر کل</span>
-        </span>
-      );
-    }
-    if (isAdmin) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#6C47FF]/10 text-[#6C47FF] border border-[#6C47FF]/20 shadow-xs">
-          <Shield className="w-3 h-3 text-[#6C47FF]" />
-          <span>مدیر</span>
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500">
-        کاربر
-      </span>
-    );
-  };
-
-  const displayName = user?.name || (user?.phone ? `۰${user.phone.slice(-10)}` : user?.email) || "کاربر Promty";
-
   return (
-    <div id="app-shell" className="min-h-screen bg-[#FAFAF9] text-[#1C1C1C] font-sans antialiased flex flex-col selection:bg-[#6C47FF]/20 selection:text-[#6C47FF]">
-      {/* Navigation Bar */}
-      <header id="main-nav-bar" className="sticky top-0 bg-white/85 backdrop-blur-md border-b border-slate-100 shadow-xs" style={{ zIndex: Z.HEADER }}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
-          {/* Logo & Platform Name */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            {branding.siteLogo ? (
-              <img src={branding.siteLogo} alt={siteTitle} className="w-9 h-9 rounded-xl object-contain shadow-xs" />
-            ) : (
-              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#6C47FF] to-violet-500 flex items-center justify-center text-white shadow-md shadow-[#6C47FF]/20 transition-all group-hover:scale-105">
-                <Sparkles className="w-5 h-5" />
-              </div>
-            )}
-            <div className="text-right">
-              <span className="text-sm md:text-base font-black tracking-tight text-slate-800 block">{siteTitle}</span>
-              <span className="text-[10px] text-[#6C47FF] font-bold hidden sm:block">
-                {branding.siteSubtitle || "موتور شخصی‌سازی و پرامپت مهندسی"}
-              </span>
-            </div>
-          </Link>
-
-          {/* User Session status & Navigation */}
-          <div className="flex items-center gap-2">
-            <nav className="flex items-center gap-1">
-              <Link
-                to="/"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition"
-              >
-                <Home className="w-4 h-4" />
-                <span className="hidden sm:inline">خانه</span>
-              </Link>
-
-              {user && (
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#6C47FF] hover:bg-[#6C47FF]/5 transition"
-                >
-                  <Bookmark className="w-4 h-4 text-[#6C47FF]" />
-                  <span>داشبورد</span>
-                </Link>
-              )}
-
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition"
-                >
-                  <LayoutDashboard className="w-4 h-4 text-[#6C47FF]" />
-                  <span className="hidden sm:inline">پنل ادمین</span>
-                </Link>
-              )}
-            </nav>
-
-            <div className="flex items-center gap-2 pr-2 border-r border-slate-100">
-              {user ? (
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => setDropdownOpen((prev) => !prev)}
-                    className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 rounded-2xl hover:bg-slate-50 border border-slate-100 hover:border-slate-200 transition cursor-pointer"
-                  >
-                    {user.avatar ? (
-                      <img
-                        src={user.avatar}
-                        referrerPolicy="no-referrer"
-                        alt={displayName}
-                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl object-cover border border-slate-200"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#6C47FF]/10 text-[#6C47FF] flex items-center justify-center text-xs font-black shadow-inner">
-                        {displayName.charAt(0)}
-                      </div>
-                    )}
-                    <div className="hidden md:block text-right">
-                      <span className="text-xs font-black text-slate-800 block truncate max-w-[120px]">{displayName}</span>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        {getRoleBadge()}
-                      </div>
-                    </div>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 mr-0.5" />
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {dropdownOpen && (
-                    <div 
-                      className="absolute left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 text-right overflow-hidden animate-fade-in font-sans"
-                      style={{ zIndex: Z.DROPDOWN }}
-                    >
-                      {/* User Info Header */}
-                      <div className="px-4 py-3 border-b border-slate-50 bg-slate-50/60">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-black text-slate-800 truncate block">{displayName}</span>
-                          {getRoleBadge()}
-                        </div>
-                        {user.phone && (
-                          <span className="text-[11px] text-slate-400 block font-mono font-medium">{user.phone}</span>
-                        )}
-                        {user.email && (
-                          <span className="text-[11px] text-slate-400 block truncate font-mono">{user.email}</span>
-                        )}
-                      </div>
-
-                      {/* Menu Links */}
-                      <div className="p-1 space-y-0.5">
-                        <Link
-                          to="/dashboard"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-[#6C47FF] hover:bg-[#6C47FF]/5 transition"
-                        >
-                          <Bookmark className="w-4 h-4 text-[#6C47FF]" />
-                          <span>داشبورد و ذخیره‌شده‌ها</span>
-                        </Link>
-
-                        {isAdmin && (
-                          <Link
-                            to="/admin"
-                            onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition"
-                          >
-                            <LayoutDashboard className="w-4 h-4 text-indigo-500" />
-                            <span>پنل مدیریت و تنظیمات</span>
-                          </Link>
-                        )}
-                      </div>
-
-                      {/* Logout Action */}
-                      <div className="pt-1 mt-1 border-t border-slate-50 px-1">
-                        <button
-                          onClick={() => {
-                            setDropdownOpen(false);
-                            logout();
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-50 transition cursor-pointer"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          <span>خروج از حساب کاربری</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <button
-                  id="open-auth-modal-btn"
-                  onClick={() => setPhoneModalOpen(true)}
-                  className="flex items-center justify-center gap-1.5 p-2 sm:px-3.5 sm:py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition shadow-sm cursor-pointer text-xs font-bold"
-                  title="ورود / ثبت‌نام"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span className="hidden sm:inline">ورود / ثبت‌نام</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+    <div id="app-shell" className="min-h-screen bg-canvas text-primary font-sans antialiased flex flex-col selection:bg-brand-solid/20 selection:text-brand">
+      <SiteHeader />
 
       {/* Global Body Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-8">
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/tool/:toolSlug" element={<Homepage />} />
@@ -317,9 +90,11 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppWrapper />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppWrapper />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

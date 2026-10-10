@@ -28,10 +28,10 @@ export default function CopyButton({ text, className = "", label, onCopy }: Copy
     <button
       id="copy-prompt-btn"
       onClick={handleCopy}
-      className={`flex items-center justify-center gap-2 px-5 py-3 font-medium transition-all duration-200 border-2 border-[#6C47FF] hover:bg-[#6C47FF] hover:text-white rounded-lg cursor-pointer ${
+      className={`flex items-center justify-center gap-2 px-5 py-3 font-medium transition-all duration-200 border-2 border-brand hover:bg-brand-solid hover:text-white rounded-lg cursor-pointer ${
         copied
           ? "bg-[#10B981] border-[#10B981] text-white"
-          : "bg-white text-[#6C47FF]"
+          : "bg-surface text-brand"
       } ${className}`}
     >
       {copied ? (

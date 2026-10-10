@@ -1,4 +1,6 @@
 import "dotenv/config";
+import crypto from "node:crypto";
+import { securityState } from "./src/server/services/securityState.ts";
 import express from "express";
 import path from "path";
 import fs from "fs";
@@ -21,11 +23,18 @@ import { JsonRelationshipRepository } from "./src/server/repositories/json/JsonR
 import { SearchService } from "./src/server/services/SearchService";
 import { smsService, sanitizeIranianMobile } from "./src/server/services/smsService.ts";
 
-let JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.warn("WARNING: JWT_SECRET environment variable is missing. Using a fallback secret key for development.");
-  JWT_SECRET = "promty_fallback_secret_key_123_development";
+if (process.env.LOCAL_PREVIEW === "1" && process.env.HOST && !["127.0.0.1", "localhost", "::1"].includes(process.env.HOST)) throw new Error("Local preview must bind loopback.");
+const operationalProduction = process.env.NODE_ENV === "production" && process.env.LOCAL_PREVIEW !== "1";
+if (operationalProduction) {
+  for (const key of ["JWT_SECRET", "ADMIN_EMAIL", "ADMIN_PASSWORD", "APP_ORIGIN", "MELIPAYAMAK_USERNAME", "MELIPAYAMAK_PASSWORD", "MELIPAYAMAK_OTP_BODY_ID"]) {
+    if (!process.env[key]) throw new Error(`Production configuration missing: ${key}`);
+  }
+  if (process.env.JWT_SECRET!.length < 32 || process.env.ADMIN_PASSWORD!.length < 12 || process.env.ADMIN_PASSWORD === "admin123") throw new Error("Production credentials are too weak.");
+  if (!process.env.APP_ORIGIN!.startsWith("https://")) throw new Error("APP_ORIGIN must use HTTPS in production.");
 }
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString("hex");
+const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[char]!));
+const safeJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -204,7 +213,7 @@ function readDB(): DB {
       siteTitle: "پرامپتی | Promty",
       siteSubtitle: "موتور شخصی‌سازی و پرامپت مهندسی",
       heroTitle: "قلب تپنده نوآوری با پرامپتی",
-      heroDescription: "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.",
+      heroDescription: "مرجع جستجو و شخصی‌سازی پرامپت. با جستجو، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.",
       footerAbout: "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
       footerCopyright: "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
       siteLogo: "",
@@ -410,55 +419,15 @@ async function syncTaxonomies(prisma: PrismaClient | null) {
 
 // Check admin and super admin credentials
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@promty.ir";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const SUPER_ADMIN_PHONE = process.env.SUPER_ADMIN_PHONE || "";
 const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "";
 
-/**
- * Resolves user role hierarchically:
- * 1. Checks SUPER_ADMIN_PHONE and SUPER_ADMIN_EMAIL from environment
- * 2. Checks ADMIN_EMAIL and ADMIN_PHONE from environment
- * 3. Preserves database assigned roles (SUPER_ADMIN, ADMIN, USER)
- */
+// Preserve only trusted persistent roles; identifiers never grant privileges.
 function resolveUserRole(
   identifier: { email?: string | null; phone?: string | null },
   currentRole?: string | null
 ): "SUPER_ADMIN" | "ADMIN" | "USER" {
-  const rawSuperPhone = process.env.SUPER_ADMIN_PHONE?.trim();
-  let sPhone = rawSuperPhone;
-  if (rawSuperPhone) {
-    try {
-      sPhone = sanitizeIranianMobile(rawSuperPhone);
-    } catch (_) {
-      sPhone = rawSuperPhone;
-    }
-  }
-
-  const sEmail = process.env.SUPER_ADMIN_EMAIL?.trim()?.toLowerCase();
-  const aEmail = (process.env.ADMIN_EMAIL || "admin@promty.ir").trim().toLowerCase();
-  const aPhone = process.env.ADMIN_PHONE?.trim();
-
-  let userPhone = identifier.phone ? identifier.phone.trim() : null;
-  if (userPhone) {
-    try {
-      userPhone = sanitizeIranianMobile(userPhone);
-    } catch (_) {}
-  }
-  const userEmail = identifier.email ? identifier.email.trim().toLowerCase() : null;
-
-  if (sPhone && userPhone === sPhone) {
-    return "SUPER_ADMIN";
-  }
-  if (sEmail && userEmail === sEmail) {
-    return "SUPER_ADMIN";
-  }
-  if (aPhone && userPhone === aPhone) {
-    return "ADMIN";
-  }
-  if (aEmail && userEmail === aEmail) {
-    return "ADMIN";
-  }
-
   const normalized = currentRole ? String(currentRole).toUpperCase() : "";
   if (normalized === "SUPER_ADMIN") return "SUPER_ADMIN";
   if (normalized === "ADMIN") return "ADMIN";
@@ -523,7 +492,7 @@ async function getPageMetadata(urlPath: string) {
         }
       ]
     };
-    jsonLd = `<script type="application/ld+json">${JSON.stringify(breadcrumbs)}</script>`;
+    jsonLd = `<script type="application/ld+json">${safeJsonLd(breadcrumbs)}</script>`;
 
   } else if (domainMatch) {
     const slug = domainMatch[1].toLowerCase();
@@ -550,13 +519,13 @@ async function getPageMetadata(urlPath: string) {
         }
       ]
     };
-    jsonLd = `<script type="application/ld+json">${JSON.stringify(breadcrumbs)}</script>`;
+    jsonLd = `<script type="application/ld+json">${safeJsonLd(breadcrumbs)}</script>`;
 
   } else if (promptMatch) {
     const id = promptMatch[1];
     try {
       const prompt = await promptRepo.getById(id);
-      if (prompt) {
+      if (prompt && prompt.isActive) {
         title = `${prompt.title} | قالب پرامپت آماده و شخصی‌سازی - Promty`;
         description = prompt.description || `دانلود، ویرایش و کپی سریع پرامپت مهندسی‌شده "${prompt.title}" مخصوص ${prompt.category || "هوش مصنوعی"} در وبسایت پرامپتی.`;
         if (prompt.sampleImage) {
@@ -564,10 +533,7 @@ async function getPageMetadata(urlPath: string) {
         }
 
         // Schema Engine Injection
-        // BreadcrumbList, SoftwareApplication/HowTo, and aggregateRating connected to database usageCount
-        const ratingValue = 4.8;
-        const reviewCount = Math.max(5, Math.floor((prompt.usageCount || 0) / 10) + 1);
-        
+        // Structured content contains no inferred ratings or invented review counts.
         const mainEntitySchema: any = {
           "@context": "https://schema.org",
           "@type": "HowTo",
@@ -586,13 +552,7 @@ async function getPageMetadata(urlPath: string) {
               "text": "دکمه کپی پرامپت را فشار دهید و در چت باکس هوش مصنوعی کپی کنید."
             }
           ],
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": ratingValue.toString(),
-            "bestRating": "5",
-            "worstRating": "1",
-            "ratingCount": reviewCount.toString()
-          }
+
         };
 
         const breadcrumbs = {
@@ -615,8 +575,8 @@ async function getPageMetadata(urlPath: string) {
         };
 
         jsonLd = `
-          <script type="application/ld+json">${JSON.stringify(breadcrumbs)}</script>
-          <script type="application/ld+json">${JSON.stringify(mainEntitySchema)}</script>
+          <script type="application/ld+json">${safeJsonLd(breadcrumbs)}</script>
+          <script type="application/ld+json">${safeJsonLd(mainEntitySchema)}</script>
         `;
       }
     } catch (e) {
@@ -636,23 +596,23 @@ async function getPageMetadata(urlPath: string) {
         }
       ]
     };
-    jsonLd = `<script type="application/ld+json">${JSON.stringify(breadcrumbs)}</script>`;
+    jsonLd = `<script type="application/ld+json">${safeJsonLd(breadcrumbs)}</script>`;
   }
 
   // Generate complete HTML meta chunk
   const metaHtml = `
     <!-- Custom Meta Tags injected dynamically -->
-    <title>${title}</title>
-    <meta name="description" content="${description}" />
-    <meta property="og:title" content="${title}" />
-    <meta property="og:description" content="${description}" />
+    <title>${escapeHtml(title)}</title>
+    <meta name="description" content="${escapeHtml(description)}" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="${pageUrl}" />
-    <meta property="og:image" content="${imageUrl}" />
+    <meta property="og:url" content="${escapeHtml(pageUrl)}" />
+    <meta property="og:image" content="${escapeHtml(imageUrl)}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${title}" />
-    <meta name="twitter:description" content="${description}" />
-    <meta name="twitter:image" content="${imageUrl}" />
+    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:description" content="${escapeHtml(description)}" />
+    <meta name="twitter:image" content="${escapeHtml(imageUrl)}" />
     ${jsonLd}
   `;
 
@@ -661,18 +621,20 @@ async function getPageMetadata(urlPath: string) {
 
 async function startServer() {
   const app = express();
-  const PORT = 3005;
+  const PORT = Number(process.env.PORT || 3005);
 
   const hasDbUrl = !!process.env.DATABASE_URL;
 
   if (hasDbUrl) {
     try {
       prisma = new PrismaClient();
+      await prisma.$connect();
       promptRepo = new PrismaPromptRepository(prisma);
       taxonomyRepo = new PrismaTaxonomyRepository(prisma);
       relationshipRepo = new PrismaRelationshipRepository(prisma);
       console.log("[DB] Using Prisma database backend.");
     } catch (dbError) {
+      if (operationalProduction) throw dbError;
       console.error("[DB] Failed to initialize Prisma, falling back to JSON storage:", dbError);
       prisma = null;
     }
@@ -706,18 +668,86 @@ async function startServer() {
     }
   }
 
-  app.use(express.json());
+  app.use(express.json({ limit: "256kb" }));
   app.use(cookieParser());
 
-  // Serve processed media uploads with 1-month Cache-Control
-  app.use("/dl", express.static(path.join(process.cwd(), "dl"), { maxAge: "30d" }));
+  const currentUser = async (req: express.Request): Promise<any | null> => {
+    const token = req.cookies?.promty_session || (req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.slice(7) : null);
+    if (!token) return null;
+    try {
+      const claims = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] }) as any;
+      const user = prisma ? await prisma.user.findUnique({ where: { id: claims.id } }) : (readDB().users || []).find((u: any) => u.id === claims.id);
+      if (claims.iat <= securityState.revokedAfter(claims.id)) return null;
+      if (!user || String(user.role).toLowerCase() !== String(claims.role).toLowerCase()) return null;
+      return { ...user, role: String(user.role).toLowerCase() };
+    } catch { return null; }
+  };
+  const isManager = (user: any) => ["admin", "super_admin"].includes(user?.role);
+  app.use(async (req, res, next) => {
+    (req as any).user = await currentUser(req);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    if (operationalProduction) {
+      const nonce = crypto.randomBytes(18).toString("base64");
+      res.locals.cspNonce = nonce;
+      res.setHeader("Content-Security-Policy", `default-src 'self'; script-src 'self' 'nonce-${nonce}' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'`);
+    }
+    if (req.path.startsWith("/api")) res.setHeader("Cache-Control", "no-store");
+    if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+      const origin = req.headers.origin;
+      const allowed = new Set([process.env.APP_ORIGIN, ...(!operationalProduction ? ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3005"] : [])].filter(Boolean));
+      if ((origin && !allowed.has(origin)) || (!origin && req.cookies?.promty_session) || req.headers["sec-fetch-site"] === "cross-site") return res.status(403).json({ success: false, message: "مبدأ درخواست مجاز نیست." });
+    }
+    next();
+  });
+  app.use("/api", (req, res, next) => {
+    const costly = /auth\/(login|google|otp)|analyze-public|refine-prompt|prompts\/submit/.test(req.path);
+    if (req.method !== "POST" || !costly) return next();
+    try {
+      const auth = /auth/.test(req.path);
+      const allowed = securityState.consume(`${req.ip}:${req.path}`, auth ? 20 : 10, 3600000);
+      const globalAllowed = auth || securityState.consume("global-ai-daily", Math.max(1, Number(process.env.AI_DAILY_REQUEST_LIMIT) || 100), 86400000);
+      if (!allowed || !globalAllowed) return res.status(429).json({ success: false, message: "سقف درخواست مجاز رسیده است؛ بعداً تلاش کنید." });
+      next();
+    } catch { return res.status(503).json({ success: false, message: "کنترل مصرف موقتاً در دسترس نیست." }); }
+  });
+  // Draft content must never leak through detail, media, render, copy, or saved lists.
+  app.use(async (req, res, next) => {
+    const match = req.path.match(/^\/api\/prompts\/([^/]+)(?:\/|$)/) || req.path.match(/^\/dl\/prompts\/([^/]+)(?:\/|$)/) || req.path.match(/^\/prompts\/([^/]+)$/);
+    const reserved = ["submit", "analyze-public", "facets"];
+    const id = req.path === "/api/render-prompt" ? req.body?.promptId : match?.[1];
+    if (id && !reserved.includes(id)) {
+      try {
+        const prompt = await promptRepo.getById(id);
+        if (!prompt || (!prompt.isActive && !isManager((req as any).user))) return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
+      } catch { return res.status(503).json({ success: false, message: "محتوا موقتاً در دسترس نیست." }); }
+    }
+    next();
+  });
+  const requireManager = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!isManager((req as any).user)) return res.status(403).json({ success: false, message: "دسترسی غیرمجاز" });
+    next();
+  };
+  app.use("/dl", (req, res, next) => {
+    // Static serving normalizes dot segments; reject every alternate path before it can do so.
+    if (req.path !== "/brand/logo.webp" && !/^\/prompts\/[a-zA-Z0-9_-]{1,80}\/[a-zA-Z0-9_-]+\.webp$/.test(req.path)) return res.status(404).end();
+    next();
+  });
+  // Auth-aware media must not be cached after unpublishing.
+  app.use("/dl", (_req, res, next) => { res.setHeader("Cache-Control", "private, no-store"); next(); }, express.static(path.join(process.cwd(), "dl"), { maxAge: 0 }));
 
-  const upload = multer({ storage: multer.memoryStorage() });
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 6, fields: 2, parts: 8 } });
 
   // API - Process and upload media cover/gallery
-  app.post("/api/upload/:promptId", upload.fields([
+  app.post("/api/upload/:promptId", requireManager, async (req, res, next) => {
+    if (!/^[a-zA-Z0-9_-]{1,80}$/.test(req.params.promptId)) return res.status(400).json({ success: false });
+    try {
+      if (!await promptRepo.getById(req.params.promptId)) return res.status(404).json({ success: false });
+      next();
+    } catch { res.status(503).json({ success: false }); }
+  }, upload.fields([
     { name: "cover", maxCount: 1 },
-    { name: "gallery", maxCount: 15 }
+    { name: "gallery", maxCount: 5 }
   ]), async (req, res) => {
     try {
       const { promptId } = req.params;
@@ -730,6 +760,12 @@ async function startServer() {
         return res.status(400).json({ success: false, message: "هیچ فایلی برای آپلود دریافت نشد." });
       }
 
+      // Decode and validate every image before creating directories or writing files.
+      for (const file of [coverFile, ...galleryFiles].filter(Boolean) as Express.Multer.File[]) {
+        const metadata = await sharp(file.buffer, { limitInputPixels: 25000000 }).metadata();
+        if (!["jpeg", "png", "webp"].includes(metadata.format || "") || !metadata.width || !metadata.height || metadata.width > 8000 || metadata.height > 8000 || (metadata.pages || 1) > 1) return res.status(400).json({ success: false, message: "تصویر معتبر JPEG/PNG/WebP با ابعاد مجاز لازم است." });
+        await sharp(file.buffer, { limitInputPixels: 25000000 }).webp().toBuffer();
+      }
       const targetDir = path.join(process.cwd(), "dl", "prompts", promptId);
       
       // Ensure directory exists recursively
@@ -814,21 +850,30 @@ async function startServer() {
   });
 
   // API - Auth Login (Static Admin)
-  app.post("/api/auth/login", (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      const isSuper = (SUPER_ADMIN_EMAIL && ADMIN_EMAIL.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase());
-      const role = isSuper ? "super_admin" : "admin";
+    if (ADMIN_PASSWORD && email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      const initialRole = SUPER_ADMIN_EMAIL && ADMIN_EMAIL.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ? "SUPER_ADMIN" : "ADMIN";
+      let user: any;
+      if (prisma) {
+        user = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } });
+        if (!user) user = await prisma.user.create({ data: { email: ADMIN_EMAIL, name: "مدیر سیستم", role: initialRole } });
+      } else {
+        const db = readDB(); db.users ||= [];
+        user = db.users.find((u: any) => u.email === ADMIN_EMAIL);
+        if (!user) { user = { id: "admin_static", email: ADMIN_EMAIL, name: "مدیر سیستم", role: initialRole }; db.users.push(user); writeDB(db); }
+      }
+      const role = String(user.role).toLowerCase();
       const token = jwt.sign(
-        { id: "admin_static", email: ADMIN_EMAIL, role },
+        { id: user.id, email: ADMIN_EMAIL, role },
         JWT_SECRET,
         { expiresIn: "7d" }
       );
 
       res.cookie("promty_session", token, {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
+        secure: operationalProduction,
+        sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -845,8 +890,8 @@ async function startServer() {
   app.post("/api/auth/logout", (req, res) => {
     res.clearCookie("promty_session", {
       httpOnly: true,
-      secure: true,
-      sameSite: "none"
+      secure: operationalProduction,
+      sameSite: "lax"
     });
     return res.json({ success: true, message: "خروج موفقیت‌آمیز" });
   });
@@ -867,6 +912,7 @@ async function startServer() {
         return res.status(400).json({ success: false, message: "توکن معتبر نیست." });
       }
 
+      if (!payload.email || !payload.email_verified) return res.status(401).json({ success: false });
       const { email, name, picture } = payload;
       let user: any = null;
 
@@ -901,14 +947,10 @@ async function startServer() {
           }
         }
       } else {
-        const targetRole = resolveUserRole({ email: email });
-        user = {
-          id: "google_mock_" + Date.now(),
-          email,
-          name,
-          avatar: picture,
-          role: targetRole,
-        };
+        const db = readDB(); db.users ||= [];
+        user = db.users.find((u: any) => u.email === email);
+        if (!user) { user = { id: "user_" + crypto.randomUUID(), email, name, avatar: picture, role: "USER" }; db.users.push(user); writeDB(db); }
+
       }
 
       const userRoleLower = String(user.role).toLowerCase();
@@ -920,8 +962,8 @@ async function startServer() {
 
       res.cookie("promty_session", token, {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
+        secure: operationalProduction,
+        sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -952,63 +994,8 @@ async function startServer() {
 
   // API - Get User Profile (Auth status check)
   app.get("/api/auth/me", async (req, res) => {
-    const token = req.cookies.promty_session;
-    if (!token) {
-      return res.json({ success: false, user: null });
-    }
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      if (!decoded) {
-        return res.json({ success: false, user: null });
-      }
-
-      let user: any = null;
-      if (prisma && decoded.id && !decoded.id.startsWith("google_mock") && !decoded.id.startsWith("mock") && !decoded.id.startsWith("admin_static")) {
-        user = await prisma.user.findUnique({
-          where: { id: decoded.id },
-        });
-      }
-
-      if (!user) {
-        // Fallback for static admin or unmigrated mock sessions
-        const isSuper = (SUPER_ADMIN_EMAIL && decoded.email === SUPER_ADMIN_EMAIL) ||
-                        (SUPER_ADMIN_PHONE && decoded.phone === SUPER_ADMIN_PHONE);
-        const resolvedRole = isSuper ? "SUPER_ADMIN" : resolveUserRole({ email: decoded.email, phone: decoded.phone }, decoded.role);
-        user = {
-          id: decoded.id || "admin",
-          email: decoded.email,
-          phone: decoded.phone,
-          name: decoded.role === "admin" || decoded.role === "super_admin" ? "مدیر سیستم" : "کاربر",
-          avatar: null,
-          role: resolvedRole,
-        };
-      } else {
-        // Ensure role stays strictly up-to-date with SUPER_ADMIN overrides
-        const accurateRole = resolveUserRole({ email: user.email, phone: user.phone }, user.role);
-        if (user.role !== accurateRole && (accurateRole === "SUPER_ADMIN" || accurateRole === "ADMIN")) {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: { role: accurateRole },
-          });
-        }
-      }
-
-      const roleLower = String(user.role).toLowerCase();
-
-      return res.json({
-        success: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          phone: user.phone,
-          name: user.name,
-          avatar: user.avatar,
-          role: roleLower,
-        },
-      });
-    } catch (err) {
-      return res.json({ success: false, user: null });
-    }
+    const user = (req as any).user;
+    return res.json({ success: !!user, user: user ? { id: user.id, email: user.email, phone: user.phone, name: user.name, avatar: user.avatar, role: user.role } : null });
   });
 
   // API - Public Configuration (Google Client ID)
@@ -1045,23 +1032,6 @@ async function startServer() {
       const code = smsService.generateOtpCode();
       const result = await smsService.sendOtp(sanitizedPhone, code);
 
-      // Save to database OtpVerification if prisma is active
-      if (prisma) {
-        try {
-          const hashedCode = smsService.hashCode(code);
-          const expiresAt = new Date(Date.now() + 120 * 1000); // 2 minutes TTL
-          await prisma.otpVerification.create({
-            data: {
-              phone: sanitizedPhone,
-              code: hashedCode,
-              expiresAt,
-            },
-          });
-        } catch (dbErr) {
-          console.warn("[OTP] Database storage note:", dbErr);
-        }
-      }
-
       return res.json({
         success: true,
         message: "کد تایید با موفقیت ارسال شد.",
@@ -1091,27 +1061,7 @@ async function startServer() {
         return res.status(400).json({ success: false, message: e.message || "فرمت شماره موبایل نامعتبر است." });
       }
 
-      // Check verification via smsService memory cache
-      let isValid = smsService.verifyOtp(sanitizedPhone, code);
-
-      // Fallback check against database OtpVerification
-      if (!isValid && prisma) {
-        const hashedCode = smsService.hashCode(code);
-        const record = await prisma.otpVerification.findFirst({
-          where: {
-            phone: sanitizedPhone,
-            code: hashedCode,
-            expiresAt: { gt: new Date() },
-          },
-          orderBy: { createdAt: "desc" },
-        });
-
-        if (record) {
-          isValid = true;
-          // Delete to prevent replay attacks
-          await prisma.otpVerification.delete({ where: { id: record.id } }).catch(() => {});
-        }
-      }
+      const isValid = smsService.verifyOtp(sanitizedPhone, code);
 
       if (!isValid) {
         return res.status(400).json({
@@ -1124,24 +1074,12 @@ async function startServer() {
       let user: any = null;
       let isNewUser = false;
 
-      // Automatically link and grant role SUPER_ADMIN if phone matches SUPER_ADMIN_PHONE
-      let isSuperAdminMatch = false;
-      if (process.env.SUPER_ADMIN_PHONE) {
-        try {
-          isSuperAdminMatch = sanitizedPhone === sanitizeIranianMobile(process.env.SUPER_ADMIN_PHONE);
-        } catch (_) {
-          isSuperAdminMatch = sanitizedPhone === process.env.SUPER_ADMIN_PHONE.trim();
-        }
-      }
-
       if (prisma) {
         user = await prisma.user.findUnique({
           where: { phone: sanitizedPhone },
         });
 
-        const targetRole: "SUPER_ADMIN" | "ADMIN" | "USER" = isSuperAdminMatch
-          ? "SUPER_ADMIN"
-          : resolveUserRole({ phone: sanitizedPhone, email: user?.email }, user?.role);
+        const targetRole: "SUPER_ADMIN" | "ADMIN" | "USER" = resolveUserRole({ phone: sanitizedPhone, email: user?.email }, user?.role);
 
         if (!user) {
           isNewUser = true;
@@ -1151,16 +1089,6 @@ async function startServer() {
               role: targetRole,
               name: `کاربر ${sanitizedPhone.slice(-4)}`,
             },
-          });
-        } else if (isSuperAdminMatch && user.role !== "SUPER_ADMIN") {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: { role: "SUPER_ADMIN" },
-          });
-        } else if (user.role !== targetRole && (targetRole === "SUPER_ADMIN" || targetRole === "ADMIN")) {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: { role: targetRole },
           });
         }
       } else {
@@ -1172,9 +1100,7 @@ async function startServer() {
         if (!db.users) db.users = [];
         user = db.users.find((u: any) => u.phone === sanitizedPhone);
 
-        const targetRole: "SUPER_ADMIN" | "ADMIN" | "USER" = isSuperAdminMatch
-          ? "SUPER_ADMIN"
-          : resolveUserRole({ phone: sanitizedPhone, email: user?.email }, user?.role);
+        const targetRole: "SUPER_ADMIN" | "ADMIN" | "USER" = resolveUserRole({ phone: sanitizedPhone, email: user?.email }, user?.role);
 
         if (!user) {
           isNewUser = true;
@@ -1187,12 +1113,6 @@ async function startServer() {
             createdAt: new Date().toISOString(),
           };
           db.users.push(user);
-          fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
-        } else if (isSuperAdminMatch && user.role !== "SUPER_ADMIN") {
-          user.role = "SUPER_ADMIN";
-          fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
-        } else if (user.role !== targetRole) {
-          user.role = targetRole;
           fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
         }
       }
@@ -1211,8 +1131,8 @@ async function startServer() {
 
       res.cookie("promty_session", token, {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
+        secure: operationalProduction,
+        sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -1235,118 +1155,17 @@ async function startServer() {
     }
   });
 
-  // API - Mock OTP Login for backwards compatibility
-  app.post("/api/auth/otp-mock", (req, res) => {
-    const { phone, code } = req.body;
-    if (!phone) {
-      return res.status(400).json({ success: false, message: "شماره تلفن الزامی است." });
-    }
-    if (code === "1234") {
-      const mockId = "mock_otp_" + Date.now();
-      const token = jwt.sign(
-        { id: mockId, email: `${phone}@promty.ir`, phone, role: "user" },
-        JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-
-      res.cookie("promty_session", token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
-      return res.json({
-        success: true,
-        user: { id: mockId, email: `${phone}@promty.ir`, phone, name: `کاربر ${phone}`, role: "user" }
-      });
-    }
-    return res.status(400).json({ success: false, message: "کد تایید اشتباه است. (کد پیش‌فرض ۱۲۳۴ است)" });
-  });
-
-  // API - Complete registration / Phone profile update
+  app.post("/api/auth/otp-mock", (_req, res) => res.status(404).json({ success: false }));
   app.post("/api/auth/phone-register", async (req, res) => {
-    const { phone, name, email } = req.body;
-    if (!phone || !name) {
-      return res.status(400).json({ success: false, message: "شماره و نام الزامی است." });
-    }
-    try {
-      let sanitizedPhone: string;
-      try {
-        sanitizedPhone = sanitizeIranianMobile(phone);
-      } catch (err: any) {
-        return res.status(400).json({ success: false, message: err.message || "فرمت شماره موبایل نامعتبر است." });
-      }
-
-      let user: any = null;
-      if (prisma) {
-        user = await prisma.user.findUnique({ where: { phone: sanitizedPhone } });
-        if (!user) {
-          const targetRole = resolveUserRole({ phone: sanitizedPhone, email: email || null });
-          user = await prisma.user.create({
-            data: { phone: sanitizedPhone, name, email: email || null, role: targetRole },
-          });
-        } else {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: { name, ...(email ? { email } : {}) },
-          });
-        }
-      } else {
-        const dbPath = path.join(process.cwd(), "db.json");
-        let db: any = {};
-        if (fs.existsSync(dbPath)) {
-          db = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
-        }
-        if (!db.users) db.users = [];
-        user = db.users.find((u: any) => u.phone === sanitizedPhone);
-        if (!user) {
-          const targetRole = resolveUserRole({ phone: sanitizedPhone, email: email || null });
-          user = {
-            id: "phone_mock_" + Date.now(),
-            phone: sanitizedPhone,
-            name,
-            email: email || null,
-            role: targetRole
-          };
-          db.users.push(user);
-          fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
-        } else {
-          user.name = name;
-          if (email) user.email = email;
-          fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
-        }
-      }
-
-      const roleLower = String(user.role).toLowerCase();
-      const token = jwt.sign(
-        { id: user.id, email: user.email, phone: user.phone, role: roleLower },
-        JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-
-      res.cookie("promty_session", token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
-      return res.json({
-        success: true,
-        user: { id: user.id, phone: user.phone, name: user.name, email: user.email, role: roleLower },
-      });
-    } catch (err: any) {
-      if (err.code === "P2002") {
-        const field = err.meta?.target?.[0] || "این مقدار";
-        return res.status(409).json({
-          success: false,
-          message: field === "email" ? "این ایمیل قبلاً توسط حساب دیگری ثبت شده است." : "این شماره قبلاً ثبت شده است.",
-        });
-      }
-      console.error("Phone register error:", err);
-      return res.status(500).json({ success: false, message: "خطایی در ثبت‌نام رخ داد. دوباره تلاش کنید." });
-    }
+    const user = (req as any).user;
+    if (!user?.phone) return res.status(401).json({ success: false, message: "ابتدا شماره خود را با کد تایید احراز کنید." });
+    if (req.body.email && req.body.email !== user.email) return res.status(400).json({ success: false, message: "تغییر ایمیل نیازمند تایید است." });
+    if (req.body.phone && sanitizeIranianMobile(req.body.phone) !== user.phone) return res.status(403).json({ success: false });
+    const name = typeof req.body.name === "string" ? req.body.name.trim().slice(0, 120) : "";
+    if (!name) return res.status(400).json({ success: false });
+    if (prisma) await prisma.user.update({ where: { id: user.id }, data: { name } });
+    else { const db = readDB(); const saved = db.users.find((u: any) => u.id === user.id); saved.name = name; writeDB(db); }
+    res.json({ success: true, user: { ...user, name } });
   });
 
   // Helper to extract JWT token from cookies or Authorization header
@@ -1360,56 +1179,26 @@ async function startServer() {
     return null;
   };
 
-  // Admin middleware: allows users with role "admin" or "super_admin"
-  const adminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const token = extractAuthToken(req);
-    if (!token) {
-      return res.status(403).json({ success: false, message: "دسترسی غیرمجاز (توکن یا کوکی یافت نشد)" });
-    }
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      const role = decoded?.role?.toLowerCase();
-      const isSuperAdminEnv = 
-        (SUPER_ADMIN_PHONE && decoded.phone === SUPER_ADMIN_PHONE) ||
-        (SUPER_ADMIN_EMAIL && decoded.email === SUPER_ADMIN_EMAIL);
-
-      if (decoded && (role === "admin" || role === "super_admin" || isSuperAdminEnv)) {
-        (req as any).user = decoded;
-        next();
-      } else {
-        res.status(403).json({ success: false, message: "دسترسی غیرمجاز (نیاز به سطح دسترسی ادمین)" });
-      }
-    } catch (err) {
-      res.status(403).json({ success: false, message: "توکن نامعتبر است" });
-    }
-  };
-
-  // Super Admin middleware: strictly allows only SUPER_ADMIN
+  const adminAuth = requireManager;
   const superAdminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const token = extractAuthToken(req);
-    if (!token) {
-      return res.status(403).json({ success: false, message: "دسترسی غیرمجاز (توکن یا کوکی یافت نشد)" });
-    }
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      const role = decoded?.role?.toLowerCase();
-      const isSuperAdminEnv = 
-        (SUPER_ADMIN_PHONE && decoded.phone === SUPER_ADMIN_PHONE) ||
-        (SUPER_ADMIN_EMAIL && decoded.email === SUPER_ADMIN_EMAIL);
-
-      if (decoded && (role === "super_admin" || isSuperAdminEnv)) {
-        (req as any).user = decoded;
-        next();
-      } else {
-        res.status(403).json({
-          success: false,
-          message: "دسترسی غیرمجاز. این قابلیت منحصراً در اختیار مدیر ارشد (SUPER_ADMIN) است.",
-        });
-      }
-    } catch (err) {
-      res.status(403).json({ success: false, message: "توکن نامعتبر است" });
-    }
+    if ((req as any).user?.role !== "super_admin") return res.status(403).json({ success: false, message: "نیاز به مدیر ارشد" });
+    next();
   };
+
+  app.use("/api/admin/users", async (req, res, next) => {
+    if (["GET", "HEAD"].includes(req.method)) return next();
+    const actor = (req as any).user;
+    if (!isManager(actor)) return res.status(403).json({ success: false });
+    if (req.body.role && actor.role !== "super_admin") return res.status(403).json({ success: false, message: "تغییر نقش فقط توسط مدیر ارشد ممکن است." });
+    if (req.body.role && !["USER", "ADMIN", "SUPER_ADMIN"].includes(String(req.body.role).toUpperCase())) return res.status(400).json({ success: false });
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [req.path.split("/").filter(Boolean)[0]];
+    if (actor.role !== "super_admin") {
+      const users: any[] = prisma ? await prisma.user.findMany({ where: { id: { in: ids.filter((id: any) => typeof id === "string") } } }) : (readDB().users || []).filter((u: any) => ids.includes(u.id));
+      if (users.some(u => String(u.role).toLowerCase() !== "user")) return res.status(403).json({ success: false });
+    }
+    if (req.body.role || req.method === "DELETE" || req.path === "/bulk-delete") securityState.revoke(ids.filter((id: any) => typeof id === "string"));
+    next();
+  });
 
   // API - Role Assignment (SUPER_ADMIN only)
   app.post("/api/admin/roles/assign", superAdminAuth, async (req, res) => {
@@ -1458,6 +1247,7 @@ async function startServer() {
           return res.status(403).json({ success: false, message: "امکان تغییر نقش مدیر ارشد سیستم (تنظیم‌شده در متغیرهای سرور) وجود ندارد." });
         }
 
+        securityState.revoke([user.id]);
         user = await prisma.user.update({
           where: { id: user.id },
           data: { role: normalizedRole as any },
@@ -1475,6 +1265,7 @@ async function startServer() {
           return res.status(404).json({ success: false, message: "کاربر مورد نظر یافت نشد." });
         }
 
+        securityState.revoke([user.id]);
         user.role = normalizedRole;
         fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), "utf-8");
       }
@@ -1725,26 +1516,11 @@ async function startServer() {
     }
   });
 
-  // User middleware for authenticated routes
   const userAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const token = extractAuthToken(req);
-    if (!token) {
-      return res.status(401).json({ success: false, message: "لطفاً ابتدا وارد حساب کاربری خود شوید." });
-    }
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      if (decoded && decoded.id) {
-        (req as any).user = decoded;
-        next();
-      } else {
-        res.status(401).json({ success: false, message: "توکن نامعتبر است." });
-      }
-    } catch (err) {
-      res.status(401).json({ success: false, message: "نشست شما منقضی شده است. لطفا مجدد وارد شوید." });
-    }
+    if (!(req as any).user) return res.status(401).json({ success: false, message: "ابتدا وارد شوید." });
+    next();
   };
 
-  // API - Get Presets of user for a specific Prompt
   app.get("/api/prompts/:id/presets", userAuth, async (req, res) => {
     const { id: promptId } = req.params;
     const userId = (req as any).user.id;
@@ -2091,7 +1867,7 @@ async function startServer() {
           },
         });
 
-        const bookmarks = savedPrompts.map((sp) => ({
+        const bookmarks = savedPrompts.filter(sp => sp.prompt.isActive || isManager((req as any).user)).map((sp) => ({
           id: sp.id,
           promptId: sp.promptId,
           createdAt: sp.createdAt,
@@ -2114,7 +1890,7 @@ async function startServer() {
             createdAt: sp.createdAt,
             prompt,
           };
-        }).filter((sp: any) => sp.prompt);
+        }).filter((sp: any) => sp.prompt && (sp.prompt.isActive || isManager((req as any).user)));
 
         return res.json({ success: true, bookmarks });
       }
@@ -2127,6 +1903,7 @@ async function startServer() {
   app.put("/api/user/profile", userAuth, async (req, res) => {
     const userId = (req as any).user.id;
     const { name, email } = req.body;
+    if (email !== undefined && email !== (req as any).user.email) return res.status(400).json({ success: false, message: "تغییر ایمیل نیازمند تایید است." });
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return res.status(400).json({ success: false, message: "نام و نام خانوادگی الزامی است." });
@@ -2135,7 +1912,7 @@ async function startServer() {
     try {
       let updatedUser: any = null;
       const cleanName = name.trim();
-      const cleanEmail = email && typeof email === "string" && email.trim().length > 0 ? email.trim().toLowerCase() : null;
+      const cleanEmail = (req as any).user.email || null;
 
       if (prisma && !userId.startsWith("google_mock") && !userId.startsWith("mock")) {
         try {
@@ -2186,8 +1963,8 @@ async function startServer() {
 
       res.cookie("promty_session", token, {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
+        secure: operationalProduction,
+        sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -2232,20 +2009,11 @@ async function startServer() {
     try {
       const { category, page: pageQuery, limit: limitQuery } = req.query;
       
-      const page = pageQuery ? parseInt(pageQuery as string, 10) : 1;
-      const limit = limitQuery ? parseInt(limitQuery as string, 10) : 20;
+      const page = Math.max(1, Math.min(100000, parseInt(String(pageQuery), 10) || 1));
+      const limit = Math.max(1, Math.min(100, parseInt(String(limitQuery), 10) || 20));
 
       // Non-admin users should only see active prompts by default
-      let isAdmin = false;
-      const token = req.cookies.promty_session;
-      if (token) {
-        try {
-          const decoded = jwt.verify(token, JWT_SECRET) as any;
-          if (decoded && decoded.role === "admin") {
-            isAdmin = true;
-          }
-        } catch (e) {}
-      }
+      const isAdmin = isManager((req as any).user);
 
       const filters: any = {
         page,
@@ -2258,6 +2026,10 @@ async function startServer() {
         filters.category = category;
       }
 
+      for (const key of ["q", "tool", "domain", "intent", "difficulty", "language", "sort"]) {
+        if (typeof req.query[key] === "string") filters[key] = String(req.query[key]).slice(0, 300);
+      }
+      if (isAdmin && ["true", "false"].includes(String(req.query.isActive))) filters.isActive = req.query.isActive === "true";
       const { prompts, totalCount } = await promptRepo.getAll(filters);
 
       // Compute facets correctly across all matching records (without pagination limit)
@@ -2549,7 +2321,7 @@ async function startServer() {
         siteTitle: s.siteTitle || "پرامپتی | Promty",
         siteSubtitle: s.siteSubtitle || "موتور شخصی‌سازی و پرامپت مهندسی",
         heroTitle: s.heroTitle || "قلب تپنده نوآوری با پرامپتی",
-        heroDescription: s.heroDescription || "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.",
+        heroDescription: s.heroDescription || "مرجع جستجو و شخصی‌سازی پرامپت. با جستجو، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.",
         footerAbout: s.footerAbout || "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
         footerCopyright: s.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
         siteLogo: s.siteLogo || "",
@@ -2591,7 +2363,7 @@ async function startServer() {
       siteTitle: siteTitle !== undefined ? (siteTitle || "پرامپتی | Promty") : (prev.siteTitle || "پرامپتی | Promty"),
       siteSubtitle: siteSubtitle !== undefined ? (siteSubtitle || "") : (prev.siteSubtitle || "موتور شخصی‌سازی و پرامپت مهندسی"),
       heroTitle: heroTitle !== undefined ? (heroTitle || "") : (prev.heroTitle || "قلب تپنده نوآوری با پرامپتی"),
-      heroDescription: heroDescription !== undefined ? (heroDescription || "") : (prev.heroDescription || "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید."),
+      heroDescription: heroDescription !== undefined ? (heroDescription || "") : (prev.heroDescription || "مرجع جستجو و شخصی‌سازی پرامپت. با جستجو، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید."),
       footerAbout: footerAbout !== undefined ? (footerAbout || "") : (prev.footerAbout || "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید."),
       footerCopyright: footerCopyright !== undefined ? (footerCopyright || "") : (prev.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است."),
       siteLogo: siteLogo !== undefined ? siteLogo : (prev.siteLogo || ""),
@@ -2608,28 +2380,14 @@ async function startServer() {
         return res.status(400).json({ success: false, message: "فایل لوگو ارسال نشده است." });
       }
 
+      const image = sharp(req.file.buffer, { limitInputPixels: 20000000 });
+      const meta = await image.metadata();
+      if (!["png", "jpeg", "webp"].includes(meta.format || "") || (meta.pages || 1) !== 1 || !meta.width || !meta.height || meta.width > 8192 || meta.height > 8192) return res.status(400).json({ success: false, message: "لوگو باید تصویر PNG، JPEG یا WebP معتبر باشد." });
+      const encoded = await image.webp({ quality: 90 }).toBuffer();
       const brandDir = path.join(process.cwd(), "dl", "brand");
-      if (!fs.existsSync(brandDir)) {
-        fs.mkdirSync(brandDir, { recursive: true });
-      }
-
-      const isSvg = req.file.mimetype === "image/svg+xml" || req.file.originalname.toLowerCase().endsWith(".svg");
-      let logoUrl = "";
-
-      if (isSvg) {
-        const svgPath = path.join(brandDir, "logo.svg");
-        fs.writeFileSync(svgPath, req.file.buffer);
-        logoUrl = "/dl/brand/logo.svg?v=" + Date.now();
-      } else {
-        const webpPath = path.join(brandDir, "logo.webp");
-        try {
-          await sharp(req.file.buffer).webp({ quality: 90 }).toFile(webpPath);
-        } catch (sharpErr) {
-          // Fallback write directly
-          fs.writeFileSync(webpPath, req.file.buffer);
-        }
-        logoUrl = "/dl/brand/logo.webp?v=" + Date.now();
-      }
+      fs.mkdirSync(brandDir, { recursive: true });
+      fs.writeFileSync(path.join(brandDir, "logo.webp"), encoded);
+      const logoUrl = "/dl/brand/logo.webp?v=" + Date.now();
 
       const db = readDB();
       if (!db.settings) db.settings = {} as any;
@@ -2652,7 +2410,7 @@ async function startServer() {
       siteTitle: s.siteTitle || "پرامپتی | Promty",
       siteSubtitle: s.siteSubtitle || "موتور شخصی‌سازی و پرامپت مهندسی",
       heroTitle: s.heroTitle || "قلب تپنده نوآوری با پرامپتی",
-      heroDescription: s.heroDescription || "اولین پلتفرم گرافِ دانش پرامپت در ایران. با موتور هوشمند ما، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.",
+      heroDescription: s.heroDescription || "مرجع جستجو و شخصی‌سازی پرامپت. با جستجو، فیلترها، ابزارها، قالب‌های خروجی و دسته‌بندی‌های معنایی را با یک کلیک کاوش کنید.",
       footerAbout: s.footerAbout || "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
       footerCopyright: s.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
       siteLogo: s.siteLogo || "",
@@ -2901,27 +2659,15 @@ ${sourceText}
     const db = readDB();
     const n8nUrl = (db.settings?.n8nRefineWebhook || db.settings?.n8nWebhookUrl || "").trim();
 
-    // Increment usage count if tracked
-    if (promptId) {
-      await promptRepo.incrementUsageCount(promptId);
-    }
-
     // High fidelity template-based or local refinement fallback
-    const mockRefine = (text: string) => {
-      // Enhance with professional prompt directives for incredible outputs
-      let output = text;
-      // English-friendly addition for detailed generative results
-      output += "\n\n--ar 16:9 --v 6.0 --style raw --stylize 250 --quality 2.0 --fast";
-      output += "\n\n/* Enhanced with Promty AI Refined System: High resolution details, volumetric light, professional cinematic color grading, hyper-detailed photography style, dynamic focal blur */";
-      return output;
-    };
+    const mockRefine = (text: string) => text;
 
     if (n8nUrl.length === 0) {
       return res.json({
         success: true,
         refinedPrompt: mockRefine(originalPrompt),
         fallbackUsed: true,
-        message: "تنظیمات وبهوک n8n خالی است. یک بهبود آزمایشی تولید شد."
+        message: "تنظیمات وبهوک n8n خالی است. متن بدون تغییر بازگردانده شد."
       });
     }
 
@@ -2982,7 +2728,7 @@ ${sourceText}
         success: true,
         refinedPrompt: mockRefine(originalPrompt),
         fallbackUsed: true,
-        message: `خطا در فراخوانی وب‌هوک n8n (${errMsg}). از الگوی بهبود محلی سیستم استفاده شد.`
+        message: `خطا در فراخوانی وب‌هوک n8n (${errMsg}). متن اصلی بدون تغییر بازگردانده شد.`
       });
     }
   });
@@ -3157,16 +2903,7 @@ ${sourceText}
       const queryStr = typeof q === "string" ? q : "";
       
       // Non-admin users only search active prompts
-      let isAdmin = false;
-      const token = req.cookies.promty_session;
-      if (token) {
-        try {
-          const decoded = jwt.verify(token, JWT_SECRET) as any;
-          if (decoded && decoded.role === "admin") {
-            isAdmin = true;
-          }
-        } catch (e) {}
-      }
+      const isAdmin = isManager((req as any).user);
 
       const filters: any = {};
       if (!isAdmin) {
@@ -3177,15 +2914,13 @@ ${sourceText}
 
       const searchResult = SearchService.search(prompts, queryStr);
       
-      if (queryStr) {
-        SearchService.recordSearch(queryStr);
-      }
+
 
       res.json({
         success: true,
         query: queryStr,
         ...searchResult,
-        history: SearchService.getSearchHistory()
+        history: []
       });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err.message });
@@ -3196,9 +2931,14 @@ ${sourceText}
   app.get("/api/search/history", (req, res) => {
     res.json({
       success: true,
-      history: SearchService.getSearchHistory(),
-      trending: ["طراحی لوگو", "Midjourney", "کدنویسی React", "تولید تیزر", "ChatGPT"]
+      history: [],
+      trending: []
     });
+  });
+
+  app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err instanceof multer.MulterError) return res.status(413).json({ success: false, message: "حجم یا تعداد فایل بیشتر از حد مجاز است." });
+    next(err);
   });
 
   // Serve index.html with server-side injected SEO metadata
@@ -3226,6 +2966,8 @@ ${sourceText}
         // Inject right before </head>
         html = html.replace("</head>", `${metaTags}\n  </head>`);
         
+        if (res.locals.cspNonce) html = html.replace(/<script\b/g, `<script nonce="${res.locals.cspNonce}"`);
+        res.setHeader("Cache-Control", "private, no-store");
         res.setHeader("Content-Type", "text/html");
         return res.status(200).send(html);
       }
@@ -3250,11 +2992,14 @@ ${sourceText}
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, process.env.HOST || "127.0.0.1", () => {
     console.log(`Server running at http://localhost:${PORT}`);
   });
 }
 
 startServer().catch((err) => {
   console.error("Failed to start fullstack server:", err);
+  process.exitCode = 1;
+  if (prisma) void prisma.$disconnect();
+  process.exitCode = 1;
 });

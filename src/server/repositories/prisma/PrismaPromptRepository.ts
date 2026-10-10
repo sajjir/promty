@@ -1,6 +1,7 @@
+import { filterPrompts, paginatePrompts } from "../filterPrompts";
 // src/server/repositories/prisma/PrismaPromptRepository.ts
 import { PrismaClient, Prompt as PrismaPrompt } from "@prisma/client";
-import { IPromptRepository } from "../IPromptRepository";
+import { IPromptRepository, PromptFilters } from "../IPromptRepository";
 import { Prompt, FieldSchema } from "../../../types";
 import { SearchService } from "../../services/SearchService";
 import fs from "fs/promises";
@@ -40,7 +41,7 @@ export class PrismaPromptRepository implements IPromptRepository {
       updatedAt: dbPrompt.updatedAt.toISOString(),
       parentId: dbPrompt.parentId || undefined,
       sourceText: dbPrompt.sourceText || undefined,
-      parent: dbPrompt.parent ? {
+      parent: dbPrompt.parent?.isActive ? {
         id: dbPrompt.parent.id,
         title: dbPrompt.parent.title
       } : undefined,
@@ -62,45 +63,9 @@ export class PrismaPromptRepository implements IPromptRepository {
     }
   }
 
-  public async getAll(filters?: { category?: string; isActive?: boolean; page?: number; limit?: number }): Promise<{ prompts: Prompt[]; totalCount: number }> {
-    try {
-      const where: any = {};
-      if (filters) {
-        if (filters.isActive !== undefined) {
-          where.isActive = filters.isActive;
-        }
-        if (filters.category) {
-          where.category = filters.category;
-        }
-      }
-
-      const totalCount = await this.prisma.prompt.count({ where });
-
-      let promptsData: PrismaPrompt[];
-      if (filters && filters.page && filters.limit) {
-        const take = filters.limit;
-        const skip = (filters.page - 1) * filters.limit;
-        promptsData = await this.prisma.prompt.findMany({
-          where,
-          orderBy: { createdAt: "desc" },
-          take,
-          skip,
-        });
-      } else {
-        promptsData = await this.prisma.prompt.findMany({
-          where,
-          orderBy: { createdAt: "desc" },
-        });
-      }
-
-      return {
-        prompts: promptsData.map((p) => this.mapPrismaPrompt(p)),
-        totalCount,
-      };
-    } catch (error) {
-      console.error("Prisma getAll failed:", error);
-      throw new Error("Failed to retrieve prompts", { cause: error });
-    }
+  public async getAll(filters?: PromptFilters): Promise<{ prompts: Prompt[]; totalCount: number }> {
+    const list = (await this.prisma.prompt.findMany({ where: filters?.isActive === undefined ? {} : { isActive: filters.isActive } })).map(p => this.mapPrismaPrompt(p));
+    return paginatePrompts(filterPrompts(list, filters), filters);
   }
 
   public async create(promptData: Omit<Prompt, "id" | "createdAt" | "updatedAt" | "usageCount">): Promise<Prompt> {

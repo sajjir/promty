@@ -1,31 +1,116 @@
-@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
-@theme {
+/* Primitives stay here; components consume semantic Tailwind tokens below. */
+:root {
+  color-scheme: light;
+  --ui-canvas: #f8fafc;
+  --ui-surface: #ffffff;
+  --ui-soft: #f1f5f9;
+  --ui-inset: #e2e8f0;
+  --ui-elevated: #ffffff;
+  --ui-primary: #0f172a;
+  --ui-secondary: #475569;
+  --ui-muted: #64748b;
+  --ui-line: #e2e8f0;
+  --ui-line-strong: #94a3b8;
+  --ui-brand: #6c47ff;
+  --ui-brand-soft: #ede9fe;
+  --ui-brand-solid: #6c47ff;
+  --ui-brand-hover: #5935e6;
+  --ui-success: #047857;
+  --ui-success-soft: #ecfdf5;
+  --ui-caution: #92400e;
+  --ui-caution-soft: #fffbeb;
+  --ui-danger: #be123c;
+  --ui-danger-soft: #fff1f2;
+  --ui-info: #0369a1;
+  --ui-info-soft: #f0f9ff;
+  --ui-header: rgba(255,255,255,.94);
+  --ui-hero: radial-gradient(ellipse at 85% 0%, rgba(108,71,255,.10), transparent 55%), radial-gradient(ellipse at 0% 100%, rgba(14,165,233,.07), transparent 60%);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ui-canvas: #0c1222;
+  --ui-surface: #151b2e;
+  --ui-soft: #1a2238;
+  --ui-inset: #26324b;
+  --ui-elevated: #1a1f3a;
+  --ui-primary: #f1f5f9;
+  --ui-secondary: #cbd5e1;
+  --ui-muted: #a5b4ca;
+  --ui-line: #303b54;
+  --ui-line-strong: #71819b;
+  --ui-brand: #b9a0ff;
+  --ui-brand-soft: #2c2449;
+  --ui-success: #6ee7b7;
+  --ui-success-soft: #14372f;
+  --ui-caution: #fcd34d;
+  --ui-caution-soft: #3b2e1c;
+  --ui-danger: #fda4af;
+  --ui-danger-soft: #412333;
+  --ui-info: #7dd3fc;
+  --ui-info-soft: #183449;
+  --ui-header: rgba(12,18,34,.96);
+  --ui-hero: radial-gradient(ellipse at 85% 0%, rgba(108,71,255,.18), transparent 55%), radial-gradient(ellipse at 0% 100%, rgba(34,211,238,.07), transparent 60%);
+}
+@theme inline {
   --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --color-canvas: var(--ui-canvas);
+  --color-surface: var(--ui-surface);
+  --color-surface-soft: var(--ui-soft);
+  --color-surface-inset: var(--ui-inset);
+  --color-surface-elevated: var(--ui-elevated);
+  --color-primary: var(--ui-primary);
+  --color-secondary: var(--ui-secondary);
+  --color-muted: var(--ui-muted);
+  --color-line: var(--ui-line);
+  --color-line-strong: var(--ui-line-strong);
+  --color-brand: var(--ui-brand);
+  --color-brand-soft: var(--ui-brand-soft);
+  --color-brand-solid: var(--ui-brand-solid);
+  --color-brand-hover: var(--ui-brand-hover);
+  --color-success-text: var(--ui-success);
+  --color-success-soft: var(--ui-success-soft);
+  --color-caution-text: var(--ui-caution);
+  --color-caution-soft: var(--ui-caution-soft);
+  --color-danger-text: var(--ui-danger);
+  --color-danger-soft: var(--ui-danger-soft);
+  --color-info-text: var(--ui-info);
+  --color-info-soft: var(--ui-info-soft);
+}
+@layer base {
+  body { font-family: var(--font-sans); background: var(--ui-canvas); color: var(--ui-primary); direction: rtl; text-align: right; }
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  button:not(:disabled), select { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--ui-brand); outline-offset: 4px; }
+  input, textarea, select { accent-color: var(--ui-brand-solid); }
+  input::placeholder, textarea::placeholder { color: var(--ui-muted); opacity: 1; }
+  select option { color: var(--ui-primary); background: var(--ui-surface); }
+  ::selection { background: var(--ui-brand-soft); color: var(--ui-primary); }
+}
+@layer components {
+  .site-header { background: var(--ui-header); backdrop-filter: blur(12px); }
+  .brand-mark { background: linear-gradient(135deg,#6c47ff,#8b5cf6); }
+  .home-hero { background-image: var(--ui-hero); }
+  .header-account-link { display: block; border-radius: 8px; padding: 10px 12px; color: var(--ui-secondary); font-size: 14px; }
+  .header-account-link:hover { background: var(--ui-soft); color: var(--ui-primary); }
+  .skip-link { position: absolute; top: 8px; right: 16px; transform: translateY(-200%); padding: 12px; border-radius: 8px; background: var(--ui-surface-elevated); color: var(--ui-primary); z-index: 100; }
+  .skip-link:focus { transform: translateY(0); }
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--ui-line-strong); border-radius: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
-body {
-  font-family: var(--font-sans);
-  background-color: #fafaf9;
-  color: #1c1c1c;
-  direction: rtl;
-  text-align: right;
-}
+/* Keep keyboard focus visible even on legacy outline-none controls. */
+:focus-visible { outline: 2px solid var(--ui-brand); outline-offset: 4px; }
 
-/* Custom scrollbar for beautiful styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
+.prompt-backdrop { position:absolute; inset:0; overflow:hidden; border-radius:inherit; pointer-events:none; opacity:.09; color:var(--ui-brand); mask-image:linear-gradient(to bottom,black,transparent 85%); }
+.prompt-backdrop-line { width:max-content; white-space:nowrap; font-size:11px; line-height:24px; font-family:var(--font-mono); animation:prompt-drift 100s linear infinite alternate; will-change:transform; }
+.prompt-backdrop-line:nth-child(even) { animation-direction:alternate-reverse; }
+@keyframes prompt-drift { from { transform:translateX(0); } to { transform:translateX(35%); } }
+@media (prefers-reduced-motion:reduce) { .prompt-backdrop-line { animation:none; will-change:auto; } }

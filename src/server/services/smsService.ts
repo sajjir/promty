@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { DurableOtpStore } from "./otpStore.ts";
 
 export interface SendOtpResult {
   success: boolean;
@@ -55,13 +56,13 @@ export function sanitizeIranianMobile(rawPhone: string): string {
 }
 
 class SmsService {
-  private endpoint = "http://api.payamak-panel.com/post/send.asmx";
+  private endpoint = "https://api.payamak-panel.com/post/send.asmx";
   // 120 seconds TTL and rate limit window (2 minutes)
   private cooldownSeconds = 120;
   private otpTtlMs = 120 * 1000;
 
   // In-memory cache for fast lookups and rate-limiting
-  private otpCache = new Map<string, CachedOtp>();
+  private store = new DurableOtpStore();
 
   /**
    * Sanitizes and validates an Iranian mobile number into 11-digit format: 09xxxxxxxxx
@@ -74,7 +75,7 @@ class SmsService {
    * Generates a secure 5-digit OTP code
    */
   public generateOtpCode(): string {
-    const num = crypto.randomInt(10000, 99999);
+    const num = crypto.randomInt(10000, 100000);
     return num.toString();
   }
 
@@ -89,19 +90,7 @@ class SmsService {
    * Checks if an OTP can be sent to this phone or if rate-limit is active
    */
   public checkRateLimit(phone: string): { allowed: boolean; remainingSeconds: number } {
-    const cached = this.otpCache.get(phone);
-    if (!cached) {
-      return { allowed: true, remainingSeconds: 0 };
-    }
-
-    const elapsed = Date.now() - cached.lastSentAt;
-    const cooldownMs = this.cooldownSeconds * 1000;
-    if (elapsed < cooldownMs) {
-      const remainingSeconds = Math.ceil((cooldownMs - elapsed) / 1000);
-      return { allowed: false, remainingSeconds };
-    }
-
-    return { allowed: true, remainingSeconds: 0 };
+    return this.store.checkRateLimit(phone);
   }
 
   /**
@@ -146,11 +135,12 @@ class SmsService {
     // If credentials are provided, invoke the real MeliPayamak SOAP service
     if (username && password && bodyIdStr) {
       const bodyId = Number(bodyIdStr);
-      if (isNaN(bodyId)) {
+      if (!Number.isSafeInteger(bodyId) || bodyId <= 0) {
         throw new Error("شناسه الگوی پیامک (MELIPAYAMAK_OTP_BODY_ID) نامعتبر است.");
       }
 
-      // Strictly pass text as an array of strings: [String(code)]
+      this.store.reserveSend(phone);
+      // Reserve before network I/O to prevent concurrent sends.
       recId = await this.invokeSendByBaseNumber({
         username,
         password,
@@ -159,23 +149,9 @@ class SmsService {
         text: [String(code)],
       });
     } else {
-      // In development or when credentials are not yet configured:
-      // Produce a numeric string > 15 digits and log to console
-      recId = "20261004" + Date.now().toString() + "000";
-      console.log(`\n========================================`);
-      console.log(`[SMS Service DEV] OTP Code for ${phone}: ${code}`);
-      console.log(`[SMS Service DEV] Mock recId (>15 digits): ${recId}`);
-      console.log(`========================================\n`);
+      throw new Error("سرویس پیامک پیکربندی نشده است؛ ورود با پیامک در دسترس نیست.");
     }
-
-    // Save into cache
-    const now = Date.now();
-    this.otpCache.set(phone, {
-      phone,
-      codeHash: this.hashCode(code),
-      expiresAt: now + this.otpTtlMs,
-      lastSentAt: now,
-    });
+    this.store.activate(phone, code);
 
     return {
       success: true,
@@ -226,6 +202,8 @@ class SmsService {
         "SOAPAction": "http://tempuri.org/SendByBaseNumber",
       },
       body: soapEnvelope,
+      signal: AbortSignal.timeout(15000),
+      redirect: "error",
     });
 
     if (!response.ok) {
@@ -265,25 +243,7 @@ class SmsService {
    */
   public verifyOtp(rawPhone: string, code: string): boolean {
     const phone = this.sanitizePhoneNumber(rawPhone);
-    const cached = this.otpCache.get(phone);
-
-    if (!cached) {
-      return false;
-    }
-
-    if (Date.now() > cached.expiresAt) {
-      this.otpCache.delete(phone);
-      return false;
-    }
-
-    const incomingHash = this.hashCode(code);
-    if (incomingHash !== cached.codeHash) {
-      return false;
-    }
-
-    // Code verified successfully, clear from cache to prevent replay
-    this.otpCache.delete(phone);
-    return true;
+    return this.store.consume(phone, code);
   }
 
   /**

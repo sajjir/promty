@@ -11,7 +11,7 @@ export interface SearchResult {
 }
 
 export class SearchService {
-  private static searchHistory: string[] = [];
+
 
   /**
    * Normalizes Persian and English text to optimize matching and bypass typos
@@ -30,17 +30,11 @@ export class SearchService {
    * Records a user search query in history, keeping it clean and unique
    */
   public static recordSearch(query: string): void {
-    const normalized = query.trim();
-    if (!normalized) return;
-
-    this.searchHistory = [
-      normalized,
-      ...this.searchHistory.filter((q) => q !== normalized)
-    ].slice(0, 10); // Limit to top 10 recent searches
+    // Personal queries must never be retained in shared process memory.
   }
 
   public static getSearchHistory(): string[] {
-    return this.searchHistory;
+    return [];
   }
 
   /**
@@ -85,7 +79,7 @@ export class SearchService {
 
     const scoredPrompts = prompts.map((p) => {
       const normalizedTitle = this.normalizeText(p.title);
-      const normalizedDesc = this.normalizeText(p.description);
+      const normalizedDesc = this.normalizeText(p.description || "");
       const normalizedTask = this.normalizeText(p.task || "");
       
       let score = 0;
@@ -126,7 +120,7 @@ export class SearchService {
         }
 
         // Check tag match
-        p.tags.forEach((tag) => {
+        (p.tags || []).forEach((tag) => {
           const normalizedTag = this.normalizeText(tag);
           if (normalizedTag.includes(keyword) || keyword.includes(normalizedTag)) {
             score += 5;

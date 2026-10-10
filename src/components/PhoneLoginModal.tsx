@@ -11,6 +11,7 @@ interface PhoneLoginModalProps {
 
 export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps = {}) {
   const {
+    googleClientId,
     isPhoneModalOpen,
     setPhoneModalOpen,
     phoneModalContextMessage,
@@ -180,26 +181,30 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
       />
 
       {/* Modal Container */}
-      <motion.div 
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-dialog-title"
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
-        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-10 font-sans"
+        className="relative w-full max-w-md bg-surface rounded-3xl shadow-2xl border border-line overflow-hidden z-10 font-sans"
         dir="rtl"
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="px-6 py-5 border-b border-line flex items-center justify-between bg-surface-soft/50">
           <div>
-            <h3 className="text-base font-black text-slate-800">
+            <h3 id="auth-dialog-title" className="text-base font-black text-primary">
               {contextMessage || phoneModalContextMessage || "ورود یا ثبت‌نام در Promty"}
             </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-[11px] text-muted mt-0.5">
               دسترسی به تمام قابلیت‌های ساخت، شخصی‌سازی و آرشیو پرامپت‌ها
             </p>
           </div>
-          <button 
+          <button
+            aria-label="بستن پنجره ورود"
             onClick={handleClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-white border border-transparent hover:border-slate-200 transition cursor-pointer"
+            className="p-2 rounded-xl text-muted hover:text-secondary hover:bg-surface border border-transparent hover:border-line transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -209,16 +214,16 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
         <div className="p-6">
           {success ? (
             <div className="flex flex-col items-center justify-center py-8 text-center space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shadow-inner">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-success-text flex items-center justify-center shadow-inner">
                 <Check className="w-7 h-7" />
               </div>
-              <h4 className="text-base font-black text-slate-800">ورود با موفقیت انجام شد</h4>
-              <p className="text-xs text-slate-400">خوش آمدید! در حال انتقال به پرامپتی...</p>
+              <h4 className="text-base font-black text-primary">ورود با موفقیت انجام شد</h4>
+              <p className="text-xs text-muted">خوش آمدید! در حال انتقال به پرامپتی...</p>
             </div>
           ) : (
             <div className="space-y-4">
               {error && (
-                <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-2.5 text-xs text-rose-600">
+                <div className="p-3 bg-danger-soft border border-danger-text rounded-xl flex items-start gap-2.5 text-xs text-danger-text">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span className="leading-relaxed">{error}</span>
                 </div>
@@ -228,24 +233,24 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                 <div className="space-y-5">
                   <form onSubmit={handleSendOtp} className="space-y-4">
                     <div className="space-y-1.5 text-right">
-                      <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                      <label className="text-xs font-bold text-primary flex items-center justify-between">
                         <span>شماره موبایل</span>
-                        <span className="text-[11px] text-slate-400 font-normal">ورود بدون رمز با پیامک</span>
+                        <span className="text-[11px] text-muted font-normal">ورود بدون رمز با پیامک</span>
                       </label>
                       <div className="relative">
-                        <Phone className="absolute right-3.5 top-3.5 w-4 h-4 text-slate-400" />
+                        <Phone className="absolute right-3.5 top-3.5 w-4 h-4 text-muted" />
                         <input 
                           type="tel"
                           value={phone}
                           onChange={(e) => handlePhoneChange(e.target.value)}
                           placeholder="۰۹۱۲۳۴۵۶۷۸۹"
                           autoFocus
-                          className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 text-sm focus:border-[#6C47FF] focus:outline-none focus:ring-4 focus:ring-[#6C47FF]/10 text-right font-mono font-bold tracking-wider placeholder:font-sans placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 transition"
+                          className="w-full pr-10 pl-4 py-3 rounded-xl border border-line text-sm focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/10 text-right font-mono font-bold tracking-wider placeholder:font-sans placeholder:tracking-normal placeholder:font-normal placeholder:text-muted transition"
                           required
                           disabled={loading}
                         />
                       </div>
-                      <p className="text-[10px] text-slate-400 leading-relaxed">
+                      <p className="text-[10px] text-muted leading-relaxed">
                         کد تایید ۵ رقمی از طریق پیامک به این شماره ارسال خواهد شد.
                       </p>
                     </div>
@@ -253,7 +258,7 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-[#6C47FF] hover:bg-[#5B3CE0] text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md shadow-[#6C47FF]/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="w-full bg-brand-solid hover:bg-[#5B3CE0] text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {loading ? (
                         <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -266,12 +271,13 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                     </button>
                   </form>
 
+                  {googleClientId && <>
                   {/* Divider */}
                   <div className="relative flex items-center justify-center my-4">
                     <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-slate-100" />
+                      <div className="w-full border-t border-line" />
                     </div>
-                    <span className="relative bg-white px-3 text-[11px] font-bold text-slate-400">
+                    <span className="relative bg-surface px-3 text-[11px] font-bold text-muted">
                       یا ورود سریع با گوگل
                     </span>
                   </div>
@@ -280,26 +286,27 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                   <div className="flex justify-center pt-1 pb-1">
                     <GoogleLoginButton />
                   </div>
+                  </>}
                 </div>
               ) : step === "otp" ? (
                 <form onSubmit={handleVerifyOtp} className="space-y-4">
                   <div className="space-y-2 text-right">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-700">کد تایید ۵ رقمی</label>
+                      <label className="text-xs font-bold text-primary">کد تایید ۵ رقمی</label>
                       <button 
                         type="button" 
                         onClick={() => {
                           setStep("phone");
                           setError(null);
                         }}
-                        className="text-xs font-bold text-[#6C47FF] hover:underline cursor-pointer"
+                        className="text-xs font-bold text-brand hover:underline cursor-pointer"
                       >
                         ویرایش شماره ({phone})
                       </button>
                     </div>
 
                     <div className="relative">
-                      <Key className="absolute right-3.5 top-3.5 w-4 h-4 text-slate-400" />
+                      <Key className="absolute right-3.5 top-3.5 w-4 h-4 text-muted" />
                       <input 
                         type="text"
                         value={code}
@@ -307,16 +314,16 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                         placeholder="•••••"
                         autoFocus
                         maxLength={5}
-                        className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 text-lg focus:border-[#6C47FF] focus:outline-none focus:ring-4 focus:ring-[#6C47FF]/10 text-center font-mono tracking-[0.7em] font-black text-slate-800 transition"
+                        className="w-full pr-10 pl-4 py-3 rounded-xl border border-line text-lg focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/10 text-center font-mono tracking-[0.7em] font-black text-primary transition"
                         required
                         disabled={loading}
                       />
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                    <div className="flex items-center justify-between text-[11px] text-muted pt-1">
                       <span>کد ۵ رقمی ارسال‌شده به شماره را وارد کنید</span>
                       {countdown > 0 ? (
-                        <span className="font-mono text-slate-500 font-bold">
+                        <span className="font-mono text-muted font-bold">
                           {formatCountdown(countdown)} تا ارسال مجدد
                         </span>
                       ) : (
@@ -324,7 +331,7 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                           type="button"
                           onClick={() => handleSendOtp()}
                           disabled={loading}
-                          className="text-[#6C47FF] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                          className="text-brand font-bold hover:underline flex items-center gap-1 cursor-pointer"
                         >
                           <RotateCw className="w-3 h-3" />
                           <span>ارسال مجدد کد</span>
@@ -336,7 +343,7 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                   <button
                     type="submit"
                     disabled={loading || code.length !== 5}
-                    className="w-full bg-[#6C47FF] hover:bg-[#5B3CE0] text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md shadow-[#6C47FF]/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full bg-brand-solid hover:bg-[#5B3CE0] text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {loading ? (
                       <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -348,18 +355,18 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
               ) : (
                 /* Step 3: Complete user profile name and email */
                 <form onSubmit={handleSaveProfile} className="space-y-4">
-                  <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl flex items-center gap-2.5 text-xs text-indigo-900">
-                    <Sparkles className="w-4 h-4 text-[#6C47FF] shrink-0" />
+                  <div className="p-3 bg-brand-soft/70 border border-brand rounded-2xl flex items-center gap-2.5 text-xs text-brand">
+                    <Sparkles className="w-4 h-4 text-brand shrink-0" />
                     <span className="font-bold">تکمیل اطلاعات حساب کاربری شما در پرامپتی</span>
                   </div>
 
                   <div className="space-y-1.5 text-right">
-                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <label className="text-xs font-bold text-primary flex items-center justify-between">
                       <span>نام و نام خانوادگی</span>
-                      <span className="text-[10px] text-rose-500 font-bold">الزامی</span>
+                      <span className="text-[10px] text-danger-text font-bold">الزامی</span>
                     </label>
                     <div className="relative">
-                      <User className="absolute right-3.5 top-3.5 w-4 h-4 text-slate-400" />
+                      <User className="absolute right-3.5 top-3.5 w-4 h-4 text-muted" />
                       <input 
                         type="text"
                         value={name}
@@ -367,30 +374,30 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                         placeholder="مثال: علی رضایی"
                         autoFocus
                         required
-                        className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 text-sm focus:border-[#6C47FF] focus:outline-none focus:ring-4 focus:ring-[#6C47FF]/10 text-right font-medium transition"
+                        className="w-full pr-10 pl-4 py-3 rounded-xl border border-line text-sm focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/10 text-right font-medium transition"
                         disabled={loading}
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1.5 text-right">
-                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <label className="text-xs font-bold text-primary flex items-center justify-between">
                       <span>ایمیل</span>
-                      <span className="text-[10px] text-slate-400 font-medium">اختیاری</span>
+                      <span className="text-[10px] text-muted font-medium">اختیاری</span>
                     </label>
                     <div className="relative">
-                      <Mail className="absolute right-3.5 top-3.5 w-4 h-4 text-slate-400" />
+                      <Mail className="absolute right-3.5 top-3.5 w-4 h-4 text-muted" />
                       <input 
                         type="email"
                         dir="ltr"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="name@example.com"
-                        className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 text-sm focus:border-[#6C47FF] focus:outline-none focus:ring-4 focus:ring-[#6C47FF]/10 font-mono text-left transition"
+                        className="w-full pr-10 pl-4 py-3 rounded-xl border border-line text-sm focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/10 font-mono text-left transition"
                         disabled={loading}
                       />
                     </div>
-                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                    <p className="text-[10px] text-muted leading-relaxed">
                       از ایمیل برای ارسال اعلان‌های مهم و بازیابی اطلاعات استفاده می‌شود.
                     </p>
                   </div>
@@ -399,7 +406,7 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                     <button
                       type="submit"
                       disabled={loading || !name.trim()}
-                      className="w-full bg-[#6C47FF] hover:bg-[#5B3CE0] text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md shadow-[#6C47FF]/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="w-full bg-brand-solid hover:bg-[#5B3CE0] text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {loading ? (
                         <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
