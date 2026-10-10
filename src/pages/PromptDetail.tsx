@@ -1,3 +1,4 @@
+import { usePromptLanguage } from "../lib/usePromptLanguage";
 import IranIcon from "../components/IranIcon";
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -246,7 +247,8 @@ export default function PromptDetail() {
   const [loading, setLoading] = useState(true);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [promptLang, setPromptLang] = useState<"en" | "fa">("fa");
+  const [preferredLanguage, setPromptLang] = usePromptLanguage();
+  const promptLang = preferredLanguage === "fa" && prompt?.bodyFa ? "fa" : "en";
   const [selectedRunTool, setSelectedRunTool] = useState<string>("");
   const [isManualEditMode, setIsManualEditMode] = useState(false);
   const [boxCopied, setBoxCopied] = useState(false);
@@ -692,8 +694,6 @@ export default function PromptDetail() {
           const data = await res.json();
           currentPrompt = data.prompt;
           setPrompt(data.prompt);
-          const initialLang = "en";
-          setPromptLang(initialLang);
           const initialBody = data.prompt.body;
           setRenderedBody(initialBody);
           setRefineHistory([
@@ -978,7 +978,7 @@ export default function PromptDetail() {
 
             {/* Live Wizard Form */}
             {prompt.fieldsSchema && prompt.fieldsSchema.length > 0 && (
-              <div className="order-1 lg:order-3 pt-2" ref={wizardRef}>
+              <div className="order-3 pt-2" ref={wizardRef}>
                 <PromptWizard
                   showCopyButton={false}
                   fields={prompt.fieldsSchema}
@@ -995,7 +995,7 @@ export default function PromptDetail() {
               </div>
             )}
             {/* Prompt Textbox */}
-            <div className="order-2 lg:order-1 space-y-3">
+            <div id="prompt-text-section" className="order-1 space-y-3 scroll-mt-24">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <label htmlFor="prompt-box-area" className="text-xs font-black text-muted">متن پرامپت نهایی:</label>
@@ -1064,7 +1064,7 @@ export default function PromptDetail() {
             </div>
 
              {/* Buttons Row */}
-             <div className="order-3 lg:order-2 flex items-center justify-between pt-2">
+             <div className="order-2 flex items-center justify-between pt-2">
                <div>
                  {/* Left side empty or metadata */}
                </div>
@@ -1419,7 +1419,7 @@ export default function PromptDetail() {
           {/* Bookmark Button (25% width) */}
           <button
             onClick={handleBookmarkToggle}
-            className="w-1/4 flex flex-col sm:flex-row items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-800 text-muted hover:bg-slate-700 active:scale-95 transition-all text-xs font-bold cursor-pointer"
+            className="w-1/4 h-14 flex flex-col sm:flex-row items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-800 text-muted hover:bg-slate-700 active:scale-95 transition-all text-xs font-bold cursor-pointer"
             title={isBookmarked ? "نشان شده" : "افزودن به نشان‌شده‌ها"}
           >
             <Bookmark className={`w-4 h-4 transition-colors ${isBookmarked ? "fill-amber-400 text-caution-text" : "text-muted"}`} />
@@ -1431,10 +1431,11 @@ export default function PromptDetail() {
             onClick={async () => {
               await navigator.clipboard.writeText(renderedBody);
               handleTrackCopy?.();
+              document.getElementById('prompt-text-section')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
               setMobileCopied(true);
               setTimeout(() => setMobileCopied(false), 2000);
             }}
-            className="w-3/4 flex items-center justify-center gap-2 py-3 bg-brand-solid hover:bg-brand-solid text-white rounded-xl shadow-lg shadow-brand/30 active:scale-95 transition-all text-sm font-black cursor-pointer"
+            className="w-3/4 h-14 flex items-center justify-center gap-2 py-3 bg-brand-solid hover:bg-brand-solid text-white rounded-xl shadow-lg shadow-brand/30 active:scale-95 transition-all text-sm font-black cursor-pointer"
           >
             {mobileCopied ? (
               <>

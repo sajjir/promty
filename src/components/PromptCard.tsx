@@ -1,3 +1,4 @@
+import { usePromptLanguage } from "../lib/usePromptLanguage";
 import React from "react";
 import { Link } from "react-router-dom";
 import { Prompt } from "../types";
@@ -67,6 +68,9 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
   const { user, setPhoneModalOpen } = useAuth();
   const [isBookmarked, setIsBookmarked] = React.useState(isInitiallyBookmarked || false);
   const [isCopied, setIsCopied] = React.useState(false);
+  const [language] = usePromptLanguage();
+  const [feedback, setFeedback] = React.useState("");
+  React.useEffect(() => { if (!feedback) return; const timer = setTimeout(() => setFeedback(""), 2500); return () => clearTimeout(timer); }, [feedback]);
 
   React.useEffect(() => {
     if (isInitiallyBookmarked !== undefined) {
@@ -93,8 +97,10 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
       const data = await res.json();
       if (res.ok && data.success) {
         setIsBookmarked(data.bookmarked);
-      }
+        setFeedback(data.bookmarked ? "پرامپت نشان شد" : "پرامپت از نشان‌ها حذف شد");
+      } else { setFeedback("نشان‌کردن انجام نشد؛ دوباره تلاش کنید"); }
     } catch (err) {
+      setFeedback("خطا در نشان‌کردن پرامپت");
       console.error("Bookmark error:", err);
     }
   };
@@ -103,10 +109,12 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
     e.preventDefault();
     e.stopPropagation();
     try {
-      await navigator.clipboard.writeText(prompt.body);
+      await navigator.clipboard.writeText(language === "fa" && prompt.bodyFa ? prompt.bodyFa : prompt.body);
       setIsCopied(true);
+      setFeedback("پرامپت کپی شد");
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
+      setFeedback("کپی انجام نشد؛ دوباره تلاش کنید");
       console.error("Failed to copy prompt body:", err);
     }
   };
@@ -158,6 +166,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
       id={`prompt-card-${prompt.id}`}
       className="bg-surface rounded-xl overflow-hidden border border-line hover:border-line transition-all duration-300 hover:shadow-md flex flex-col h-full group"
     >
+      <div role="status" aria-live="polite" className={feedback ? "bg-surface-elevated text-primary px-3 py-2 text-xs font-bold border-b border-line" : "sr-only"}>{feedback}</div>
       {/* Sample Image */}
       <div className="relative aspect-video w-full overflow-hidden bg-surface-soft">
         <Link to={`/prompts/${prompt.id}`} className="block w-full h-full">
