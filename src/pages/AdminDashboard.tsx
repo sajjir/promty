@@ -1,11 +1,12 @@
+import Loader from "../components/Loader";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Prompt, Stats } from "../types";
 import { useAuth } from "../components/AuthContext";
-import { 
-  Plus, Trash2, Edit3, Eye, EyeOff, BarChart3, HelpCircle, 
-  LogOut, CheckCircle, Loader2, Sparkles, Settings, Network, 
-  Tag, Layers, Sliders, Database, Key, Search, RefreshCw, X, 
+import {
+  Plus, Trash2, Edit3, Eye, EyeOff, BarChart3, HelpCircle,
+  LogOut, CheckCircle, Sparkles, Settings, Network,
+  Tag, Layers, Sliders, Database, Key, Search, RefreshCw, X,
   ChevronRight, AlertCircle, HeartCrack, HelpCircle as HelpIcon,
   Check, Users, Shield, ShieldCheck, ShieldAlert, UserPlus, ArrowUpDown,
   Upload, Image as ImageIcon, FileText, CheckSquare, Square, Pencil, Trash
@@ -76,7 +77,7 @@ export default function AdminDashboard() {
   const [bulkRoleModalOpen, setBulkRoleModalOpen] = useState(false);
   const [bulkTargetRole, setBulkTargetRole] = useState<"SUPER_ADMIN" | "ADMIN" | "USER">("USER");
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
-  
+
   // Dedicated Branding state
   const [siteTitleLocal, setSiteTitleLocal] = useState("");
   const [siteSubtitleLocal, setSiteSubtitleLocal] = useState("");
@@ -143,7 +144,7 @@ export default function AdminDashboard() {
     if (!token) return;
     try {
       setLoading(true);
-      
+
       // Fetch stats
       const statsRes = await fetch("/api/stats", {
         headers: { Authorization: `Bearer ${token}` }
@@ -638,7 +639,7 @@ export default function AdminDashboard() {
         setNewTaxTitleFa("");
         setNewTaxDescFa("");
         setEditingTaxId(null);
-        
+
         // Refresh taxonomy terms list
         const taxRes = await fetch("/api/taxonomies", {
           headers: { Authorization: `Bearer ${token}` }
@@ -729,7 +730,7 @@ export default function AdminDashboard() {
         setGraphSuccess("رابطه گراف دانش جدید با موفقیت ایجاد و تثبیت شد.");
         setRelSourceId("");
         setRelTargetId("");
-        
+
         // Refresh relationships
         const relRes = await fetch("/api/relationships", {
           headers: { Authorization: `Bearer ${token}` }
@@ -769,7 +770,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-3 text-muted">
-        <Loader2 className="w-8 h-8 animate-spin text-brand" />
+        <Loader className="w-8 h-8 text-brand" />
         <p className="text-xs font-semibold">در حال بارگذاری ایمن مرکز کنترل ادمین...</p>
       </div>
     );
@@ -777,7 +778,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8 pb-16 animate-fade-in text-right" dir="rtl">
-      
+
       {/* Top Banner Control Panel */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-surface p-6 border border-line rounded-2xl shadow-sm">
         <div className="space-y-1">
@@ -931,7 +932,7 @@ export default function AdminDashboard() {
       {/* Main Tab Contents */}
       <div className="bg-surface border border-line rounded-3xl p-6 shadow-sm">
         <AnimatePresence mode="wait">
-          
+
           {/* TAB 1: Prompts Listing */}
           {activeTab === "prompts" && (
             <motion.div
@@ -1135,9 +1136,9 @@ export default function AdminDashboard() {
                         disabled={taxActionLoading}
                         className="flex-1 py-2.5 bg-brand-solid hover:bg-brand-solid disabled:bg-surface-inset text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition cursor-pointer"
                       >
-                        {taxActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>{editingTaxId ? "اعمال تغییرات ✍️" : "ذخیره فیلد معنایی 📂"}</span>}
+                        {taxActionLoading ? <Loader className="w-3.5 h-3.5" /> : <span>{editingTaxId ? "اعمال تغییرات ✍️" : "ذخیره فیلد معنایی 📂"}</span>}
                       </button>
-                      
+
                       {editingTaxId && (
                         <button
                           type="button"
@@ -1253,11 +1254,11 @@ export default function AdminDashboard() {
                   </h4>
 
                   <form onSubmit={handleCreateRelationship} className="space-y-4 text-right">
-                    
+
                     {/* Source selection */}
                     <div className="space-y-3 p-3 bg-surface rounded-xl border border-line">
                       <span className="text-[10px] text-brand font-bold block">مرحله اول: انتخاب مبدا (Source)</span>
-                      
+
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <label className="text-[10px] text-muted font-bold block">نوع مبدا</label>
@@ -1280,7 +1281,7 @@ export default function AdminDashboard() {
                             required
                           >
                             <option value="">انتخاب کنید...</option>
-                            {relSourceType === "Prompt" 
+                            {relSourceType === "Prompt"
                               ? prompts.map(p => <option key={p.id} value={p.id}>{p.title}</option>)
                               : taxonomies.map(t => <option key={t.id} value={t.id}>{t.titleFa} ({t.type})</option>)
                             }
@@ -1292,7 +1293,7 @@ export default function AdminDashboard() {
                     {/* Target selection */}
                     <div className="space-y-3 p-3 bg-surface rounded-xl border border-line">
                       <span className="text-[10px] text-success-text font-bold block">مرحله دوم: انتخاب مقصد (Target)</span>
-                      
+
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <label className="text-[10px] text-muted font-bold block">نوع مقصد</label>
@@ -1315,7 +1316,7 @@ export default function AdminDashboard() {
                             required
                           >
                             <option value="">انتخاب کنید...</option>
-                            {relTargetType === "Prompt" 
+                            {relTargetType === "Prompt"
                               ? prompts.map(p => <option key={p.id} value={p.id}>{p.title}</option>)
                               : taxonomies.map(t => <option key={t.id} value={t.id}>{t.titleFa} ({t.type})</option>)
                             }
@@ -1381,7 +1382,7 @@ export default function AdminDashboard() {
                       disabled={graphActionLoading}
                       className="w-full py-2.5 bg-brand-solid hover:bg-brand-solid disabled:bg-surface-inset text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition"
                     >
-                      {graphActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>تثبیت ارتباط در گراف 🔀</span>}
+                      {graphActionLoading ? <Loader className="w-3.5 h-3.5" /> : <span>تثبیت ارتباط در گراف 🔀</span>}
                     </button>
 
                     {graphSuccess && (
@@ -1402,7 +1403,7 @@ export default function AdminDashboard() {
                 {/* Relationships list */}
                 <div className="lg:col-span-2 space-y-4">
                   <span className="text-xs font-bold text-muted">فهرست پیوندهای گراف دانش فعال ({relationships.length}):</span>
-                  
+
                   <div className="overflow-x-auto rounded-xl border border-line max-h-[500px] overflow-y-auto">
                     <table className="w-full text-sm text-right text-secondary font-sans">
                       <thead className="bg-surface-soft text-muted text-xs font-bold border-b border-line sticky top-0">
@@ -1526,7 +1527,7 @@ export default function AdminDashboard() {
                       >
                         {logoUploading ? (
                           <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
+                            <Loader className="w-3.5 h-3.5 text-brand" />
                             <span>در حال آپلود و بهینه‌سازی...</span>
                           </>
                         ) : (
@@ -1635,7 +1636,7 @@ export default function AdminDashboard() {
                   >
                     {brandingLoading ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader className="w-3.5 h-3.5" />
                         <span>در حال ذخیره برندینگ...</span>
                       </>
                     ) : (
@@ -1683,7 +1684,7 @@ export default function AdminDashboard() {
                   <h4 className="text-xs font-extrabold text-primary bg-surface-soft px-3 py-1.5 rounded-lg inline-block">
                     🔗 مسیرهای وب‌هوک اتوماسیون (n8n Agent)
                   </h4>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label htmlFor="n8n_analyze_input_tab" className="text-xs font-bold text-muted block">
@@ -1722,7 +1723,7 @@ export default function AdminDashboard() {
                   <h4 className="text-xs font-extrabold text-primary bg-surface-soft px-3 py-1.5 rounded-lg inline-block">
                     🔑 کلیدهای مستقیم مدل‌های هوش مصنوعی (Fallback)
                   </h4>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label htmlFor="gemini_key_tab" className="text-xs font-bold text-muted block">
@@ -1761,7 +1762,7 @@ export default function AdminDashboard() {
                   <h4 className="text-xs font-extrabold text-primary bg-surface-soft px-3 py-1.5 rounded-lg inline-block">
                     ⏱️ تنظیم مهلت زمانی پاسخگویی هوش مصنوعی (Timeout)
                   </h4>
-                  
+
                   <div className="max-w-md space-y-1.5">
                     <label htmlFor="ai_timeout_input" className="text-xs font-bold text-muted block">
                       حداکثر مدت زمان انتظار پاسخ (ثانیه)
@@ -1790,7 +1791,7 @@ export default function AdminDashboard() {
                   <h4 className="text-xs font-extrabold text-primary bg-surface-soft px-3 py-1.5 rounded-lg inline-block">
                     🔍 تنظیم قوانین و ضریب موتور جستجوی هوشمند (Search Rules)
                   </h4>
-                  
+
                   <div className="bg-surface-soft p-4 rounded-xl text-xs space-y-3 text-secondary">
                     <div className="flex items-center justify-between border-b border-white pb-2">
                       <span className="font-bold">ضریب اولویت کلمات عنوان پرامپت (Title Match Boost)</span>
@@ -1813,7 +1814,7 @@ export default function AdminDashboard() {
                   <p className="text-[10px] text-muted">
                     💡 تمام تنظیمات وب‌هوک و هوش مصنوعی بلادرنگ در سیستم اعمال می‌شوند.
                   </p>
-                  
+
                   <button
                     type="submit"
                     disabled={aiSettingsLoading}
@@ -1821,7 +1822,7 @@ export default function AdminDashboard() {
                   >
                     {aiSettingsLoading ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader className="w-3.5 h-3.5" />
                         <span>در حال ذخیره‌سازی...</span>
                       </>
                     ) : (
@@ -1939,7 +1940,7 @@ export default function AdminDashboard() {
                       className="w-full sm:w-auto px-5 py-2.5 bg-brand-solid hover:bg-brand-solid text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
                     >
                       {roleActionLoading === directIdentifier.trim() ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader className="w-4 h-4" />
                       ) : (
                         <span>اعمال نقش</span>
                       )}
@@ -1967,7 +1968,7 @@ export default function AdminDashboard() {
                       onClick={fetchUsers}
                       className="flex items-center gap-1 px-3 py-2 border border-line hover:bg-surface-soft rounded-xl font-bold transition cursor-pointer"
                     >
-                      <RefreshCw className={`w-3.5 h-3.5 ${usersLoading ? "animate-spin" : ""}`} />
+                      {usersLoading ? <Loader className="w-3.5 h-3.5" /> : <RefreshCw className="w-3.5 h-3.5" />}
                       <span>به‌روزرسانی لیست</span>
                     </button>
                     <span className="bg-surface-soft px-3 py-2 rounded-xl font-bold font-mono">
@@ -2013,7 +2014,7 @@ export default function AdminDashboard() {
                         className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                       >
                         {bulkActionLoading ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <Loader className="w-3.5 h-3.5" />
                         ) : (
                           <Trash2 className="w-3.5 h-3.5" />
                         )}
@@ -2149,7 +2150,7 @@ export default function AdminDashboard() {
                                 <td className="px-5 py-4 text-left">
                                   <div className="flex items-center justify-end gap-2">
                                     {isActionTarget ? (
-                                      <Loader2 className="w-4 h-4 animate-spin text-brand" />
+                                      <Loader className="w-4 h-4 text-brand" />
                                     ) : (
                                       <>
                                         {/* Direct Role Change Selector */}
@@ -2299,7 +2300,7 @@ export default function AdminDashboard() {
                   disabled={bulkActionLoading}
                   className="px-5 py-2 bg-brand-solid hover:bg-brand-solid text-white font-bold rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {bulkActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  {bulkActionLoading ? <Loader className="w-3.5 h-3.5" /> : null}
                   <span>ذخیره تغییرات</span>
                 </button>
               </div>
@@ -2344,7 +2345,7 @@ export default function AdminDashboard() {
                 disabled={bulkActionLoading}
                 className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
               >
-                {bulkActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                {bulkActionLoading ? <Loader className="w-3.5 h-3.5" /> : null}
                 <span>تایید و حذف کاربر</span>
               </button>
             </div>
@@ -2394,7 +2395,7 @@ export default function AdminDashboard() {
                 disabled={bulkActionLoading}
                 className="px-5 py-2 bg-brand-solid hover:bg-brand-solid text-white text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
               >
-                {bulkActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                {bulkActionLoading ? <Loader className="w-3.5 h-3.5" /> : null}
                 <span>اعمال نقش بر کاربران</span>
               </button>
             </div>

@@ -114,3 +114,13 @@
 .prompt-backdrop-line:nth-child(even) { animation-direction:alternate-reverse; }
 @keyframes prompt-drift { from { transform:translateX(0); } to { transform:translateX(35%); } }
 @media (prefers-reduced-motion:reduce) { .prompt-backdrop-line { animation:none; will-change:auto; } }
+
+/* Transparent three-petal loader, adapted from the supplied design. */
+.promty-loader { display:inline-block; position:relative; flex-shrink:0; vertical-align:middle; background:transparent; }
+.promty-loader-shape { position:absolute; width:55%; height:55%; left:22.5%; top:22.5%; animation:promty-flow-one 1s linear infinite; filter:drop-shadow(0 0 2px currentColor); }
+.promty-loader > span:nth-child(2) svg { animation-name:promty-flow-two; }
+.promty-loader > span:nth-child(3) svg { animation-name:promty-flow-three; }
+@keyframes promty-flow-one { 0%{transform:scale(.5) translateY(-90%);opacity:0} 25%{transform:scale(.75) translateY(-45%);opacity:1} 50%{transform:scale(1);opacity:1} 75%{transform:scale(.5) translateY(25%);opacity:1} 100%{transform:scale(0) translateY(50%);opacity:0} }
+@keyframes promty-flow-two { 0%{transform:scale(.5) rotate(-10deg) translate(-45%,-90%);opacity:0} 25%{transform:rotate(-5deg) translate(-25%,-45%);opacity:1} 50%{transform:translate(-12%,0);opacity:1} 75%{transform:scale(.5) rotate(5deg) translate(0,25%);opacity:1} 100%{transform:scale(0) rotate(10deg) translate(12%,50%);opacity:0} }
+@keyframes promty-flow-three { 0%{transform:scale(.5) rotate(10deg) translate(45%,-90%);opacity:0} 25%{transform:rotate(5deg) translate(25%,-45%);opacity:1} 50%{transform:translate(12%,0);opacity:1} 75%{transform:scale(.5) rotate(-5deg) translate(0,25%);opacity:1} 100%{transform:scale(0) rotate(-10deg) translate(-12%,50%);opacity:0} }
+@media (prefers-reduced-motion:reduce) { .promty-loader-shape { animation:none; } .promty-loader > span:not(:first-child) { display:none; } }

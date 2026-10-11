@@ -1,6 +1,7 @@
+import Loader from "../components/Loader";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lock, Mail, AlertTriangle, Loader2 } from "lucide-react";
+import { Lock, Mail, AlertTriangle } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 
 export default function AdminLogin() {
@@ -92,7 +93,7 @@ export default function AdminLogin() {
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader className="w-4 h-4" />
                 <span>در حال بررسی اطلاعات...</span>
               </>
             ) : (

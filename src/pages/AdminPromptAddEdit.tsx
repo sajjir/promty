@@ -1,8 +1,9 @@
+import Loader from "../components/Loader";
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Category, FieldSchema } from "../types";
 import PromptWizard from "../components/PromptWizard";
-import { ArrowRight, AlertTriangle, Sparkles, Code, Check, Loader2, Wand2, Camera } from "lucide-react";
+import { ArrowRight, AlertTriangle, Sparkles, Code, Check, Wand2, Camera } from "lucide-react";
 
 export default function AdminPromptAddEdit() {
   const { id } = useParams<{ id: string }>(); // If there is an ID, we are in Edit mode, otherwise Add mode.
@@ -395,7 +396,7 @@ export default function AdminPromptAddEdit() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-3 text-muted">
-        <Loader2 className="w-8 h-8 animate-spin text-brand" />
+        <Loader className="w-8 h-8 text-brand" />
         <p className="text-xs">در حال دریافت و تحلیل مشخصات فنی...</p>
       </div>
     );
@@ -453,7 +454,7 @@ export default function AdminPromptAddEdit() {
           >
             {analyzingSource ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader className="w-4 h-4" />
                 <span>در حال تجزیه و ساختاردهی...</span>
               </>
             ) : (
@@ -991,7 +992,7 @@ export default function AdminPromptAddEdit() {
             >
               {saving || isUploading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader className="w-4 h-4" />
                   <span>
                     {isUploading ? "در حال پردازش و آپلود تصاویر..." : "در حال ذخیره‌سازی..."}
                   </span>

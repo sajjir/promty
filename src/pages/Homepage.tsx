@@ -1,3 +1,4 @@
+import Loader from "../components/Loader";
 import PromptBackdrop from '../components/PromptBackdrop';
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -6,7 +7,7 @@ import PromptCard from "../components/PromptCard";
 import { useAuth } from "../components/AuthContext";
 import {
   Search, Megaphone, Globe, Video, Camera, Sparkles,
-  SlidersHorizontal, Loader2, X, Clock, Tag, Check,
+  SlidersHorizontal, X, Clock, Tag, Check,
   Compass, Cpu, ChevronDown, ListFilter, RotateCcw,
   Sparkle, AlertCircle, HelpCircle, ArrowLeft, Plus, CheckCircle2
 } from "lucide-react";
@@ -965,7 +966,7 @@ export default function Homepage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted bg-surface border border-line rounded-3xl">
-            <Loader2 className="w-8 h-8 animate-spin text-brand" />
+            <Loader className="w-8 h-8 text-brand" />
             <p className="text-xs font-semibold">موتور در حال واکاوی است...</p>
           </div>
         ) : filteredPrompts.length > 0 ? (
@@ -998,7 +999,7 @@ export default function Homepage() {
                   className="px-8 py-3.5 bg-surface hover:bg-surface-soft text-primary hover:text-brand border-2 border-line hover:border-brand/30 active:border-brand rounded-2xl shadow-sm hover:shadow-md font-bold text-xs transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
                 >
                   {isLoadingMore ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-brand" />
+                    <Loader className="w-4 h-4 text-brand" />
                   ) : (
                     <ChevronDown className="w-4 h-4 text-brand group-hover:translate-y-0.5 transition-transform" />
                   )}
@@ -1169,7 +1170,7 @@ export default function Homepage() {
                       >
                         {isAnalyzingPublic ? (
                           <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
+                            <Loader className="w-3.5 h-3.5 text-brand" />
                             <span>در حال استخراج معنایی...</span>
                           </>
                         ) : (
@@ -1217,7 +1218,7 @@ export default function Homepage() {
                       disabled={submitting}
                       className="px-6 py-3 text-xs bg-brand-solid hover:bg-indigo-600 disabled:bg-surface-inset text-white font-bold rounded-xl shadow-md shadow-brand/10 transition cursor-pointer flex items-center gap-1"
                     >
-                      {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>ارسال جهت بازبینی ادمین 🚀</span>}
+                      {submitting ? <Loader className="w-3.5 h-3.5" /> : <span>ارسال جهت بازبینی ادمین 🚀</span>}
                     </button>
                   </div>
                 </form>

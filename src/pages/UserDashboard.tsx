@@ -1,8 +1,9 @@
+import Loader from "../components/Loader";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthContext";
 import PromptCard from "../components/PromptCard";
-import { Sparkles, Bookmark, Loader2, Compass, ArrowRight, User, Phone, Mail, Calendar } from "lucide-react";
+import { Sparkles, Bookmark, Compass, ArrowRight, User, Phone, Mail, Calendar } from "lucide-react";
 
 export default function UserDashboard() {
   const { user, setPhoneModalOpen, updateUser } = useAuth();
@@ -167,7 +168,7 @@ export default function UserDashboard() {
       <div id="tab-panels-content">
         {loading ? (
           <div className="py-20 text-center space-y-3">
-            <Loader2 className="animate-spin text-brand w-8 h-8 mx-auto" />
+            <Loader className="text-brand w-8 h-8 mx-auto" />
             <p className="text-xs text-muted font-semibold">درحال لود اطلاعات داشبورد شما...</p>
           </div>
         ) : activeTab === "bookmarked" ? (

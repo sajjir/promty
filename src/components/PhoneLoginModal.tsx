@@ -1,3 +1,4 @@
+import Loader from "./Loader";
 import React, { useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { Phone, Key, X, Check, AlertCircle, User, ArrowRight, RotateCw, Mail, Sparkles } from "lucide-react";
@@ -261,7 +262,7 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                       className="w-full bg-brand-solid hover:bg-[#5B3CE0] text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {loading ? (
-                        <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <Loader className="h-5 w-5 text-white" />
                       ) : (
                         <>
                           <span>ارسال کد تایید پیامکی</span>
@@ -346,7 +347,7 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                     className="w-full bg-brand-solid hover:bg-[#5B3CE0] text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {loading ? (
-                      <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <Loader className="h-5 w-5 text-white" />
                     ) : (
                       <span>تایید و ورود به حساب</span>
                     )}
@@ -409,7 +410,7 @@ export default function PhoneLoginModal({ contextMessage }: PhoneLoginModalProps
                       className="w-full bg-brand-solid hover:bg-[#5B3CE0] text-white text-xs font-bold py-3.5 rounded-xl transition shadow-md shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {loading ? (
-                        <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <Loader className="h-5 w-5 text-white" />
                       ) : (
                         <span>تکمیل حساب و ورود به پلتفرم</span>
                       )}

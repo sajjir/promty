@@ -34,7 +34,7 @@ export default function SiteHeader() {
   const navigation = (mobile = false) => (
     <nav aria-label={mobile ? 'ناوبری موبایل' : 'ناوبری اصلی'} className={mobile ? 'grid gap-1' : 'flex items-center gap-1'}>
       {[
-        { to: '/', label: 'خانه', Icon: Home, show: true },
+        { to: '/', label: 'خانه', Icon: Home, show: mobile },
         { to: '/dashboard', label: 'داشبورد', Icon: Bookmark, show: !!user },
         { to: '/admin', label: 'مدیریت', Icon: LayoutDashboard, show: isAdmin },
       ].filter(item => item.show).map(({ to, label, Icon }) => (
