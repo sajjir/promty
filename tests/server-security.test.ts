@@ -55,6 +55,19 @@ test('HTTP security: roles, drafts, upload auth, escaped metadata and session re
   assert.equal((await call('/api/auth/otp/send',undefined,'POST',{phone:'09120000000'})).status,400);
   const badImage = new FormData();badImage.append('cover',new Blob(['not an image'],{type:'image/png'}),'fake.png');
   assert.ok((await fetch(base+'/api/upload/public',{method:'POST',headers:{Authorization:`Bearer ${manager}`},body:badImage})).status>=400);assert.ok(fs.existsSync(path.join(dir,'dl/prompts/public/cover.webp')));
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><circle cx="32" cy="32" r="24" fill="#7c4dff"/></svg>';
+  const logoForm = () => { const f = new FormData(); f.append('logo',new Blob([svg],{type:'image/svg+xml'}),'logo.svg'); return f; };
+  assert.equal((await fetch(base+'/api/admin/settings/logo',{method:'POST',body:logoForm()})).status,403);
+  const logoResponse = await fetch(base+'/api/admin/settings/logo',{method:'POST',headers:{Authorization:`Bearer ${manager}`},body:logoForm()});
+  assert.equal(logoResponse.status,200);
+  assert.equal((await sharp(fs.readFileSync(path.join(dir,'dl/brand/logo.webp'))).metadata()).format,'webp');
+  const publicLogo = await call((await logoResponse.json()).siteLogo); assert.equal(publicLogo.status,200);
+  const logoBefore = fs.readFileSync(path.join(dir,'dl/brand/logo.webp'));
+  for (const bad of [svg.replace('</svg>','<script>alert(1)</script></svg>'),svg.replace('</svg>','<image href="https://attacker.invalid/image.png"/></svg>')]) {
+    const f = new FormData();f.append('logo',new Blob([bad],{type:'image/svg+xml'}),'unsafe.svg');
+    assert.equal((await fetch(base+'/api/admin/settings/logo',{method:'POST',headers:{Authorization:`Bearer ${manager}`},body:f})).status,400);
+    assert.deepEqual(fs.readFileSync(path.join(dir,'dl/brand/logo.webp')),logoBefore);
+  }
   const html = await (await call('/prompts/public')).text();assert.ok(html.includes('&lt;img'));assert.equal(html.includes('<img id="injected"'),false);assert.equal(html.includes('<script>alert(1)</script>'),false);assert.equal(html.includes('aggregateRating'),false);
   assert.equal((await call('/api/user/profile',regular,'PUT',{name:'Changed',email:'admin@test.invalid'})).status,400);
   assert.equal((await call('/api/admin/users/senior',manager,'PUT',{name:'attack'})).status,403);

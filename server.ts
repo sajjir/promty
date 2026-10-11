@@ -2380,10 +2380,15 @@ async function startServer() {
         return res.status(400).json({ success: false, message: "فایل لوگو ارسال نشده است." });
       }
 
+      const sourceText = req.file.buffer.toString("utf8");
+      const isSvgSource = /<(?:[\w.-]+:)?svg\b/i.test(sourceText);
+      if (isSvgSource && (/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet|<(?:[\w.-]+:)?(?:script|foreignObject)\b|\son[\w:-]+\s*=/i.test(sourceText) || /\b(?:href|src)\s*=\s*["'](?!#)[^"']+["']/i.test(sourceText) || Array.from(sourceText.matchAll(/url\(([^)]*)\)/gi)).some(([, value]) => !value.trim().replace(/^["']|["']$/g, "").startsWith("#")))) {
+        return res.status(400).json({ success: false, message: "SVG لوگو باید بدون اسکریپت، محتوای تعاملی و منابع خارجی باشد." });
+      }
       const image = sharp(req.file.buffer, { limitInputPixels: 20000000 });
       const meta = await image.metadata();
-      if (!["png", "jpeg", "webp"].includes(meta.format || "") || (meta.pages || 1) !== 1 || !meta.width || !meta.height || meta.width > 8192 || meta.height > 8192) return res.status(400).json({ success: false, message: "لوگو باید تصویر PNG، JPEG یا WebP معتبر باشد." });
-      const encoded = await image.webp({ quality: 90 }).toBuffer();
+      if (!["png", "jpeg", "webp", "svg"].includes(meta.format || "") || (meta.format === "svg" && !isSvgSource) || (meta.pages || 1) !== 1 || !meta.width || !meta.height || meta.width > 8192 || meta.height > 8192) return res.status(400).json({ success: false, message: "لوگو باید تصویر SVG، PNG، JPEG یا WebP معتبر باشد." });
+      const encoded = await image.resize({ width: 512, height: 512, fit: "inside", withoutEnlargement: meta.format !== "svg" }).webp({ quality: 90 }).toBuffer();
       const brandDir = path.join(process.cwd(), "dl", "brand");
       fs.mkdirSync(brandDir, { recursive: true });
       fs.writeFileSync(path.join(brandDir, "logo.webp"), encoded);

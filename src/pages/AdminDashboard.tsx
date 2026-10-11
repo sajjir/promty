@@ -1008,6 +1008,16 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4 text-left">
                             <div className="flex items-center justify-end gap-2">
                               <Link
+                                to={`/prompts/${p.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`نمایش ${p.title} در تب جدید`}
+                                className="p-1 px-2.5 text-brand hover:bg-brand-soft border border-brand rounded-lg text-xs font-bold flex items-center gap-1 whitespace-nowrap"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>نمایش</span>
+                              </Link>
+                              <Link
                                 to={`/admin/prompts/${p.id}/edit`}
                                 className="p-1 px-2.5 text-info-text hover:bg-info-soft border border-info-text rounded-lg text-xs font-bold flex items-center gap-1"
                               >
@@ -1508,7 +1518,7 @@ export default function AdminDashboard() {
                       فرمت‌های مجاز: <code className="bg-surface px-1.5 py-0.5 rounded border border-line font-mono text-[11px]">WEBP</code>، <code className="bg-surface px-1.5 py-0.5 rounded border border-line font-mono text-[11px]">PNG</code>، <code className="bg-surface px-1.5 py-0.5 rounded border border-line font-mono text-[11px]">SVG</code>
                     </p>
                     <p className="text-[11px] text-muted">
-                      لوگو به صورت خودکار در ابعاد متناسب بهینه‌سازی شده و در <code className="bg-surface px-1 py-0.5 rounded font-mono text-[10px]">/dl/brand/logo.webp</code> (یا SVG) ذخیره می‌گردد.
+                      لوگو به صورت خودکار در ابعاد متناسب بهینه‌سازی شده و در <code className="bg-surface px-1 py-0.5 rounded font-mono text-[10px]">/dl/brand/logo.webp</code> ذخیره می‌گردد؛ SVG نیز با حفظ شفافیت به تصویر WebP تبدیل می‌شود.
                     </p>
                     <div>
                       <input
