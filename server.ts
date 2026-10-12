@@ -202,6 +202,7 @@ function readDB(): DB {
       return parsed as DB;
     }
   } catch (error) {
+    if (operationalProduction) throw new Error("Cannot read existing db.json; restore or repair it before startup. The file was not replaced.");
     console.error("Error reading database file, using fallback:", error);
   }
 
@@ -380,7 +381,9 @@ function readDB(): DB {
       }
     ]
   };
-  fs.writeFileSync(DB_FILE, JSON.stringify(initialDB, null, 2), "utf-8");
+  // A public installation starts without demonstration prompts or fabricated usage.
+  if (operationalProduction) initialDB.prompts = [];
+  fs.writeFileSync(DB_FILE, JSON.stringify(initialDB, null, 2), { encoding: "utf-8", mode: 0o600 });
   return initialDB;
 }
 

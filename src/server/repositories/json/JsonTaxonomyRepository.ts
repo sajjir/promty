@@ -15,9 +15,11 @@ export class JsonTaxonomyRepository implements ITaxonomyRepository {
     const data = fs.readFileSync(DB_FILE, "utf-8");
     const db = JSON.parse(data);
     
-    // Auto-seed if taxonomies are empty
-    if (!db.taxonomies || db.taxonomies.length === 0) {
-      db.taxonomies = this.generateInitialSeededTaxonomies();
+    // Add missing standard metadata; preserve authored titles, status and all content.
+    db.taxonomies ||= [];
+    const missing = this.generateInitialSeededTaxonomies().filter(term => !db.taxonomies.some((existing: TaxonomyTerm) => existing.type === term.type && existing.slug === term.slug));
+    if (missing.length) {
+      db.taxonomies.push(...missing);
       fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
     }
     

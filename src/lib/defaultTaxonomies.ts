@@ -94,4 +94,12 @@ export const defaultTaxonomies: DefaultTaxonomyItem[] = [
   { type: "outputFormat", slug: "checklist", titleEn: "Checklist", titleFa: "چک‌لیست کارها" },
   { type: "outputFormat", slug: "roadmap", titleEn: "Roadmap", titleFa: "مسیر راه (Roadmap)" },
   { type: "outputFormat", slug: "presentation", titleEn: "Presentation", titleFa: "فایل ارائه" },
+  // Archive metadata must be available without importing local demonstration data.
+  { type: "tool", slug: "codex", titleEn: "Codex", titleFa: "Codex" },
+  { type: "tool", slug: "deepseek", titleEn: "DeepSeek", titleFa: "دیپ‌سیک (DeepSeek)" },
+  { type: "domain", slug: "jewelry", titleEn: "Jewelry", titleFa: "جواهرات" },
+  { type: "domain", slug: "design", titleEn: "Design", titleFa: "طراحی رابط و گرافیک" },
+  { type: "outputFormat", slug: "code", titleEn: "Code", titleFa: "کد و پروژه" },
+  { type: "outputFormat", slug: "report", titleEn: "Report", titleFa: "گزارش" },
+  { type: "outputFormat", slug: "chart", titleEn: "Chart", titleFa: "نمودار" },
 ];
