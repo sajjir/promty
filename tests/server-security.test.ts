@@ -38,6 +38,15 @@ test('HTTP security: roles, drafts, upload auth, escaped metadata and session re
   const archive = await (await call('/api/prompts')).json(); assert.equal(archive.data.some((p:any)=>p.id==='draft'),false);
   const filtered = await (await call('/api/prompts?tool=claude&q='+encodeURIComponent('آرشيو آزمايشي')+'&sort=usage&page=2&limit=20')).json();
   assert.equal(filtered.pagination.total,25);assert.equal(filtered.data.length,5);assert.equal(filtered.data[0].usageCount,44);
+  const multipleTools = await (await call('/api/prompts?tool=claude&tool=chatgpt&q='+encodeURIComponent('آرشیو آزمایشی')+'&sort=usage&page=2&limit=20')).json();
+  assert.equal(multipleTools.pagination.total,65);assert.equal(multipleTools.data.length,20);
+  assert.equal(new Set(multipleTools.data.map((p:any)=>p.id)).size,20);
+  const csvTools = await (await call('/api/prompts?tool=claude,chatgpt&q='+encodeURIComponent('آرشیو آزمایشی'))).json();
+  assert.equal(csvTools.pagination.total,65);
+  const alternativeTools=await (await call('/api/prompts?tool=claude')).json();
+  assert.equal(alternativeTools.facets.tools.chatgpt,40);
+  const standaloneFacets=await (await call('/api/facets?tool=claude&tool=chatgpt')).json();
+  assert.equal(standaloneFacets.facets.tools.chatgpt,40);
   const empty = await (await call('/api/prompts?q=nonexistent-phrase-123')).json();assert.equal(empty.pagination.total,0);
   const seniorArchive = await (await call('/api/prompts',senior)).json(); assert.equal(seniorArchive.data.some((p:any)=>p.id==='draft'),true);
   assert.equal((await call('/api/user/dashboard',regular)).status,200);
@@ -78,13 +87,29 @@ test('HTTP security: roles, drafts, upload auth, escaped metadata and session re
   assert.equal((await (await call('/api/auth/me',regular)).json()).user,null);
   assert.equal((await call('/api/admin/roles/assign',senior,'POST',{targetIdentifier:'regular',newRole:'USER'})).status,200);
   assert.equal((await (await call('/api/auth/me',regular)).json()).user,null);
-  const createResponse = await call('/api/prompts',manager,'POST',{title:'چرخه انتشار آزمایشی',body:'Hello [[name]]',bodyFa:'سلام [[name]]',isActive:false,fieldsSchema:[],tags:[],tools:['claude'],domains:['ai']});
+  const createResponse = await call('/api/prompts',manager,'POST',{title:'چرخه انتشار آزمایشی',body:'Hello [[name]]',bodyFa:'سلام [[name]]',useCase:'learning-plan',resourceType:'agent-guide',intent:'learning',outputFormats:['text'],isActive:false,fieldsSchema:[],tags:[],tools:['claude'],domains:['ai']});
   assert.equal(createResponse.status,201);
   const created = (await createResponse.json()).prompt;
   assert.equal((await call('/api/prompts/'+created.id)).status,404);
   assert.equal((await call('/api/prompts/'+created.id,senior)).status,200);
   assert.equal((await call('/api/prompts/'+created.id,manager,'PUT',{isActive:true})).status,200);
   assert.equal((await call('/api/prompts/'+created.id)).status,200);
+  const published = (await (await call('/api/prompts/'+created.id)).json()).prompt;
+  assert.equal(published.useCase,'learning-plan');assert.equal(published.resourceType,'agent-guide');assert.equal(published.intent,'teaching');
+  const byUseCase = await (await call('/api/prompts?useCase=learning-plan&resourceType=agent-guide&outputFormat=text&intent=teaching')).json();
+  assert.equal(byUseCase.pagination.total,1);assert.equal(byUseCase.data[0].id,created.id);
+  assert.equal(byUseCase.archiveFacets.resourceTypes['agent-guide'],1);assert.equal(byUseCase.archiveFacets.groups.personal,1);
+  assert.equal((await (await call('/api/prompts?useCase=learning-plan&intent=learning')).json()).pagination.total,1);
+  assert.equal((await call('/api/prompts/'+created.id,manager,'PUT',{useCase:'unknown'})).status,400);
+  assert.equal((await call('/api/prompts/'+created.id,manager,'PUT',{resourceType:'markdown'})).status,400);
+  assert.equal((await call('/api/prompts/'+created.id,manager,'PUT',{useCase:'book-writing'})).status,200);
+  assert.equal((await (await call('/api/prompts?useCase=learning-plan')).json()).pagination.total,0);
+  const reclassified = await (await call('/api/prompts?useCase=book-writing&resourceType=agent-guide')).json();
+  assert.equal(reclassified.data[0].category,'تدوین کتاب');assert.equal(reclassified.archiveFacets.groups.publishing,1);
+  const mixedCases = await (await call('/api/prompts?useCase=learning-plan&useCase=book-writing&resourceType=prompt&resourceType=agent-guide&outputFormat=text&outputFormat=code')).json();
+  assert.equal(mixedCases.pagination.total,1);assert.equal(mixedCases.data[0].id,created.id);
+
+
   assert.equal((await call('/api/prompts/'+created.id,manager,'PUT',{bodyFa:'متن ویرایش‌شده'})).status,200);
   assert.equal((await (await call('/api/prompts/'+created.id)).json()).prompt.bodyFa,'متن ویرایش‌شده');
   assert.equal((await call('/api/prompts/'+created.id,manager,'PUT',{isActive:false})).status,200);

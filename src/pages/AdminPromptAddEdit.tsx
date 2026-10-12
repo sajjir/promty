@@ -1,3 +1,4 @@
+import { useCases, useCaseGroups, getUseCase, resourceTypes, ResourceType, normalizeIntent, groupAncestors, getGroup } from "../lib/archiveCatalog";
 import Loader from "../components/Loader";
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
@@ -29,15 +30,17 @@ export default function AdminPromptAddEdit() {
   // Local form states
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [useCase, setUseCase] = useState("");
+  const [resourceType, setResourceType] = useState<ResourceType>("prompt");
   const [category, setCategory] = useState("تبلیغات");
-  const [intent, setIntent] = useState("Create");
-  const [intents, setIntents] = useState<string[]>(["Create"]);
-  const [domains, setDomains] = useState<string[]>(["Marketing"]);
-  const [tools, setTools] = useState<string[]>(["ChatGPT"]);
+  const [intent, setIntent] = useState("writing");
+  const [intents, setIntents] = useState<string[]>(["writing"]);
+  const [domains, setDomains] = useState<string[]>([]);
+  const [tools, setTools] = useState<string[]>([]);
   const [task, setTask] = useState("");
-  const [language, setLanguage] = useState("Persian");
-  const [difficulty, setDifficulty] = useState("Beginner");
-  const [outputFormats, setOutputFormats] = useState<string[]>(["Text"]);
+  const [language, setLanguage] = useState("persian");
+  const [difficulty, setDifficulty] = useState("beginner");
+  const [outputFormats, setOutputFormats] = useState<string[]>(["text"]);
   const [requiresReferenceImage, setRequiresReferenceImage] = useState(false);
   const [tagsInput, setTagsInput] = useState("");
   const [body, setBody] = useState("");
@@ -124,14 +127,16 @@ export default function AdminPromptAddEdit() {
             setTitle(p.title);
             setDescription(p.description);
             setCategory(p.category || (p.tools && p.tools[0]) || (p.domains && p.domains[0]) || p.tool || p.domain || "عمومی");
-            setIntent(p.intent || "Create");
-            setIntents(Array.isArray(p.intents) ? p.intents : (p.intent ? [p.intent] : ["Create"]));
-            setDomains(Array.isArray(p.domains) ? p.domains : (p.domain ? [p.domain] : ["Marketing"]));
-            setTools(Array.isArray(p.tools) ? p.tools : (p.tool ? [p.tool] : ["ChatGPT"]));
+            setIntent(normalizeIntent(p.intent || "writing"));
+            setIntents((Array.isArray(p.intents) ? p.intents : (p.intent ? [p.intent] : ["writing"])).map(normalizeIntent));
+            setDomains(Array.isArray(p.domains) ? p.domains : (p.domain ? [p.domain] : []));
+            setTools(Array.isArray(p.tools) ? p.tools : (p.tool ? [p.tool] : []));
             setTask(p.task || "");
-            setLanguage(p.language || "Persian");
-            setDifficulty(p.difficulty || "Beginner");
-            setOutputFormats(Array.isArray(p.outputFormats) ? p.outputFormats : (p.outputFormat ? [p.outputFormat] : ["Text"]));
+            setUseCase(p.useCase || "");
+            setResourceType(p.resourceType || "prompt");
+            setLanguage((p.language || "persian").toLowerCase());
+            setDifficulty((p.difficulty || "beginner").toLowerCase());
+            setOutputFormats(Array.isArray(p.outputFormats) ? p.outputFormats : (p.outputFormat ? [p.outputFormat] : ["text"]));
             setRequiresReferenceImage(p.requiresReferenceImage || false);
             setTagsInput(p.tags ? p.tags.join(", ") : "");
             setBody(p.body);
@@ -158,14 +163,16 @@ export default function AdminPromptAddEdit() {
             setTitle(""); // Keep title empty for user input
             setDescription(p.description || "");
             setCategory(p.category || (p.tools && p.tools[0]) || (p.domains && p.domains[0]) || "عمومی");
-            setIntent(p.intent || "Create");
-            setIntents(Array.isArray(p.intents) ? p.intents : (p.intent ? [p.intent] : ["Create"]));
-            setDomains(Array.isArray(p.domains) ? p.domains : (p.domain ? [p.domain] : ["Marketing"]));
-            setTools(Array.isArray(p.tools) ? p.tools : (p.tool ? [p.tool] : ["ChatGPT"]));
+            setIntent(normalizeIntent(p.intent || "writing"));
+            setIntents((Array.isArray(p.intents) ? p.intents : (p.intent ? [p.intent] : ["writing"])).map(normalizeIntent));
+            setDomains(Array.isArray(p.domains) ? p.domains : (p.domain ? [p.domain] : []));
+            setTools(Array.isArray(p.tools) ? p.tools : (p.tool ? [p.tool] : []));
             setTask(p.task || "");
-            setLanguage(p.language || "Persian");
-            setDifficulty(p.difficulty || "Beginner");
-            setOutputFormats(Array.isArray(p.outputFormats) ? p.outputFormats : (p.outputFormat ? [p.outputFormat] : ["Text"]));
+            setUseCase(p.useCase || "");
+            setResourceType(p.resourceType || "prompt");
+            setLanguage((p.language || "persian").toLowerCase());
+            setDifficulty((p.difficulty || "beginner").toLowerCase());
+            setOutputFormats(Array.isArray(p.outputFormats) ? p.outputFormats : (p.outputFormat ? [p.outputFormat] : ["text"]));
             setRequiresReferenceImage(p.requiresReferenceImage || false);
             setTagsInput(p.tags ? p.tags.join(", ") : "");
             setBody(p.body);
@@ -252,14 +259,14 @@ export default function AdminPromptAddEdit() {
         const parsed = data.data;
         setTitle(parsed.title || "");
         setDescription(parsed.description || "");
-        setIntent(parsed.intent || "Create");
-        setIntents(Array.isArray(parsed.intents) ? parsed.intents : (parsed.intent ? [parsed.intent] : ["Create"]));
-        setDomains(Array.isArray(parsed.domains) ? parsed.domains : (parsed.domain ? [parsed.domain] : ["Marketing"]));
-        setTools(Array.isArray(parsed.tools) ? parsed.tools : (parsed.tool ? [parsed.tool] : ["ChatGPT"]));
+        setIntent(normalizeIntent(parsed.intent || "writing"));
+        setIntents((Array.isArray(parsed.intents) ? parsed.intents : (parsed.intent ? [parsed.intent] : ["writing"])).map(normalizeIntent));
+        setDomains(Array.isArray(parsed.domains) ? parsed.domains : (parsed.domain ? [parsed.domain] : []));
+        setTools(Array.isArray(parsed.tools) ? parsed.tools : (parsed.tool ? [parsed.tool] : []));
         setTask(parsed.task || "");
-        setLanguage(parsed.language || "Persian");
-        setDifficulty(parsed.difficulty || "Beginner");
-        setOutputFormats(Array.isArray(parsed.outputFormats) ? parsed.outputFormats : (parsed.outputFormat ? [parsed.outputFormat] : ["Text"]));
+        setLanguage((parsed.language || "persian").toLowerCase());
+        setDifficulty((parsed.difficulty || "beginner").toLowerCase());
+        setOutputFormats(Array.isArray(parsed.outputFormats) ? parsed.outputFormats : (parsed.outputFormat ? [parsed.outputFormat] : ["text"]));
         setTagsInput(parsed.tags ? parsed.tags.join(", ") : "");
         setBody(parsed.body || "");
         setBodyFa((parsed.bodyFa || "").replace(/\[\[(.*?)\]\]/g, "{{$1}}"));
@@ -282,6 +289,8 @@ export default function AdminPromptAddEdit() {
     setError("");
     setSuccess(false);
 
+    if (!getUseCase(useCase)) { setError("کاربرد اصلی محتوا را انتخاب کنید."); return; }
+
     // Schema Validation block
     if (schemaError) {
       setError("لطفاً ابتدا خطای ساختار فیلدهای Wizard را تصحیح کنید.");
@@ -299,9 +308,11 @@ export default function AdminPromptAddEdit() {
     const payload = {
       title,
       description,
-      category: tools[0] || domains[0] || category || "عمومی",
-      intent: intents[0] || intent || "Create",
-      intents,
+      category: getUseCase(useCase)!.title,
+      useCase,
+      resourceType,
+      intent: normalizeIntent(intents[0] || intent || "writing"),
+      intents: intents.map(normalizeIntent),
       domains,
       tools,
       task,
@@ -546,6 +557,20 @@ export default function AdminPromptAddEdit() {
             </div>
           )}
 
+          <div className="grid gap-4 sm:grid-cols-2 rounded-xl border border-brand p-4">
+            <label className="text-sm text-primary">کاربرد اصلی *
+              <select required aria-label="کاربرد اصلی" value={useCase} onChange={e => setUseCase(e.target.value)} className="w-full mt-2 rounded-lg bg-surface border border-line p-3">
+                <option value="">انتخاب کاربرد</option>
+                {useCaseGroups.map(group => <optgroup key={group.slug} label={groupAncestors(group.slug).reverse().map(slug => getGroup(slug)!.title).join(' ← ')}>{useCases.filter(item => item.group === group.slug).map(item => <option key={item.slug} value={item.slug}>{item.title}</option>)}</optgroup>)}
+              </select>
+            </label>
+            <label className="text-sm text-primary">نوع منبع
+              <select aria-label="نوع منبع محتوا" value={resourceType} onChange={e => setResourceType(e.target.value as ResourceType)} className="w-full mt-2 rounded-lg bg-surface border border-line p-3">
+                {Object.entries(resourceTypes).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
+              </select>
+            </label>
+            <p className="text-xs text-muted sm:col-span-2">ابزارها و قالب خروجی ویژگی مکمل‌اند. برای Skill متن کامل SKILL.md و برای راهنمای ایجنت دستورالعمل و روش استفاده را وارد کنید.</p>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             {/* Intent - Multi Select */}
             <div className="flex flex-col gap-1.5 col-span-2">

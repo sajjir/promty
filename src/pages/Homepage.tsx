@@ -1,6 +1,10 @@
+import ArchiveMultiSelect from "../components/ArchiveMultiSelect";
+import { archiveFilterKeys, readFilterValues, setFilterValues, SelectionUpdate } from "../lib/archiveFilters";
+import ArchiveDiscovery from "../components/ArchiveDiscovery";
+import { getUseCase, useCaseGroups, resourceTypes, outputLabels, useCaseInGroups } from "../lib/archiveCatalog";
 import Loader from "../components/Loader";
 import PromptBackdrop from '../components/PromptBackdrop';
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Prompt } from "../types";
 import PromptCard from "../components/PromptCard";
@@ -17,6 +21,10 @@ export default function Homepage() {
   const navigate = useNavigate();
   const { toolSlug, domainSlug } = useParams<{ toolSlug?: string; domainSlug?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  // Router search-param updates do not queue like React state updates. Preserve
+  // the latest pending URL so rapid checkbox actions cannot overwrite each other.
+  const paramsRef = useRef(new URLSearchParams(searchParams));
+  useLayoutEffect(() => { paramsRef.current = new URLSearchParams(searchParams); }, [searchParams]);
   const { user, branding, siteTitle } = useAuth();
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
 
@@ -37,15 +45,10 @@ export default function Homepage() {
 
   // Search parameters parsed from URL
   const searchQuery = searchParams.get("q") || "";
-  const selectedTool = searchParams.get("tool") || "";
-  const selectedDomain = searchParams.get("domain") || "";
-  const selectedIntent = searchParams.get("intent") || "";
-  const selectedDifficulty = searchParams.get("difficulty") || "";
-  const selectedLanguage = searchParams.get("language") || "";
 
   // Helper to update any filter in URL search params
   const updateFilter = (key: string, value: string, isSearch: boolean = false) => {
-    const newParams = new URLSearchParams(searchParams);
+    const newParams = new URLSearchParams(paramsRef.current);
     if (value) {
       newParams.set(key, value);
     } else {
@@ -53,6 +56,7 @@ export default function Homepage() {
     }
     // Always reset page to 1 when filters change
     newParams.delete("page");
+    paramsRef.current = newParams;
     setSearchParams(newParams, { replace: isSearch });
   };
 
@@ -60,11 +64,16 @@ export default function Homepage() {
     updateFilter("q", val, true);
   };
 
-  const setSelectedTool = (val: string) => updateFilter("tool", val);
-  const setSelectedDomain = (val: string) => updateFilter("domain", val);
-  const setSelectedIntent = (val: string) => updateFilter("intent", val);
-  const setSelectedDifficulty = (val: string) => updateFilter("difficulty", val);
-  const setSelectedLanguage = (val: string) => updateFilter("language", val);
+  const updateSelections = (key: string, update: SelectionUpdate) => {
+    const next = new URLSearchParams(paramsRef.current);
+    const values = typeof update === 'function' ? update(readFilterValues(next,key)) : update;
+    setFilterValues(next, key, values);
+    if (key === 'group') setFilterValues(next, 'useCase', values.length ? readFilterValues(next, 'useCase').filter(slug => useCaseInGroups(slug, values)) : []);
+    next.delete('page');
+    paramsRef.current = next;
+    setSearchParams(next);
+  };
+  const removeSelection = (key: string, value: string) => updateSelections(key, current => current.filter(selected => selected !== value));
 
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,10 +82,15 @@ export default function Homepage() {
   const [dbTaxonomies, setDbTaxonomies] = useState<any[]>([]);
   const [availableFacets, setAvailableFacets] = useState<any>(null);
   const facets = availableFacets;
+  const [archiveFacets, setArchiveFacets] = useState<Record<string, Record<string, number>>>({});
 
   // Translate helper using dynamic taxonomies
   const getTranslation = (slug: string, type: string) => {
     if (!slug) return "";
+    if (type === "useCase") return getUseCase(slug)?.title || slug;
+    if (type === "group") return useCaseGroups.find(g => g.slug === slug)?.title || slug;
+    if (type === "resourceType") return resourceTypes[slug as keyof typeof resourceTypes] || slug;
+    if (type === "outputFormat") return outputLabels[slug] || slug;
     const term = dbTaxonomies.find(
       (t) => t.slug?.toLowerCase() === slug.toLowerCase() && t.type?.toLowerCase() === type.toLowerCase()
     );
@@ -84,16 +98,7 @@ export default function Homepage() {
   };
 
   // Compute filterHistory dynamically from URL parameters
-  const filterHistory = [
-    selectedIntent ? { type: "intent", value: selectedIntent, label: "" } : null,
-    selectedTool ? { type: "tool", value: selectedTool, label: "" } : null,
-    selectedDomain ? { type: "domain", value: selectedDomain, label: "" } : null,
-    selectedDifficulty ? { type: "difficulty", value: selectedDifficulty, label: "" } : null,
-    selectedLanguage ? { type: "language", value: selectedLanguage, label: "" } : null,
-  ].filter(Boolean).map((item: any) => ({
-    ...item,
-    label: getTranslation(item.value, item.type)
-  })) as { type: string; value: string; label: string }[];
+  const filterHistory = archiveFilterKeys.flatMap(type => readFilterValues(searchParams, type).map(value => ({ type, value, label: getTranslation(value, type) })));
 
   // Search state response from server
   const [searchResults, setSearchResults] = useState<{
@@ -246,7 +251,7 @@ export default function Homepage() {
 
   // Advanced Filters State
   const [showFilters, setShowFilters] = useState(false);
-  const sortBy = (searchParams.get("sort") || "usage") as "usage" | "latest" | "title";
+  const sortBy = (searchParams.get("sort") || (searchQuery.trim() ? "relevance" : "latest")) as "relevance" | "usage" | "latest" | "title";
   const setSortBy = (value: string) => updateFilter("sort", value);
   const requestVersion = useRef(0);
   const historyKey = `promty-search-history:${user?.id || "guest"}`;
@@ -282,6 +287,7 @@ export default function Homepage() {
       const newPrompts = response.data || [];
       const total = response.pagination?.total || 0;
 
+      setArchiveFacets(response.archiveFacets || {});
       if (response.facets) {
         setAvailableFacets(response.facets);
       }
@@ -313,14 +319,10 @@ export default function Homepage() {
     loadPrompts(page + 1, true);
   };
 
-  const handleFilterToggle = (type: string, value: string, label?: string) => {
-    updateFilter(type, value);
-  };
-
   const handleRemoveLastFilter = () => {
     if (filterHistory.length === 0) return;
     const last = filterHistory[filterHistory.length - 1];
-    updateFilter(last.type, "");
+    removeSelection(last.type, last.value);
   };
 
   // Initial Data Fetch
@@ -401,7 +403,7 @@ export default function Homepage() {
     const paramKey = tax.type.toLowerCase();
     const newParams = new URLSearchParams(searchParams);
     // Set the taxonomy parameter
-    newParams.set(paramKey, tax.slug);
+    setFilterValues(newParams, paramKey, [...readFilterValues(newParams,paramKey), tax.slug]);
     // Clear the search query 'q'
     newParams.delete("q");
     newParams.delete("page");
@@ -463,6 +465,7 @@ export default function Homepage() {
   };
 
   const handleClearFilters = () => {
+    paramsRef.current = new URLSearchParams();
     setSearchParams(new URLSearchParams());
 
   };
@@ -538,19 +541,19 @@ export default function Homepage() {
                       <span className="font-bold">تطبیق هوشمند الگو:</span>
 
                       {searchResults.matchedTools.map(t => (
-                        <span key={t} onClick={() => { setSelectedTool(t); setShowSuggestions(false); }} className="bg-surface px-2 py-0.5 rounded border border-brand hover:bg-brand-soft cursor-pointer text-primary font-medium">
+                        <span key={t} onClick={() => { updateSelections('tool', current => [...current,t]); setShowSuggestions(false); }} className="bg-surface px-2 py-0.5 rounded border border-brand hover:bg-brand-soft cursor-pointer text-primary font-medium">
                           🛠️ ابزار: {getTranslation(t, "tool")}
                         </span>
                       ))}
 
                       {searchResults.matchedIntents.map(i => (
-                        <span key={i} onClick={() => { setSelectedIntent(i); setShowSuggestions(false); }} className="bg-surface px-2 py-0.5 rounded border border-brand hover:bg-brand-soft cursor-pointer text-primary font-medium">
+                        <span key={i} onClick={() => { updateSelections('intent', current => [...current,i]); setShowSuggestions(false); }} className="bg-surface px-2 py-0.5 rounded border border-brand hover:bg-brand-soft cursor-pointer text-primary font-medium">
                           🎯 هدف: {getTranslation(i, "intent")}
                         </span>
                       ))}
 
                       {searchResults.matchedDomains.map(d => (
-                        <span key={d} onClick={() => { setSelectedDomain(d); setShowSuggestions(false); }} className="bg-surface px-2 py-0.5 rounded border border-brand hover:bg-brand-soft cursor-pointer text-primary font-medium">
+                        <span key={d} onClick={() => { updateSelections('domain', current => [...current,d]); setShowSuggestions(false); }} className="bg-surface px-2 py-0.5 rounded border border-brand hover:bg-brand-soft cursor-pointer text-primary font-medium">
                           🌐 حوزه: {getTranslation(d, "domain")}
                         </span>
                       ))}
@@ -676,15 +679,15 @@ export default function Homepage() {
       </section>
 
       {/* Advanced Faceted Sidebar/Filter Panel */}
-      <div className="bg-surface border border-line rounded-2xl shadow-sm overflow-hidden p-5 space-y-5">
+      <div className="bg-surface border border-line rounded-2xl shadow-sm p-5 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-brand-solid/10 text-brand rounded-xl">
               <SlidersHorizontal className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-black text-primary">فیلترهای طبقه‌بندی هوشمند</h2>
-              <p className="text-[11px] text-muted">بر اساس گراف طبقه‌بندی استاندارد Promty.ir</p>
+              <h2 className="text-base font-black text-primary">پیدا کردن منبع مناسب</h2>
+              <p className="text-[11px] text-muted">کاربرد اصلی، ابزار مکمل و خروجی مورد انتظار</p>
             </div>
           </div>
 
@@ -702,7 +705,7 @@ export default function Homepage() {
               <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showFilters ? "rotate-180" : ""}`} />
             </button>
 
-            {(selectedIntent || selectedTool || selectedDomain || selectedDifficulty || selectedLanguage) && (
+            {(filterHistory.length > 0) && (
               <button
                 onClick={handleClearFilters}
                 className="flex items-center gap-1 px-3 py-2 bg-danger-soft hover:bg-danger-soft text-danger-text text-xs font-bold rounded-xl transition"
@@ -714,40 +717,11 @@ export default function Homepage() {
           </div>
         </div>
 
-        {/* Quick Filter Chips for AI Tools */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <span className="text-xs font-bold text-muted shrink-0 ml-1">ابزارهای محبوب:</span>
-          <button
-            onClick={() => handleFilterToggle("tool", "", "همه ابزارها")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 ${
-              selectedTool === ""
-                ? "bg-brand-solid/10 text-brand"
-                : "bg-surface-soft text-secondary hover:bg-surface-soft"
-            }`}
-          >
-            همه ابزارها
-          </button>
-          {tools.map((opt) => {
-            const count = facets?.tools?.[opt.slug.toLowerCase()] || 0;
-            const isSelected = selectedTool === opt.slug;
-            return (
-              <button
-                key={opt.slug}
-                onClick={() => handleFilterToggle("tool", isSelected ? "" : opt.slug, opt.titleFa)}
-                disabled={count === 0 && !isSelected}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 flex items-center gap-1 ${
-                  isSelected
-                    ? "bg-brand-solid text-white shadow-sm"
-                    : count === 0
-                      ? "bg-surface-soft text-muted opacity-50 cursor-not-allowed border border-line"
-                      : "bg-surface-soft text-secondary hover:bg-surface-soft border border-line"
-                }`}
-              >
-                {isSelected && <Check className="w-3 h-3" />}
-                <span>{opt.titleFa} ({count})</span>
-              </button>
-            );
-          })}
+        <ArchiveDiscovery params={searchParams} counts={archiveFacets} onChange={updateSelections} />
+        <div className="space-y-1.5 max-w-sm">
+          <span className="text-sm text-muted">ابزار (اختیاری)</span>
+          <ArchiveMultiSelect label="ابزار مکمل" placeholder="همه ابزارها" selected={readFilterValues(searchParams,'tool')} onChange={values => updateSelections('tool',values)}
+            options={tools.map(opt => ({ value: opt.slug, label: opt.titleFa, count: facets?.tools?.[opt.slug.toLowerCase()] || 0 }))} />
         </div>
 
         {/* Expandable Advanced Filters Grid */}
@@ -758,129 +732,20 @@ export default function Homepage() {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="overflow-hidden border-t border-line pt-5"
+              className="border-t border-line pt-5"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
 
-                {/* Intent Select */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted block">🎯 هدف پرامپت (Intent)</label>
-                  <select
-                    value={selectedIntent}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const opt = intents.find(t => t.slug === val);
-                      handleFilterToggle("intent", val, opt ? opt.titleFa : val);
-                    }}
-                    className="w-full text-xs py-2 px-3 bg-surface-soft border border-line rounded-xl focus:border-brand outline-none text-right font-medium"
-                  >
-                    <option value="">همه اهداف</option>
-                    {intents.map(opt => {
-                      const count = facets?.intents?.[opt.slug.toLowerCase()] || 0;
-                      const isSelected = selectedIntent === opt.slug;
-                      return (
-                        <option
-                          key={opt.slug}
-                          value={opt.slug}
-                          disabled={count === 0 && !isSelected}
-                          className={count === 0 && !isSelected ? "text-muted" : ""}
-                        >
-                          {opt.titleFa} ({count})
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-
-                {/* Domain Select */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted block">🌐 حوزه موضوعی (Domain)</label>
-                  <select
-                    value={selectedDomain}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const opt = domains.find(t => t.slug === val);
-                      handleFilterToggle("domain", val, opt ? opt.titleFa : val);
-                    }}
-                    className="w-full text-xs py-2 px-3 bg-surface-soft border border-line rounded-xl focus:border-brand outline-none text-right font-medium"
-                  >
-                    <option value="">همه حوزه‌ها</option>
-                    {domains.map(opt => {
-                      const count = facets?.domains?.[opt.slug.toLowerCase()] || 0;
-                      const isSelected = selectedDomain === opt.slug;
-                      return (
-                        <option
-                          key={opt.slug}
-                          value={opt.slug}
-                          disabled={count === 0 && !isSelected}
-                          className={count === 0 && !isSelected ? "text-muted" : ""}
-                        >
-                          {opt.titleFa} ({count})
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-
-                {/* Difficulty Select */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted block">⚡ سطح سختی پرامپت</label>
-                  <select
-                    value={selectedDifficulty}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const opt = difficulties.find(t => t.slug === val);
-                      handleFilterToggle("difficulty", val, opt ? opt.titleFa : val);
-                    }}
-                    className="w-full text-xs py-2 px-3 bg-surface-soft border border-line rounded-xl focus:border-brand outline-none text-right font-medium"
-                  >
-                    <option value="">همه سطوح</option>
-                    {difficulties.map(opt => {
-                      const count = facets?.difficulties?.[opt.slug.toLowerCase()] || 0;
-                      const isSelected = selectedDifficulty === opt.slug;
-                      return (
-                        <option
-                          key={opt.slug}
-                          value={opt.slug}
-                          disabled={count === 0 && !isSelected}
-                          className={count === 0 && !isSelected ? "text-muted" : ""}
-                        >
-                          {opt.titleFa} ({count})
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-
-                {/* Language Select */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted block">💬 زبان پرامپت</label>
-                  <select
-                    value={selectedLanguage}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const opt = languages.find(t => t.slug === val);
-                      handleFilterToggle("language", val, opt ? opt.titleFa : val);
-                    }}
-                    className="w-full text-xs py-2 px-3 bg-surface-soft border border-line rounded-xl focus:border-brand outline-none text-right font-medium"
-                  >
-                    <option value="">همه زبان‌ها</option>
-                    {languages.map(opt => {
-                      const count = facets?.languages?.[opt.slug.toLowerCase()] || 0;
-                      const isSelected = selectedLanguage === opt.slug;
-                      return (
-                        <option
-                          key={opt.slug}
-                          value={opt.slug}
-                          disabled={count === 0 && !isSelected}
-                          className={count === 0 && !isSelected ? "text-muted" : ""}
-                        >
-                          {opt.titleFa} ({count})
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
+                {[
+                  { key: 'intent', label: 'هدف مکمل', placeholder: 'همه هدف‌ها', options: intents, counts: facets?.intents },
+                  { key: 'domain', label: 'حوزه موضوعی', placeholder: 'همه حوزه‌ها', options: domains, counts: facets?.domains },
+                  { key: 'difficulty', label: 'سطح دشواری', placeholder: 'همه سطح‌ها', options: difficulties, counts: facets?.difficulties },
+                  { key: 'language', label: 'زبان', placeholder: 'همه زبان‌ها', options: languages, counts: facets?.languages },
+                ].map(facet => <div key={facet.key} className="space-y-1.5">
+                  <span className="text-xs font-bold text-muted block">{facet.label}</span>
+                  <ArchiveMultiSelect label={facet.label} placeholder={facet.placeholder} selected={readFilterValues(searchParams,facet.key)} onChange={values => updateSelections(facet.key,values)}
+                    options={facet.options.map(opt => ({ value: opt.slug, label: opt.titleFa, count: facet.counts?.[opt.slug.toLowerCase()] || 0 }))} />
+                </div>)}
 
               </div>
             </motion.div>
@@ -888,39 +753,10 @@ export default function Homepage() {
         </AnimatePresence>
 
         {/* Active Applied Filters Summary */}
-        {(selectedIntent || selectedTool || selectedDomain || selectedDifficulty || selectedLanguage) && (
+        {(filterHistory.length > 0) && (
           <div className="flex flex-wrap items-center gap-1.5 bg-surface-soft p-2.5 rounded-xl border border-line">
             <span className="text-[10px] text-muted font-bold ml-1.5">فیلترهای اعمال‌شده:</span>
-            {selectedIntent && (
-              <span className="flex items-center gap-1 bg-surface text-xs text-primary px-2 py-1 rounded-lg border border-line">
-                <span>🎯 هدف: {getTranslation(selectedIntent, "intent")}</span>
-                <X className="w-3 h-3 text-muted cursor-pointer hover:text-danger-text" onClick={() => handleFilterToggle("intent", "", "")} />
-              </span>
-            )}
-            {selectedTool && (
-              <span className="flex items-center gap-1 bg-surface text-xs text-primary px-2 py-1 rounded-lg border border-line">
-                <span>🛠️ ابزار: {getTranslation(selectedTool, "tool")}</span>
-                <X className="w-3 h-3 text-muted cursor-pointer hover:text-danger-text" onClick={() => handleFilterToggle("tool", "", "")} />
-              </span>
-            )}
-            {selectedDomain && (
-              <span className="flex items-center gap-1 bg-surface text-xs text-primary px-2 py-1 rounded-lg border border-line">
-                <span>🌐 حوزه: {getTranslation(selectedDomain, "domain")}</span>
-                <X className="w-3 h-3 text-muted cursor-pointer hover:text-danger-text" onClick={() => handleFilterToggle("domain", "", "")} />
-              </span>
-            )}
-            {selectedDifficulty && (
-              <span className="flex items-center gap-1 bg-surface text-xs text-primary px-2 py-1 rounded-lg border border-line">
-                <span>⚡ سطح: {getTranslation(selectedDifficulty, "difficulty")}</span>
-                <X className="w-3 h-3 text-muted cursor-pointer hover:text-danger-text" onClick={() => handleFilterToggle("difficulty", "", "")} />
-              </span>
-            )}
-            {selectedLanguage && (
-              <span className="flex items-center gap-1 bg-surface text-xs text-primary px-2 py-1 rounded-lg border border-line">
-                <span>💬 زبان: {getTranslation(selectedLanguage, "language")}</span>
-                <X className="w-3 h-3 text-muted cursor-pointer hover:text-danger-text" onClick={() => handleFilterToggle("language", "", "")} />
-              </span>
-            )}
+            {filterHistory.map(item => <button key={`${item.type}-${item.value}`} aria-label={`حذف فیلتر ${item.label}`} onClick={() => removeSelection(item.type,item.value)} className="rounded-lg border border-line bg-surface px-2 py-1 text-xs">{item.label} ×</button>)}
           </div>
         )}
       </div>
@@ -931,7 +767,7 @@ export default function Homepage() {
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-lg font-black text-primary flex items-center gap-2">
               <Compass className="w-5 h-5 text-brand" />
-              <span>آرشیو جامع پرامپت‌ها</span>
+              <span>آرشیو کاربردمحور</span>
             </h2>
             <button
               id="open-contrib-modal-btn"
@@ -945,7 +781,7 @@ export default function Homepage() {
 
           <div className="flex items-center gap-3">
             <span className="text-muted text-xs hidden sm:inline">
-              {loading ? "در حال دریافت..." : `نمایش ${filteredPrompts.length} از ${totalPromptsCount} پرامپت`}
+              {loading ? "در حال دریافت..." : `نمایش ${filteredPrompts.length} از ${totalPromptsCount} منبع`}
             </span>
 
             {/* Sort Dropdown */}
@@ -956,7 +792,8 @@ export default function Homepage() {
                 onChange={(e) => setSortBy(e.target.value as any)}
                 className="text-xs bg-surface border border-line rounded-lg py-1 px-2 outline-none font-bold text-secondary focus:border-brand cursor-pointer"
               >
-                <option value="usage">محبوب‌ترین‌ها</option>
+                <option value="relevance">مرتبط‌ترین‌ها</option>
+                <option value="usage">بیشترین کپی</option>
                 <option value="latest">جدیدترین‌ها</option>
                 <option value="title">الفبایی (عنوان)</option>
               </select>
@@ -1003,7 +840,7 @@ export default function Homepage() {
                   ) : (
                     <ChevronDown className="w-4 h-4 text-brand group-hover:translate-y-0.5 transition-transform" />
                   )}
-                  <span>{isLoadingMore ? "در حال بارگذاری..." : "نمایش پرامپت‌های بیشتر"}</span>
+                  <span>{isLoadingMore ? "در حال بارگذاری..." : "نمایش منابع بیشتر"}</span>
                 </button>
               </div>
             )}
@@ -1011,7 +848,7 @@ export default function Homepage() {
         ) : (
           <div className="bg-surface border border-line rounded-2xl p-12 text-center text-muted space-y-3 shadow-sm">
             <Sparkle className="w-10 h-10 text-muted mx-auto animate-bounce" />
-            <p className="text-sm font-black text-primary">هیچ پرامپتی پیدا نشد.</p>
+            <p className="text-sm font-black text-primary">هیچ منبعی پیدا نشد.</p>
             <p className="text-xs text-muted max-w-sm mx-auto">
               فیلترهای اعمال‌شده بسیار محدود کننده هستند، یا پرامپتی متناسب با عبارت جستجوی شما یافت نشد. برای نتایج بهتر فیلترها را حذف کنید.
             </p>

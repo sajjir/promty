@@ -10,6 +10,9 @@ export interface FieldSchema {
 }
 
 export interface Prompt {
+  useCase?: string;
+  resourceType?: 'prompt' | 'skill' | 'agent-guide';
+  isDemo?: boolean;
   id: string;
   title: string;
   description: string;

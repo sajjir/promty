@@ -1,4 +1,5 @@
-import { filterPrompts, paginatePrompts } from "../filterPrompts";
+import { normalizeArchivePrompt } from '../../../lib/archiveCatalog';
+import { filterPrompts, paginatePrompts, buildArchiveFacets } from "../filterPrompts";
 // src/server/repositories/prisma/PrismaPromptRepository.ts
 import { PrismaClient, Prompt as PrismaPrompt } from "@prisma/client";
 import { IPromptRepository, PromptFilters } from "../IPromptRepository";
@@ -15,7 +16,10 @@ export class PrismaPromptRepository implements IPromptRepository {
   }
 
   private mapPrismaPrompt(dbPrompt: any): Prompt {
-    return {
+    return normalizeArchivePrompt({
+      useCase: dbPrompt.useCase || undefined,
+      resourceType: dbPrompt.resourceType || "prompt",
+      isDemo: dbPrompt.isDemo || false,
       id: dbPrompt.id,
       title: dbPrompt.title,
       description: dbPrompt.description,
@@ -47,7 +51,7 @@ export class PrismaPromptRepository implements IPromptRepository {
       } : undefined,
       coverImage: dbPrompt.coverImage || undefined,
       mediaGallery: dbPrompt.mediaGallery ? (dbPrompt.mediaGallery as unknown as string[]) : undefined
-    };
+    });
   }
 
   public async getById(id: string): Promise<Prompt | null> {
@@ -70,8 +74,12 @@ export class PrismaPromptRepository implements IPromptRepository {
 
   public async create(promptData: Omit<Prompt, "id" | "createdAt" | "updatedAt" | "usageCount">): Promise<Prompt> {
     try {
+      promptData = normalizeArchivePrompt(promptData);
       const dbPrompt = await this.prisma.prompt.create({
         data: {
+          useCase: promptData.useCase || null,
+          resourceType: promptData.resourceType || "prompt",
+          isDemo: promptData.isDemo || false,
           title: promptData.title,
           description: promptData.description || "",
           body: promptData.body,
@@ -107,7 +115,9 @@ export class PrismaPromptRepository implements IPromptRepository {
 
   public async update(id: string, updates: Partial<Prompt>): Promise<Prompt> {
     try {
+      updates = normalizeArchivePrompt(updates);
       const data: any = {};
+      for (const key of ["useCase", "resourceType", "isDemo"] as const) if (updates[key] !== undefined) data[key] = updates[key];
       if (updates.title !== undefined) data.title = updates.title;
       if (updates.description !== undefined) data.description = updates.description;
       if (updates.body !== undefined) data.body = updates.body;
@@ -204,111 +214,8 @@ export class PrismaPromptRepository implements IPromptRepository {
     }
   }
 
-  public async getFacets(filters?: {
-    q?: string;
-    tool?: string;
-    domain?: string;
-    intent?: string;
-    difficulty?: string;
-    language?: string;
-  }): Promise<{
-    tools: Record<string, number>;
-    domains: Record<string, number>;
-    intents: Record<string, number>;
-    difficulties: Record<string, number>;
-    languages: Record<string, number>;
-  }> {
-    try {
-      const dbPrompts = await this.prisma.prompt.findMany({
-        where: { isActive: true },
-      });
-      const prompts = dbPrompts.map((p) => this.mapPrismaPrompt(p));
-
-      let matchedPrompts = prompts;
-      if (filters?.q && filters.q.trim()) {
-        matchedPrompts = SearchService.search(prompts, filters.q).prompts;
-      }
-
-      if (filters) {
-        if (filters.tool) {
-          const tLower = filters.tool.toLowerCase();
-          matchedPrompts = matchedPrompts.filter((p) =>
-            (p.tools || []).some((t) => t.toLowerCase() === tLower)
-          );
-        }
-        if (filters.domain) {
-          const dLower = filters.domain.toLowerCase();
-          matchedPrompts = matchedPrompts.filter((p) =>
-            (p.domains || []).some((d) => d.toLowerCase() === dLower)
-          );
-        }
-        if (filters.intent) {
-          const iLower = filters.intent.toLowerCase();
-          matchedPrompts = matchedPrompts.filter(
-            (p) => p.intent && p.intent.toLowerCase() === iLower
-          );
-        }
-        if (filters.difficulty) {
-          const diffLower = filters.difficulty.toLowerCase();
-          matchedPrompts = matchedPrompts.filter(
-            (p) => p.difficulty && p.difficulty.toLowerCase() === diffLower
-          );
-        }
-        if (filters.language) {
-          const langLower = filters.language.toLowerCase();
-          matchedPrompts = matchedPrompts.filter(
-            (p) => p.language && p.language.toLowerCase() === langLower
-          );
-        }
-      }
-
-      const toolsCount: Record<string, number> = {};
-      const domainsCount: Record<string, number> = {};
-      const intentsCount: Record<string, number> = {};
-      const difficultiesCount: Record<string, number> = {};
-      const languagesCount: Record<string, number> = {};
-
-      for (const p of matchedPrompts) {
-        if (p.tools && Array.isArray(p.tools)) {
-          for (const t of p.tools) {
-            if (t) {
-              const key = t.toLowerCase();
-              toolsCount[key] = (toolsCount[key] || 0) + 1;
-            }
-          }
-        }
-        if (p.domains && Array.isArray(p.domains)) {
-          for (const d of p.domains) {
-            if (d) {
-              const key = d.toLowerCase();
-              domainsCount[key] = (domainsCount[key] || 0) + 1;
-            }
-          }
-        }
-        if (p.intent) {
-          const key = p.intent.toLowerCase();
-          intentsCount[key] = (intentsCount[key] || 0) + 1;
-        }
-        if (p.difficulty) {
-          const key = p.difficulty.toLowerCase();
-          difficultiesCount[key] = (difficultiesCount[key] || 0) + 1;
-        }
-        if (p.language) {
-          const key = p.language.toLowerCase();
-          languagesCount[key] = (languagesCount[key] || 0) + 1;
-        }
-      }
-
-      return {
-        tools: toolsCount,
-        domains: domainsCount,
-        intents: intentsCount,
-        difficulties: difficultiesCount,
-        languages: languagesCount,
-      };
-    } catch (error) {
-      console.error("Prisma getFacets failed:", error);
-      throw new Error("Failed to retrieve facets", { cause: error });
-    }
+  public async getFacets(filters?: PromptFilters) {
+    const { prompts } = await this.getAll({ isActive: true });
+    return buildArchiveFacets(prompts, { ...filters, isActive: true }).facets;
   }
 }

@@ -1,3 +1,4 @@
+import { getUseCase, resourceTypes, outputLabels, useCasePath } from "../lib/archiveCatalog";
 import Loader from "../components/Loader";
 import { usePromptLanguage } from "../lib/usePromptLanguage";
 import IranIcon from "../components/IranIcon";
@@ -82,6 +83,8 @@ const TRANSLATIONS: Record<string, string> = {
   "learn": "آموزش",
   "automate": "اتوماسیون",
   "research": "پژوهش",
+  "teaching": "یادگیری و آموزش", "learning": "یادگیری و آموزش",
+  "writing": "نوشتن و تولید متن", "coding": "برنامه‌نویسی", "planning": "برنامه‌ریزی", "analysis": "تحلیل", "visual-generation": "تولید تصویر یا ویدیو",
   "productivity": "بهره‌وری فردی",
   "business": "کسب‌وکار",
   "marketing": "مارکتینگ",
@@ -149,6 +152,9 @@ function TaxonomyBlock({ prompt }: { prompt: Prompt }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3.5 text-xs text-secondary">
+        <div className="col-span-2"><span className="block text-muted">کاربرد اصلی</span><Link to={`/?useCase=${prompt.useCase || ''}`} className="text-brand">{useCasePath(prompt.useCase) || 'نیازمند تعیین کاربرد'}</Link></div>
+        <div>نوع منبع: {resourceTypes[prompt.resourceType || 'prompt']}</div>
+        <div>خروجی: {(prompt.outputFormats || []).map(value => outputLabels[value] || value).join('، ')}</div>
         {prompt.tools && prompt.tools.length > 0 && (
           <div className="space-y-1">
             <span className="text-[10px] text-muted font-bold block">🛠️ ابزار هوش مصنوعی:</span>
@@ -249,7 +255,8 @@ export default function PromptDetail() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [preferredLanguage, setPromptLang] = usePromptLanguage();
-  const promptLang = preferredLanguage === "fa" && prompt?.bodyFa ? "fa" : "en";
+  const isPersianOnly = !!prompt?.bodyFa && prompt.bodyFa === prompt.body;
+  const promptLang = isPersianOnly || (preferredLanguage === "fa" && prompt?.bodyFa) ? "fa" : "en";
   const [selectedRunTool, setSelectedRunTool] = useState<string>("");
   const [isManualEditMode, setIsManualEditMode] = useState(false);
   const [boxCopied, setBoxCopied] = useState(false);
@@ -577,8 +584,9 @@ export default function PromptDetail() {
     // 2. Determine target tool and URL
     const targetTool = overrideTool || (prompt?.tools && prompt.tools.length > 0 ? prompt.tools[0] : "");
     const toolLower = targetTool.toLowerCase();
+    if (toolLower === "codex") { setCopyError("متن کپی شد؛ آن را در گفت‌وگوی Codex و پروژه موردنظر وارد کنید."); return; }
 
-    let baseUrl = "https://chatgpt.com/?q="; // Default
+    let baseUrl = "";
     if (targetTool) {
       const matchedKey = Object.keys(RUN_URLS).find(k => toolLower.includes(k) || k.includes(toolLower));
       if (matchedKey) {
@@ -587,6 +595,8 @@ export default function PromptDetail() {
         baseUrl = "https://fal.ai/";
       }
     }
+
+    if (!baseUrl) { setCopyError(`متن کپی شد؛ آن را در ابزار ${targetTool || "مقصد"} وارد کنید.`); return; }
 
     // 3. Construct URL and open in new tab
     const finalUrl = baseUrl.includes("?q=")
@@ -643,10 +653,11 @@ export default function PromptDetail() {
               .filter((p: Prompt) => p.id !== currentPrompt?.id && p.isActive)
               .map((p: Prompt) => {
                 let score = 0;
-                if (p.category === currentPrompt?.category) score += 5;
+                if (currentPrompt?.useCase && p.useCase === currentPrompt.useCase) score += 20;
+                if (getUseCase(p.useCase)?.group && getUseCase(p.useCase)?.group === getUseCase(currentPrompt?.useCase)?.group) score += 10;
                 if (currentPrompt?.tools?.some(t => p.tools?.includes(t))) score += 4;
                 if (currentPrompt?.domains?.some(d => p.domains?.includes(d))) score += 3;
-                if (p.tags.some(t => currentPrompt?.tags.includes(t))) score += 2;
+                if (p.tags?.some(t => t !== 'نمونه آزمایشی' && currentPrompt?.tags?.includes(t))) score += 2;
                 return { prompt: p, score };
               })
               .filter(item => item.score > 0)
@@ -710,14 +721,20 @@ export default function PromptDetail() {
   const IconComponent = categoryIcons[prompt.category || ""] || Sparkles;
 
   // Render a mock preview of textual output (for ChatGPT, Claude, etc)
-  const IMAGE_TOOLS = ['midjourney', 'flux', 'stable-diffusion', 'dalle', 'runway', 'kling'];
-  const isImagePrompt = prompt.tools ? prompt.tools.some(tool => IMAGE_TOOLS.includes(tool.toLowerCase())) : false;
+  const isImagePrompt = prompt.outputFormats?.includes("image") || false;
 
-  const isCoding =
-    prompt.tools?.some(t => ["chatgpt", "claude", "gemini", "grok"].includes(t.toLowerCase())) ||
-    prompt.domains?.some(d => ["programming", "code", "development"].includes(d.toLowerCase())) ||
-    prompt.intent?.toLowerCase() === "code" ||
-    prompt.tags?.some(tag => ["کد", "برنامه‌نویسی", "react", "programming", "code"].includes(tag.toLowerCase()));
+  const isCoding = prompt.outputFormats?.some(format => ['code', 'react', 'html', 'javascript', 'python', 'typescript', 'sql'].includes(format)) || false;
+  const downloadResource = () => {
+    const template = promptLang === 'fa' && prompt.bodyFa ? prompt.bodyFa : prompt.body;
+    const error = getPromptCopyError(renderedBody, prompt.fieldsSchema || [], liveValues, template);
+    if (error) { setCopyError(error); return; }
+    setCopyError(null);
+    const url = URL.createObjectURL(new Blob([renderedBody], { type: 'text/markdown;charset=utf-8' }));
+    const link = document.createElement('a'); link.href = url;
+    link.download = prompt.resourceType === 'skill' ? 'SKILL.md' : 'GUIDE.md';
+    link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
 
   const mediaGalleryArray = Array.isArray(prompt.mediaGallery)
     ? (prompt.mediaGallery as unknown as string[])
@@ -736,12 +753,18 @@ export default function PromptDetail() {
   return (
     <div className="space-y-8 pb-32 lg:pb-32 animate-fade-in text-right" dir="rtl">
 
+      {prompt.isDemo && <p role="note" className="rounded-xl border border-brand bg-brand-soft p-3 text-sm text-brand">نمونه آزمایشی برای بررسی آرشیو و شخصی‌سازی؛ کیفیت خروجی و سازگاری ابزارها هنوز تأیید نشده است.</p>}
+      {prompt.resourceType && prompt.resourceType !== 'prompt' && <section aria-label="راهنمای دریافت منبع" className="rounded-xl border border-line bg-surface p-4 space-y-2">
+        <h2 className="font-bold">{resourceTypes[prompt.resourceType]} — دریافت فایل Markdown</h2>
+        <p className="text-sm text-muted">{prompt.resourceType === 'skill' ? 'پس از شخصی‌سازی، فایل SKILL.md را در پوشه یک مهارت در محیط سازگار قرار دهید و راهنمای داخل آن را بخوانید. دانلود، مهارت را نصب یا اجرا نمی‌کند.' : 'فایل GUIDE.md را به ایجنت معرفی کنید تا آن را بخواند. پیش از ادغام قواعد با راهنمای پروژه، محتوای آن را بررسی کنید.'}</p>
+        <button onClick={downloadResource} className="rounded-lg bg-brand-solid text-white px-4 py-2">دریافت فایل {prompt.resourceType === 'skill' ? 'SKILL.md' : 'GUIDE.md'}</button>
+      </section>}
       {/* Top Breadcrumb Nav */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-surface p-4 border border-line rounded-2xl shadow-xs">
         <nav className="flex items-center gap-1.5 text-xs text-muted font-bold">
           <Link to="/" className="hover:text-secondary transition">خانه</Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <Link to={`/tool/${encodeURIComponent(prompt.tools?.[0] || prompt.category || "chatgpt")}`} className="text-muted bg-surface-soft px-2 py-0.5 rounded-md border border-line hover:text-brand focus-visible:ring-2 focus-visible:ring-brand">{prompt.tools?.[0] || prompt.category || "عمومی"}</Link>
+          <Link to={`/?useCase=${prompt.useCase || ""}`} className="text-muted bg-surface-soft px-2 py-0.5 rounded-md border border-line hover:text-brand focus-visible:ring-2 focus-visible:ring-brand">{getUseCase(prompt.useCase)?.title || "آرشیو"}</Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-primary truncate max-w-[150px]">{prompt.title}</span>
         </nav>
@@ -936,9 +959,10 @@ export default function PromptDetail() {
                 <button type="button" aria-pressed={promptLang === 'fa'} disabled={!prompt.bodyFa} title={!prompt.bodyFa ? 'نسخه پارسی هنوز ثبت نشده است' : 'نسخه پارسی'} onClick={() => { setPromptLang('fa'); setIsManualEditMode(false); }} className={`flex min-h-11 items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold disabled:opacity-40 ${promptLang === 'fa' ? 'bg-brand-solid text-white' : 'text-secondary'}`}>
                   <IranIcon /><span>نسخه پارسی</span>
                 </button>
-                <button type="button" aria-pressed={promptLang === 'en'} onClick={() => { setPromptLang('en'); setIsManualEditMode(false); }} className={`flex min-h-11 flex-wrap items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold ${promptLang === 'en' ? 'bg-brand-solid text-white' : 'text-secondary'}`}><span aria-hidden="true">EN</span><span>English</span><small className="text-[9px]">(نسخه پیشنهادی)</small></button>
+                <button type="button" disabled={isPersianOnly} title={isPersianOnly ? "نسخه انگلیسی ثبت نشده است" : "نسخه انگلیسی"} aria-pressed={promptLang === 'en'} onClick={() => { setPromptLang('en'); setIsManualEditMode(false); }} className={`flex min-h-11 flex-wrap items-center justify-center gap-1 rounded-lg px-1 text-xs font-bold disabled:opacity-40 ${promptLang === 'en' ? 'bg-brand-solid text-white' : 'text-secondary'}`}><span aria-hidden="true">EN</span><span>English</span><small className="text-[9px]">(نسخه پیشنهادی)</small></button>
               </div>
               {!prompt.bodyFa && <p className="text-[11px] text-muted">نسخه پارسی هنوز ثبت نشده است.</p>}
+              {isPersianOnly && <p className="text-[11px] text-muted">این منبع فعلاً فقط نسخه فارسی دارد.</p>}
               <div className="relative">
                 {isManualEditMode ? (
                   <textarea
@@ -999,7 +1023,7 @@ export default function PromptDetail() {
                  {/* Left side empty or metadata */}
                </div>
 
-               {prompt.tools && prompt.tools.length > 1 ? (
+               {prompt.resourceType && prompt.resourceType !== "prompt" ? <span className="text-xs text-muted">این منبع را طبق راهنمای دریافت در ایجنت استفاده کنید.</span> : prompt.tools && prompt.tools.length > 1 ? (
                  <div className="flex items-center bg-surface-soft hover:bg-surface-inset rounded-lg text-secondary overflow-hidden transition-all text-xs shrink-0 border border-line shadow-xs">
                    <button
                      onClick={() => handleRunExternal(renderedBody, selectedRunTool)}
@@ -1048,7 +1072,7 @@ export default function PromptDetail() {
                 <Compass className="w-5 h-5 text-brand" />
                 <span>پرامپت‌های مکمل و پیشنهادی</span>
               </h3>
-              <p className="text-[11px] text-muted font-semibold">پرامپت‌هایی با ابزارها یا موضوعات طبقه‌بندی شده مشابه که مکمل تسک فعلی شما هستند</p>
+              <p className="text-[11px] text-muted font-semibold">منابع با کاربرد مشابه در اولویت‌اند؛ حوزه و ابزار نیز در پیشنهادها مؤثرند</p>
             </div>
           </div>
 

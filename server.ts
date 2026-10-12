@@ -1,3 +1,6 @@
+import { getUseCase, resourceTypes, normalizeArchivePrompt, normalizeIntent } from './src/lib/archiveCatalog';
+import { buildArchiveFacets } from './src/server/repositories/filterPrompts';
+import { archiveFilterKeys, filterValues } from './src/lib/archiveFilters';
 import "dotenv/config";
 import crypto from "node:crypto";
 import { securityState } from "./src/server/services/securityState.ts";
@@ -1988,17 +1991,11 @@ async function startServer() {
   // API - Get Facets for progressive filtering
   app.get("/api/facets", async (req, res) => {
     try {
-      const { q, tool, domain, intent, difficulty, language } = req.query;
-      const filters = {
-        q: typeof q === "string" ? q : undefined,
-        tool: typeof tool === "string" ? tool : undefined,
-        domain: typeof domain === "string" ? domain : undefined,
-        intent: typeof intent === "string" ? intent : undefined,
-        difficulty: typeof difficulty === "string" ? difficulty : undefined,
-        language: typeof language === "string" ? language : undefined,
-      };
-      const facetsResult = await promptRepo.getFacets(filters);
-      res.json({ success: true, facets: facetsResult });
+      const filters: any = { isActive: true };
+      for (const key of archiveFilterKeys) filters[key] = filterValues(req.query[key]);
+      if (typeof req.query.q === 'string') filters.q = req.query.q.slice(0, 300);
+      const { prompts } = await promptRepo.getAll({ isActive: true, q: filters.q });
+      res.json({ success: true, ...buildArchiveFacets(prompts, filters) });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err.message });
     }
@@ -2026,56 +2023,12 @@ async function startServer() {
         filters.category = category;
       }
 
-      for (const key of ["q", "tool", "domain", "intent", "difficulty", "language", "sort"]) {
-        if (typeof req.query[key] === "string") filters[key] = String(req.query[key]).slice(0, 300);
-      }
+      for (const key of archiveFilterKeys) filters[key] = filterValues(req.query[key]);
+      for (const key of ['q', 'sort']) if (typeof req.query[key] === 'string') filters[key] = String(req.query[key]).slice(0, 300);
       if (isAdmin && ["true", "false"].includes(String(req.query.isActive))) filters.isActive = req.query.isActive === "true";
       const { prompts, totalCount } = await promptRepo.getAll(filters);
-
-      // Compute facets correctly across all matching records (without pagination limit)
-      const allMatchingFilters = { ...filters };
-      delete allMatchingFilters.page;
-      delete allMatchingFilters.limit;
-      const { prompts: allMatchingPrompts } = await promptRepo.getAll(allMatchingFilters);
-
-      const facets = {
-        tools: {} as Record<string, number>,
-        intents: {} as Record<string, number>,
-        domains: {} as Record<string, number>,
-        difficulties: {} as Record<string, number>,
-        languages: {} as Record<string, number>
-      };
-
-      for (const p of allMatchingPrompts) {
-        if (p.tools && Array.isArray(p.tools)) {
-          for (const t of p.tools) {
-            if (t) {
-              const key = t.toLowerCase();
-              facets.tools[key] = (facets.tools[key] || 0) + 1;
-            }
-          }
-        }
-        if (p.intent) {
-          const key = p.intent.toLowerCase();
-          facets.intents[key] = (facets.intents[key] || 0) + 1;
-        }
-        if (p.domains && Array.isArray(p.domains)) {
-          for (const d of p.domains) {
-            if (d) {
-              const key = d.toLowerCase();
-              facets.domains[key] = (facets.domains[key] || 0) + 1;
-            }
-          }
-        }
-        if (p.difficulty) {
-          const key = p.difficulty.toLowerCase();
-          facets.difficulties[key] = (facets.difficulties[key] || 0) + 1;
-        }
-        if (p.language) {
-          const key = p.language.toLowerCase();
-          facets.languages[key] = (facets.languages[key] || 0) + 1;
-        }
-      }
+      const { prompts: discovery } = await promptRepo.getAll({ isActive: filters.isActive, q: filters.q, category: filters.category });
+      const { facets, archiveFacets } = buildArchiveFacets(discovery, filters);
 
       res.json({
         success: true,
@@ -2086,7 +2039,7 @@ async function startServer() {
           limit,
           totalPages: Math.ceil(totalCount / limit),
         },
-        facets
+        facets, archiveFacets
       });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err.message });
@@ -2138,7 +2091,8 @@ async function startServer() {
   // API - Create Prompt (admin only)
   app.post("/api/prompts", adminAuth, async (req, res) => {
     try {
-      const promptData = req.body;
+      const promptData = normalizeArchivePrompt(req.body);
+      if ((promptData.useCase !== undefined && !getUseCase(promptData.useCase)) || (promptData.resourceType !== undefined && !Object.hasOwn(resourceTypes, promptData.resourceType))) return res.status(400).json({ success: false, message: "کاربرد یا نوع منبع معتبر نیست." });
       if (!promptData.title || !promptData.body) {
         return res.status(400).json({ success: false, message: "فیلدهای اجباری ارسال نشده‌اند." });
       }
@@ -2153,7 +2107,8 @@ async function startServer() {
   // API - Submit Prompt publicly (non-admin contribution)
   app.post("/api/prompts/submit", async (req, res) => {
     try {
-      const promptData = req.body;
+      const promptData = normalizeArchivePrompt(req.body);
+      if ((promptData.useCase !== undefined && !getUseCase(promptData.useCase)) || (promptData.resourceType !== undefined && !Object.hasOwn(resourceTypes, promptData.resourceType))) return res.status(400).json({ success: false, message: "کاربرد یا نوع منبع معتبر نیست." });
       if (!promptData.title || !promptData.body) {
         return res.status(400).json({ success: false, message: "عنوان و متن پرامپت الزامی هستند." });
       }
@@ -2283,7 +2238,8 @@ async function startServer() {
   app.put("/api/prompts/:id", adminAuth, async (req, res) => {
     try {
       const { id } = req.params;
-      const updates = req.body;
+      const updates = normalizeArchivePrompt(req.body);
+      if ((updates.useCase !== undefined && !getUseCase(updates.useCase)) || (updates.resourceType !== undefined && !Object.hasOwn(resourceTypes, updates.resourceType))) return res.status(400).json({ success: false, message: "کاربرد یا نوع منبع معتبر نیست." });
 
       const prompt = await promptRepo.getById(id);
       if (!prompt) {

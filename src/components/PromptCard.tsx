@@ -1,3 +1,4 @@
+import { getUseCase, resourceTypes, outputLabels } from "../lib/archiveCatalog";
 import { getPromptCopyError } from "./PromptWizard";
 import { usePromptLanguage } from "../lib/usePromptLanguage";
 import React from "react";
@@ -123,9 +124,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
     }
   };
 
-  const rawLabel = (prompt.tools && prompt.tools[0]) || (prompt.domains && prompt.domains[0]) || (prompt.intents && prompt.intents[0]) || prompt.intent || (prompt as any).category || "عمومی";
-  const categoryLabel = TRANSLATIONS[rawLabel.toLowerCase()] || rawLabel;
-  const extraToolsCount = (prompt.tools?.length || 0) > 1 ? prompt.tools!.length - 1 : 0;
+  const categoryLabel = getUseCase(prompt.useCase)?.title || 'کاربرد تعیین نشده';
   const IconComponent = categoryIcons[categoryLabel] || Sparkles;
 
   // Three-level cover rendering waterfall
@@ -209,14 +208,13 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
 
       {/* Content */}
       <div className="p-5 flex-1 flex flex-col">
-        {/* Category & Tool Badge */}
+        <div className="flex flex-wrap gap-2 text-xs text-muted mb-2"><span>{resourceTypes[prompt.resourceType || 'prompt']}</span>{prompt.isDemo && <span className="text-brand">نمونه آزمایشی</span>}</div>
+        {/* Main use case */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5 text-muted text-xs">
             <IconComponent className="w-3.5 h-3.5 text-brand" />
             <span className="font-bold">{categoryLabel}</span>
-            {extraToolsCount > 0 && (
-              <span className="text-[9px] text-muted font-bold bg-surface-soft px-1.5 py-0.5 rounded">+{extraToolsCount}</span>
-            )}
+
           </div>
           {prompt.difficulty && (
             <span className="text-[10px] text-muted font-bold px-2 py-0.5 bg-surface-soft rounded">
@@ -244,14 +242,15 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
 
         {/* Metadata Badges tag */}
         <div className="flex flex-wrap gap-1.5 mb-4">
+          {!!prompt.tools?.length && <span className="text-[10px] text-muted font-medium bg-surface-soft px-2 py-0.5 rounded">ابزار: {prompt.tools.slice(0, 2).join('، ')}{prompt.tools.length > 2 ? ` +${prompt.tools.length - 2}` : ''}</span>}
           {(prompt.outputFormats && prompt.outputFormats.length > 0) && (
             <span className="text-[10px] text-muted font-medium bg-surface-soft px-2 py-0.5 rounded">
-              خروجی: {prompt.outputFormats.slice(0, 2).join('، ')}
+              خروجی: {prompt.outputFormats.slice(0, 2).map(value => outputLabels[value] || value).join('، ')}
             </span>
           )}
           {prompt.language && (
             <span className="text-[10px] text-muted font-medium bg-surface-soft px-2 py-0.5 rounded">
-              زبان: {prompt.language}
+              زبان: {TRANSLATIONS[prompt.language?.toLowerCase()] || prompt.language}
             </span>
           )}
         </div>
@@ -267,7 +266,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
             to={`/prompts/${prompt.id}`}
             className="flex items-center gap-1 text-xs font-semibold text-brand hover:translate-x-[-4px] transition-transform duration-200"
           >
-            <span>مشاهده و ساخت</span>
+            <span>مشاهده و استفاده</span>
             <ArrowLeft className="w-3.5 h-3.5" />
           </Link>
         </div>

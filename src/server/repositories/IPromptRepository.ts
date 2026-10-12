@@ -1,9 +1,11 @@
 // src/server/repositories/IPromptRepository.ts
+import type { FilterSelection } from "../../lib/archiveFilters";
 import { Prompt } from "../../types";
 
 export interface PromptFilters {
+  useCase?: FilterSelection; group?: FilterSelection; resourceType?: FilterSelection; outputFormat?: FilterSelection;
   category?: string; isActive?: boolean; page?: number; limit?: number;
-  q?: string; tool?: string; domain?: string; intent?: string; difficulty?: string; language?: string;
+  q?: string; tool?: FilterSelection; domain?: FilterSelection; intent?: FilterSelection; difficulty?: FilterSelection; language?: FilterSelection;
   sort?: string;
 }
 export interface IPromptRepository {
@@ -14,7 +16,7 @@ export interface IPromptRepository {
   delete(id: string): Promise<boolean>;
   incrementUsageCount(id: string): Promise<void>;
   getStats(): Promise<{ totalPrompts: number; totalUsages: number; mostPopular: string }>;
-  getFacets(filters?: { q?: string; tool?: string; domain?: string; intent?: string; difficulty?: string; language?: string }): Promise<{
+  getFacets(filters?: PromptFilters): Promise<{
     tools: Record<string, number>;
     domains: Record<string, number>;
     intents: Record<string, number>;

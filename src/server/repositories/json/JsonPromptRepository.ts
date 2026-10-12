@@ -1,4 +1,5 @@
-import { filterPrompts, paginatePrompts } from "../filterPrompts";
+import { normalizeArchivePrompt } from '../../../lib/archiveCatalog';
+import { filterPrompts, paginatePrompts, buildArchiveFacets } from "../filterPrompts";
 // src/server/repositories/json/JsonPromptRepository.ts
 import fs from "fs";
 import path from "path";
@@ -23,7 +24,7 @@ export class JsonPromptRepository implements IPromptRepository {
   public async getById(id: string): Promise<Prompt | null> {
     const db = this.readDB();
     const prompt = db.prompts.find((p: Prompt) => p.id === id);
-    return prompt || null;
+    return prompt ? normalizeArchivePrompt(prompt) : null;
   }
 
   public async getAll(filters?: PromptFilters): Promise<{ prompts: Prompt[]; totalCount: number }> {
@@ -34,7 +35,7 @@ export class JsonPromptRepository implements IPromptRepository {
   public async create(promptData: Omit<Prompt, "id" | "createdAt" | "updatedAt" | "usageCount">): Promise<Prompt> {
     const db = this.readDB();
     const newPrompt: Prompt = {
-      ...promptData,
+      ...normalizeArchivePrompt(promptData),
       id: Math.random().toString(36).substr(2, 9),
       usageCount: 0,
       createdAt: new Date().toISOString(),
@@ -57,7 +58,7 @@ export class JsonPromptRepository implements IPromptRepository {
 
     const updatedPrompt: Prompt = {
       ...db.prompts[index],
-      ...updates,
+      ...normalizeArchivePrompt(updates),
       updatedAt: new Date().toISOString(),
     };
 
@@ -88,50 +89,6 @@ export class JsonPromptRepository implements IPromptRepository {
     }
   }
 
-  public async getFacets(filters?: { q?: string; tool?: string; domain?: string; intent?: string; difficulty?: string; language?: string }): Promise<{
-    tools: Record<string, number>;
-    domains: Record<string, number>;
-    intents: Record<string, number>;
-    difficulties: Record<string, number>;
-    languages: Record<string, number>;
-  }> {
-    const db = this.readDB();
-    const list = filterPrompts(db.prompts || [], { ...filters, isActive: true });
-
-    const aggregated = {
-      tools: {} as Record<string, number>,
-      domains: {} as Record<string, number>,
-      intents: {} as Record<string, number>,
-      difficulties: {} as Record<string, number>,
-      languages: {} as Record<string, number>
-    };
-
-    for (const p of list) {
-      for (const t of p.tools || []) {
-        const key = t.toLowerCase();
-        aggregated.tools[key] = (aggregated.tools[key] || 0) + 1;
-      }
-      for (const d of p.domains || []) {
-        const key = d.toLowerCase();
-        aggregated.domains[key] = (aggregated.domains[key] || 0) + 1;
-      }
-      if (p.intent) {
-        const key = p.intent.toLowerCase();
-        aggregated.intents[key] = (aggregated.intents[key] || 0) + 1;
-      }
-      if (p.difficulty) {
-        const key = p.difficulty.toLowerCase();
-        aggregated.difficulties[key] = (aggregated.difficulties[key] || 0) + 1;
-      }
-      if (p.language) {
-        const key = p.language.toLowerCase();
-        aggregated.languages[key] = (aggregated.languages[key] || 0) + 1;
-      }
-    }
-
-    return aggregated;
-  }
-
   public async getStats(): Promise<{ totalPrompts: number; totalUsages: number; mostPopular: string }> {
     const db = this.readDB();
     const list: Prompt[] = db.prompts || [];
@@ -141,5 +98,10 @@ export class JsonPromptRepository implements IPromptRepository {
     const mostPopular = sorted.length > 0 ? sorted[0].title : "هیچ پرامپتی ثبت نشده";
 
     return { totalPrompts, totalUsages, mostPopular };
+  }
+
+  public async getFacets(filters?: PromptFilters) {
+    const { prompts } = await this.getAll({ isActive: true });
+    return buildArchiveFacets(prompts, { ...filters, isActive: true }).facets;
   }
 }

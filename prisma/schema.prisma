@@ -10,6 +10,9 @@ datasource db {
 }
 
 model Prompt {
+  useCase       String?
+  resourceType  String   @default("prompt")
+  isDemo        Boolean  @default(false)
   id            String   @id @default(cuid())
   title         String
   description   String
