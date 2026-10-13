@@ -1,0 +1,27 @@
+# Local PostgreSQL only. Never use this volume for a production database.
+services:
+  postgres:
+    image: postgres:17-bookworm
+    container_name: promty-local-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: promty_local
+      POSTGRES_DB: promty_local
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    secrets:
+      - db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U promty_local -d promty_local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+secrets:
+  db_password:
+    file: ${PROMTY_PG_PASSWORD_PATH:?Set the absolute private PostgreSQL password path}
+volumes:
+  postgres_data:
+    name: promty_local_postgres_data

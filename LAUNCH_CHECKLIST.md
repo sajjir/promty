@@ -1,4 +1,6 @@
-# Launch hardening — codex branch
+> وضعیت جاری ۲۰۲۶-۱۰-۱۴: هدف PostgreSQL تأیید شده، اجرای محلی آن به runtime/مجوز سیستم نیاز دارد. مهاجرت Production انجام نشده است. audit قبلی ۱۴ مورد داشت؛ پیش از لانچ دوباره بررسی/رفع شود. بخش‌های پایین شواهد تاریخی مرحله‌های جدا هستند و تعداد آزمون‌های هر مرحله نباید جمعِ تعداد یکتای تست‌ها فرض شود. مرجع جاری: docs/project-context.md و docs/postgresql.md.
+
+# پذیرش لانچ — release
 
 ## Changes implemented
 
@@ -129,3 +131,12 @@ Prisma archive filtering currently loads the permitted dataset then filters in m
 - آزمون تازه production bootstrap موفق بود؛ بدون محتوای نمونه شروع می‌شود، هفت متادیتای جدید موجودند، داده و عنوان/وضعیت موجود حفظ می‌شوند و فایل JSON خراب بازنویسی نمی‌شود. همراه ۱۳ آزمون قبلی، ۱۴ آزمون رفتاری موفق‌اند. TypeScript و build موفق‌اند.
 - بسته باید شامل کد و dist ساخته‌شده از کامیت نهایی باشد، بدون `db.json`، `.env`، رسانه، بکاپ و `node_modules`. seed مخرب قدیمی و ابزار واردکردن نمونه‌های لوکال در بسته جایگزینی سرور قرار نمی‌گیرند. وابستگی‌ها/Prisma Client باید روی سرور نصب و تولید شوند.
 - آخرین مرحله قبل از محتواگذاری عمومی، آزمون مدیر/پیش‌نویس/انتشار، SMS واقعی، HTTPS، رسانه و فیلترها روی سرور است؛ موفقیت تست محلی جایگزین این آزمون نیست.
+
+## همگام‌سازی دانش و هدف PostgreSQL — ۲۰۲۶-۱۰-۱۴
+- اسناد جاری به docs مخزن release منتقل و نسخه قبلی در مسیر محلی خصوصی/خارج Git پشتیبان گرفته شد؛ فایل‌های والد نمایه‌اند.
+- PostgreSQL پیش‌فرض Production است؛ DATABASE_URL لازم است. STORAGE_BACKEND=json فقط سازگاری صریح قدیمی است؛ خطای اتصال PostgreSQL هیچ fallback ندارد.
+- قالب SSH و تنظیمات PostgreSQL خارج Git با mode 0600 ساخته شدند؛ رمز/پورت SSH هنوز ثبت نشده و اتصال سرور انجام نشده است.
+- راهنمای ایجنت استقرار Markdown است؛ Agent اجرایی یا چت جدا نصب/ساخته نشده است.
+- ابزار مهاجرت طرح خواندنی را روی داده local اجرا کرد: ۲۳ Prompt، ۱ User، ۸۲ Taxonomy، ۲ SavedPrompt، صفر Preset/Category. اجرای apply روی PostgreSQL هنوز آزموده نشده است.
+- ۱۴ آزمون خودکار، TypeScript، Build، ارجاع‌های Markdown و اعتبارسنجی Compose موفق بودند. Docker daemon به مجوز سیستم نیاز دارد؛ PostgreSQL local هنوز اجرا نشده و settings/graph همچنان JSON هستند.
+- هیچ SSH، آپلود، مهاجرت داده واقعی، ری‌استارت Production یا Push انجام نشد.

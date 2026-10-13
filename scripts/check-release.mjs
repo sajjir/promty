@@ -6,6 +6,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 const beforeUpgrade = process.argv.includes('--before-upgrade');
 const required = ['JWT_SECRET','ADMIN_EMAIL','ADMIN_PASSWORD','APP_ORIGIN','MELIPAYAMAK_USERNAME','MELIPAYAMAK_PASSWORD','MELIPAYAMAK_OTP_BODY_ID'];
 const problems = required.filter(key => !process.env[key]).map(key => `Missing: ${key}`);
+if (!process.env.DATABASE_URL?.trim() && process.env.STORAGE_BACKEND !== 'json') problems.push('PostgreSQL DATABASE_URL is required; explicit STORAGE_BACKEND=json is legacy compatibility only');
 if (process.env.NODE_ENV !== 'production') problems.push('NODE_ENV must be production');
 if (process.env.LOCAL_PREVIEW === '1') problems.push('LOCAL_PREVIEW must not be enabled on a public server');
 if ((process.env.JWT_SECRET || '').length < 32) problems.push('JWT_SECRET must contain at least 32 characters');

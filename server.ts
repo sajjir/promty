@@ -35,6 +35,9 @@ if (operationalProduction) {
   if (process.env.JWT_SECRET!.length < 32 || process.env.ADMIN_PASSWORD!.length < 12 || process.env.ADMIN_PASSWORD === "admin123") throw new Error("Production credentials are too weak.");
   if (!process.env.APP_ORIGIN!.startsWith("https://")) throw new Error("APP_ORIGIN must use HTTPS in production.");
 }
+if (operationalProduction && !process.env.DATABASE_URL?.trim() && process.env.STORAGE_BACKEND !== "json") {
+  throw new Error("Production PostgreSQL requires DATABASE_URL. Legacy JSON must be explicitly selected with STORAGE_BACKEND=json.");
+}
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString("hex");
 const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[char]!));
 const safeJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
@@ -640,9 +643,7 @@ async function startServer() {
       relationshipRepo = new PrismaRelationshipRepository(prisma);
       console.log("[DB] Using Prisma database backend.");
     } catch (dbError) {
-      if (operationalProduction) throw dbError;
-      console.error("[DB] Failed to initialize Prisma, falling back to JSON storage:", dbError);
-      prisma = null;
+      throw new Error("PostgreSQL connection failed; JSON fallback is disabled.", { cause: dbError });
     }
   }
 
