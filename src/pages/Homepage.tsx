@@ -506,26 +506,36 @@ export default function Homepage() {
 
           {/* Core Search Input Container */}
           <div ref={suggestionRef} className="pt-6 max-w-2xl mx-auto relative z-40">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="چیزی بنویسید (مثال: 'طراحی عکس تبلیغاتی طلا با میدجرنی' یا 'کد React')"
-                value={searchQuery}
-                onFocus={() => setShowSuggestions(true)}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                className="w-full text-sm md:text-base py-4.5 pr-12 pl-12 bg-surface-soft hover:bg-surface-soft/50 focus:bg-surface border-2 border-line focus:border-brand rounded-2xl outline-none transition-all text-right shadow-sm focus:shadow-md font-medium"
-              />
-              <Search className="w-5 h-5 text-brand absolute right-4 top-1/2 -translate-y-1/2" />
-
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-secondary rounded-full hover:bg-surface-inset transition"
-                >
-                  <X className="w-4 h-4" />
+            <div className="promty-search" data-has-query={!!searchQuery}>
+              <span aria-hidden="true" className="promty-search-layer promty-search-glow" />
+              <span aria-hidden="true" className="promty-search-layer promty-search-dark" />
+              <span aria-hidden="true" className="promty-search-layer promty-search-white" />
+              <span aria-hidden="true" className="promty-search-layer promty-search-border" />
+              <div className="promty-search-main">
+                <input
+                  type="text"
+                  aria-label="جستجوی منابع پرامپتی"
+                  placeholder="چیزی بنویسید (مثال: 'طراحی عکس تبلیغاتی طلا با میدجرنی' یا 'کد React')"
+                  value={searchQuery}
+                  onFocus={() => setShowSuggestions(true)}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  className="promty-search-input w-full text-sm md:text-base font-medium"
+                />
+                <span className="promty-search-pink" aria-hidden="true" />
+                <Search className="promty-search-icon" aria-hidden="true" />
+                {searchQuery && <button type="button" aria-label="پاک کردن جستجو" onClick={() => setSearchQuery('')} className="promty-search-clear">
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>}
+                <button type="button" className="promty-search-filter" aria-label={showFilters ? 'بستن فیلترهای جستجو' : 'باز کردن فیلترهای جستجو'} aria-expanded={showFilters} aria-controls="advanced-archive-filters"
+                  onClick={() => {
+                    setShowSuggestions(false);
+                    setShowFilters(value => !value);
+                    document.getElementById('archive-filter-panel')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+                  }}>
+                  <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
                 </button>
-              )}
+              </div>
             </div>
 
             {/* Smart Auto-Suggestions Overlay */}
@@ -683,7 +693,7 @@ export default function Homepage() {
       </section>
 
       {/* Advanced Faceted Sidebar/Filter Panel */}
-      <div className="bg-surface border border-line rounded-2xl shadow-sm p-5 space-y-5">
+      <div id="archive-filter-panel" className="scroll-mt-24 bg-surface border border-line rounded-2xl shadow-sm p-5 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-brand-solid/10 text-brand rounded-xl">
@@ -698,6 +708,7 @@ export default function Homepage() {
           <div className="flex items-center flex-wrap gap-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
+              aria-expanded={showFilters} aria-controls="advanced-archive-filters"
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 showFilters
                   ? "bg-brand-solid text-white shadow-sm"
@@ -736,6 +747,7 @@ export default function Homepage() {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.25 }}
+              id="advanced-archive-filters"
               className="border-t border-line pt-5"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">

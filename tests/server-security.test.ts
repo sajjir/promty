@@ -98,7 +98,7 @@ test('HTTP security: roles, drafts, upload auth, escaped metadata and session re
   assert.equal(published.useCase,'learning-plan');assert.equal(published.resourceType,'agent-guide');assert.equal(published.intent,'teaching');
   const byUseCase = await (await call('/api/prompts?useCase=learning-plan&resourceType=agent-guide&outputFormat=text&intent=teaching')).json();
   assert.equal(byUseCase.pagination.total,1);assert.equal(byUseCase.data[0].id,created.id);
-  assert.equal(byUseCase.archiveFacets.resourceTypes['agent-guide'],1);assert.equal(byUseCase.archiveFacets.groups.personal,1);
+  assert.equal(byUseCase.archiveFacets.resourceTypes['agent-guide'],1);assert.equal(byUseCase.archiveFacets.groups.education,1);assert.equal(byUseCase.archiveFacets.groups.personal,undefined);
   assert.equal((await (await call('/api/prompts?useCase=learning-plan&intent=learning')).json()).pagination.total,1);
   assert.equal((await call('/api/prompts/'+created.id,manager,'PUT',{useCase:'unknown'})).status,400);
   assert.equal((await call('/api/prompts/'+created.id,manager,'PUT',{resourceType:'markdown'})).status,400);

@@ -1,5 +1,6 @@
 import { getUseCase, resourceTypes, outputLabels, useCasePath } from "../lib/archiveCatalog";
 import Loader from "../components/Loader";
+import DownloadButton from "../components/DownloadButton";
 import { usePromptLanguage } from "../lib/usePromptLanguage";
 import IranIcon from "../components/IranIcon";
 import React, { useState, useEffect, useRef } from "react";
@@ -727,12 +728,15 @@ export default function PromptDetail() {
   const downloadResource = () => {
     const template = promptLang === 'fa' && prompt.bodyFa ? prompt.bodyFa : prompt.body;
     const error = getPromptCopyError(renderedBody, prompt.fieldsSchema || [], liveValues, template);
-    if (error) { setCopyError(error); return; }
+    if (error) { setCopyError(error); return false; }
     setCopyError(null);
     const url = URL.createObjectURL(new Blob([renderedBody], { type: 'text/markdown;charset=utf-8' }));
     const link = document.createElement('a'); link.href = url;
     link.download = prompt.resourceType === 'skill' ? 'SKILL.md' : 'GUIDE.md';
-    link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    link.hidden = true;
+    document.body.appendChild(link);
+    try { link.click(); } finally { link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+    return true;
   };
 
 
@@ -757,7 +761,7 @@ export default function PromptDetail() {
       {prompt.resourceType && prompt.resourceType !== 'prompt' && <section aria-label="راهنمای دریافت منبع" className="rounded-xl border border-line bg-surface p-4 space-y-2">
         <h2 className="font-bold">{resourceTypes[prompt.resourceType]} — دریافت فایل Markdown</h2>
         <p className="text-sm text-muted">{prompt.resourceType === 'skill' ? 'پس از شخصی‌سازی، فایل SKILL.md را در پوشه یک مهارت در محیط سازگار قرار دهید و راهنمای داخل آن را بخوانید. دانلود، مهارت را نصب یا اجرا نمی‌کند.' : 'فایل GUIDE.md را به ایجنت معرفی کنید تا آن را بخواند. پیش از ادغام قواعد با راهنمای پروژه، محتوای آن را بررسی کنید.'}</p>
-        <button onClick={downloadResource} className="rounded-lg bg-brand-solid text-white px-4 py-2">دریافت فایل {prompt.resourceType === 'skill' ? 'SKILL.md' : 'GUIDE.md'}</button>
+        <DownloadButton key={prompt.id} fileName={prompt.resourceType === 'skill' ? 'SKILL.md' : 'GUIDE.md'} onDownload={downloadResource} />
       </section>}
       {/* Top Breadcrumb Nav */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-surface p-4 border border-line rounded-2xl shadow-xs">

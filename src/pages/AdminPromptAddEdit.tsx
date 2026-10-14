@@ -561,7 +561,7 @@ export default function AdminPromptAddEdit() {
             <label className="text-sm text-primary">کاربرد اصلی *
               <select required aria-label="کاربرد اصلی" value={useCase} onChange={e => setUseCase(e.target.value)} className="w-full mt-2 rounded-lg bg-surface border border-line p-3">
                 <option value="">انتخاب کاربرد</option>
-                {useCaseGroups.map(group => <optgroup key={group.slug} label={groupAncestors(group.slug).reverse().map(slug => getGroup(slug)!.title).join(' ← ')}>{useCases.filter(item => item.group === group.slug).map(item => <option key={item.slug} value={item.slug}>{item.title}</option>)}</optgroup>)}
+                {useCaseGroups.map(group => <optgroup key={group.slug} label={groupAncestors(group.slug).reverse().map(slug => getGroup(slug)!.title).join(' ← ')}>{useCases.filter(item => item.group === group.slug && (!item.legacy || item.slug === useCase)).map(item => <option key={item.slug} value={item.slug}>{item.title}</option>)}</optgroup>)}
               </select>
             </label>
             <label className="text-sm text-primary">نوع منبع

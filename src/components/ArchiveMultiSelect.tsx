@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import type { SelectionUpdate } from '../lib/archiveFilters';
 
-type Option = { value: string; label: string; count?: number };
+type Option = { value: string; label: string; count?: number; icon?: LucideIcon };
 export default function ArchiveMultiSelect({ label, options, selected, onChange, placeholder = 'همه موارد' }: {
   label: string; options: Option[]; selected: string[]; onChange: (values: SelectionUpdate) => void; placeholder?: string;
 }) {
@@ -40,7 +41,7 @@ export default function ArchiveMultiSelect({ label, options, selected, onChange,
       <div className="max-h-64 overflow-y-auto space-y-1">
         {visible.map(option => <label key={option.value} htmlFor={`${id}-${option.value}`} className="flex cursor-pointer items-center gap-2 rounded-lg p-2 hover:bg-surface-soft text-sm text-primary">
           <input id={`${id}-${option.value}`} type="checkbox" checked={selected.includes(option.value)} onChange={() => onChange(current => current.includes(option.value) ? current.filter(value => value !== option.value) : [...current, option.value])} className="accent-violet-500 shrink-0" />
-          <span className="min-w-0 flex-1">{option.label}</span>{option.count !== undefined && <span className="text-xs text-muted">{option.count}</span>}
+          <span className="min-w-0 flex-1 flex items-center gap-2">{option.icon && <option.icon className="h-4 w-4 shrink-0 text-brand" aria-hidden="true" />}<span>{option.label}</span></span>{option.count !== undefined && <span className="text-xs text-muted">{option.count}</span>}
         </label>)}
         {!visible.length && <p className="text-xs text-muted p-2">گزینه‌ای پیدا نشد.</p>}
       </div>

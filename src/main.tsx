@@ -2,6 +2,7 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import './styles/interaction-effects.css';
 
 // Global Fetch Interceptor to ensure credentials are always sent (essential for httpOnly cookie auth in iframes)
 const originalFetch = window.fetch;

@@ -7,6 +7,7 @@ import { Prompt } from "../types";
 import { Megaphone, Globe, Video, Camera, Sparkles, ArrowLeft, Bookmark, Copy } from "lucide-react";
 import { getToolIcon, getDomainGradient } from "../lib/toolIcons";
 import { useAuth } from "./AuthContext";
+import { resourceTypeIcons } from "../lib/resourceTypeIcons";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -124,6 +125,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
     }
   };
 
+  const ResourceIcon = resourceTypeIcons[prompt.resourceType || 'prompt'];
   const categoryLabel = getUseCase(prompt.useCase)?.title || 'کاربرد تعیین نشده';
   const IconComponent = categoryIcons[categoryLabel] || Sparkles;
 
@@ -208,7 +210,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
 
       {/* Content */}
       <div className="p-5 flex-1 flex flex-col">
-        <div className="flex flex-wrap gap-2 text-xs text-muted mb-2"><span>{resourceTypes[prompt.resourceType || 'prompt']}</span>{prompt.isDemo && <span className="text-brand">نمونه آزمایشی</span>}</div>
+        <div className="flex flex-wrap gap-2 text-xs text-muted mb-2"><span className="inline-flex items-center gap-1"><ResourceIcon className="h-3.5 w-3.5" aria-hidden="true" />{resourceTypes[prompt.resourceType || 'prompt']}</span>{prompt.isDemo && <span className="text-brand">نمونه آزمایشی</span>}</div>
         {/* Main use case */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5 text-muted text-xs">
