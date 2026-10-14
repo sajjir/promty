@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { SelectionUpdate } from '../lib/archiveFilters';
 
 type Option = { value: string; label: string; count?: number };
@@ -6,9 +6,31 @@ export default function ArchiveMultiSelect({ label, options, selected, onChange,
   label: string; options: Option[]; selected: string[]; onChange: (values: SelectionUpdate) => void; placeholder?: string;
 }) {
   const id = useId();
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const outside = (event: PointerEvent | FocusEvent) => {
+      const details = detailsRef.current;
+      if (details?.open && !details.contains(event.target as Node)) details.open = false;
+    };
+    const escape = (event: KeyboardEvent) => {
+      const details = detailsRef.current;
+      if (event.key === 'Escape' && details?.open) {
+        details.open = false;
+        details.querySelector('summary')?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', outside, true);
+    document.addEventListener('focusin', outside);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', outside, true);
+      document.removeEventListener('focusin', outside);
+      document.removeEventListener('keydown', escape);
+    };
+  }, []);
   const [query, setQuery] = useState('');
   const visible = options.filter(option => !query || `${option.label} ${option.value}`.toLowerCase().includes(query.toLowerCase()));
-  return <details name="archive-filters" className="relative min-w-0 rounded-xl border border-line bg-surface group">
+  return <details ref={detailsRef} name="archive-filters" className="relative min-w-0 rounded-xl border border-line bg-surface group">
     <summary aria-label={label} className="cursor-pointer px-3 py-3 text-sm text-primary select-none rounded-xl focus-visible:outline-2 focus-visible:outline-brand">
       {selected.length ? `${label}: ${selected.length} انتخاب` : placeholder}
     </summary>

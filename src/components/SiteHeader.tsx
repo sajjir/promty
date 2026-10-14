@@ -11,6 +11,7 @@ export default function SiteHeader() {
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
   const accountButtonRef = useRef<HTMLButtonElement>(null);
+  const mobilePanelRef = useRef<HTMLDivElement>(null);
   const mobileButtonRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
   const displayName = user?.name || (user?.phone ? `۰${user.phone.slice(-10)}` : user?.email) || 'کاربر پرامپتی';
@@ -18,17 +19,19 @@ export default function SiteHeader() {
 
   useEffect(() => { setMobileOpen(false); setAccountOpen(false); }, [location.pathname]);
   useEffect(() => {
-    const outside = (event: MouseEvent) => {
+    const outside = (event: PointerEvent | FocusEvent) => {
       if (accountRef.current && !accountRef.current.contains(event.target as Node)) setAccountOpen(false);
+      if (!mobilePanelRef.current?.contains(event.target as Node) && !mobileButtonRef.current?.contains(event.target as Node)) setMobileOpen(false);
     };
     const escape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       if (accountOpen) { setAccountOpen(false); accountButtonRef.current?.focus(); }
       if (mobileOpen) { setMobileOpen(false); mobileButtonRef.current?.focus(); }
     };
-    document.addEventListener('mousedown', outside);
+    document.addEventListener('pointerdown', outside, true);
+    document.addEventListener('focusin', outside);
     document.addEventListener('keydown', escape);
-    return () => { document.removeEventListener('mousedown', outside); document.removeEventListener('keydown', escape); };
+    return () => { document.removeEventListener('pointerdown', outside, true); document.removeEventListener('focusin', outside); document.removeEventListener('keydown', escape); };
   }, [accountOpen, mobileOpen]);
 
   const navigation = (mobile = false) => (
@@ -73,7 +76,7 @@ export default function SiteHeader() {
           <button ref={mobileButtonRef} aria-label={mobileOpen ? 'بستن منوی اصلی' : 'باز کردن منوی اصلی'} aria-expanded={mobileOpen} aria-controls="mobile-navigation" className="rounded-xl p-2 text-secondary hover:bg-surface-soft" onClick={() => { setMobileOpen(!mobileOpen); setAccountOpen(false); }}>{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
         </div>
       </div>
-      {mobileOpen && <div id="mobile-navigation" className="border-t border-line bg-surface px-4 py-3 max-h-[calc(100dvh-72px)] overflow-y-auto"><div className="max-w-7xl mx-auto grid gap-4 md:grid-cols-2">{navigation(true)}<nav aria-label="بخش‌های آینده" className="grid gap-1">{[
+      {mobileOpen && <div ref={mobilePanelRef} id="mobile-navigation" className="border-t border-line bg-surface px-4 py-3 max-h-[calc(100dvh-72px)] overflow-y-auto"><div className="max-w-7xl mx-auto grid gap-4 md:grid-cols-2">{navigation(true)}<nav aria-label="بخش‌های آینده" className="grid gap-1">{[
             {label:'آموزش پرامپت‌ها', Icon:BookOpen}, {label:'ترندها', Icon:TrendingUp}, {label:'پرامپت‌ها', Icon:FileText}, {label:'مهارت‌ها (Skills)', Icon:WandSparkles}, {label:'AGENTS.md', Icon:Bot},
           ].map(({label,Icon}) => <span key={label} aria-disabled="true" className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-secondary"><Icon className="h-4 w-4 shrink-0" aria-hidden="true" />{label}<span className="mr-auto text-[10px] text-muted">به‌زودی</span></span>)}</nav><div className="border-t border-line pt-3 md:col-span-2"><p className="mb-2 text-xs text-muted">حالت نمایش</p><ThemeSwitcher /></div></div></div>}
     </header>

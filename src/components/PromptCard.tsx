@@ -242,7 +242,15 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
 
         {/* Metadata Badges tag */}
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {!!prompt.tools?.length && <span className="text-[10px] text-muted font-medium bg-surface-soft px-2 py-0.5 rounded">ابزار: {prompt.tools.slice(0, 2).join('، ')}{prompt.tools.length > 2 ? ` +${prompt.tools.length - 2}` : ''}</span>}
+          {!!prompt.tools?.length && <span className="flex flex-wrap items-center gap-1" role="group" aria-label="ابزارهای سازگار">
+            {Array.from(new Set(prompt.tools)).map(tool => {
+              const ToolIcon = getToolIcon(tool);
+              const name = TRANSLATIONS[tool.toLowerCase()] || tool;
+              return <span key={tool} role="img" aria-label={name} title={name} className="flex h-7 w-7 items-center justify-center rounded-md bg-surface-soft text-secondary">
+                <ToolIcon className="h-4 w-4" aria-hidden="true" />
+              </span>;
+            })}
+          </span>}
           {(prompt.outputFormats && prompt.outputFormats.length > 0) && (
             <span className="text-[10px] text-muted font-medium bg-surface-soft px-2 py-0.5 rounded">
               خروجی: {prompt.outputFormats.slice(0, 2).map(value => outputLabels[value] || value).join('، ')}

@@ -15,13 +15,25 @@ import {
   Heart, 
   Briefcase, 
   LineChart, 
-  FileText 
+  FileText,
+  Zap,
+  Workflow,
+  AudioLines
 } from "lucide-react";
 
 // Mapping tools to Lucide icons
 export const toolIconsMap: Record<string, any> = {
   chatgpt: Bot,
   gpt: Bot,
+  gemini: Sparkles,
+  codex: Code,
+  deepseek: Bot,
+  grok: Zap,
+  ideogram: Image,
+  veo: Video,
+  kling: Video,
+  elevenlabs: AudioLines,
+  n8n: Workflow,
   midjourney: Camera,
   mj: Camera,
   claude: PenTool,
@@ -44,7 +56,7 @@ export function getToolIcon(toolName?: string) {
   const nameLower = toolName.toLowerCase().trim();
   
   // Find a matching key
-  const matchKey = Object.keys(toolIconsMap).find(
+  const matchKey = Object.hasOwn(toolIconsMap, nameLower) ? nameLower : Object.keys(toolIconsMap).find(
     (key) => nameLower.includes(key) || key.includes(nameLower)
   );
   

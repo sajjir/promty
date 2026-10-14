@@ -447,13 +447,17 @@ export default function Homepage() {
 
   // Handle outside click to close suggestions dropdown
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: PointerEvent | FocusEvent) {
       if (suggestionRef.current && !suggestionRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", handleClickOutside, true);
+    document.addEventListener("focusin", handleClickOutside);
+    return () => {
+      document.removeEventListener("pointerdown", handleClickOutside, true);
+      document.removeEventListener("focusin", handleClickOutside);
+    };
   }, []);
 
   const filteredPrompts = prompts;
