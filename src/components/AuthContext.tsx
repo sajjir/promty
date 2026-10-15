@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { normalizeLogoAppearance, type LogoAppearance } from '../lib/logoAppearance';
 
 export interface User {
   id: string;
@@ -17,6 +18,7 @@ export interface PublicSettings {
   footerAbout: string;
   footerCopyright: string;
   siteLogo: string;
+  logoAppearance: LogoAppearance;
   aiTimeoutSeconds: number;
   isWebhookConfigured: boolean;
 }
@@ -72,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     footerAbout: "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
     footerCopyright: "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
     siteLogo: "",
+    logoAppearance: normalizeLogoAppearance(),
     aiTimeoutSeconds: 60,
     isWebhookConfigured: false,
   });
@@ -97,6 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           footerAbout: data.footerAbout || "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
           footerCopyright: data.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
           siteLogo: data.siteLogo || "",
+          logoAppearance: normalizeLogoAppearance(data.logoAppearance),
           aiTimeoutSeconds: typeof data.aiTimeoutSeconds === "number" ? data.aiTimeoutSeconds : 60,
           isWebhookConfigured: !!data.isWebhookConfigured,
         });

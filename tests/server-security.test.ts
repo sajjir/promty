@@ -26,6 +26,27 @@ test('HTTP security: roles, drafts, upload auth, escaped metadata and session re
   let ready=false;for(let i=0;i<100;i++){try{await call('/api/config');ready=true;break;}catch{await new Promise(r=>setTimeout(r,50));}}
   assert.ok(ready,'fixture server startup failed: '+output.slice(-1000));
   const regular=token('regular','user'), manager=token('manager','admin'), senior=token('senior','super_admin');
+  const initialLogo = (await (await call('/api/settings/public')).json()).logoAppearance;
+  assert.equal(initialLogo.durationSeconds,14);
+  assert.equal(initialLogo.desktopSize,50);
+  assert.equal((await call('/api/settings',regular,'POST',{logoAppearance:{desktopSize:60}})).status,403);
+  const logoSettings = {...initialLogo,desktopSize:60,mobileSize:48,animationType:'diagonal',durationSeconds:8};
+  assert.equal((await call('/api/settings',manager,'POST',{siteSubtitle:'branding-preserved',logoAppearance:logoSettings})).status,200);
+  assert.deepEqual((await (await call('/api/settings/public')).json()).logoAppearance,logoSettings);
+  assert.deepEqual((await (await call('/api/settings',manager)).json()).settings.logoAppearance,logoSettings);
+  const persistedLogoSettings = JSON.parse(fs.readFileSync(path.join(dir,'db.json'),'utf8')).settings.logoAppearance;
+  assert.deepEqual(persistedLogoSettings,logoSettings);
+  assert.equal((await call('/api/settings',manager,'POST',{logoAppearance:{desktopSize:999}})).status,400);
+  assert.equal((await call('/api/settings',manager,'POST',{logoAppearance:{gradientColors:['url(https://invalid.test)','#000000','#111111','#222222']}})).status,400);
+  assert.deepEqual((await (await call('/api/settings/public')).json()).logoAppearance,logoSettings);
+  assert.equal((await call('/api/settings',manager,'POST',{logoAppearance:{gradientEnabled:false}})).status,200);
+  const disabledLogo={...logoSettings,gradientEnabled:false};
+  assert.deepEqual((await (await call('/api/settings/public')).json()).logoAppearance,disabledLogo);
+  assert.equal((await call('/api/settings',manager,'POST',{aiTimeoutSeconds:75})).status,200);
+  const publicAfterUnrelatedSave = await (await call('/api/settings/public')).json();
+  assert.deepEqual(publicAfterUnrelatedSave.logoAppearance,disabledLogo);
+  assert.equal(publicAfterUnrelatedSave.siteSubtitle,'branding-preserved');
+  assert.equal(Object.hasOwn(publicAfterUnrelatedSave,'geminiApiKey'),false);
   assert.equal((await call('/api/auth/phone-register',undefined,'POST',{phone:'09120000000',name:'Fake',email:'admin@test.invalid'})).status,401);
   assert.equal((await call('/api/auth/otp-mock',undefined,'POST',{phone:'09120000000',code:'1234'})).status,404);
   assert.equal((await call('/api/stats',regular)).status,403);

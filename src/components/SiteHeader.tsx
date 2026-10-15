@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { BookOpen, TrendingUp, FileText, WandSparkles, Bot, Bookmark, ChevronDown, Home, LayoutDashboard, LogIn, LogOut, Menu, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { BookOpen, TrendingUp, FileText, WandSparkles, Bot, Bookmark, ChevronDown, Home, LayoutDashboard, LogIn, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import ThemeSwitcher from './ThemeSwitcher';
+import BrandLogo from './BrandLogo';
 import { Z } from '../lib/zIndex';
 
 export default function SiteHeader() {
@@ -53,7 +54,7 @@ export default function SiteHeader() {
       <a href="#main-content" className="skip-link">رفتن به محتوای اصلی</a>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 md:h-[72px] md:px-6">
         <Link to="/" className="brand-link flex min-w-0 items-center gap-2.5" aria-label={`${siteTitle}، صفحه اصلی`}>
-          {branding.siteLogo ? <img src={branding.siteLogo} alt="" className="h-9 w-9 rounded-xl object-contain" /> : <span className="brand-mark flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white"><Sparkles className="h-5 w-5" /></span>}
+          <BrandLogo src={branding.siteLogo} appearance={branding.logoAppearance} />
           <span className="min-w-0"><span className="brand-title block text-base font-extrabold"><span className="brand-actual-text block truncate">{siteTitle}</span><span aria-hidden="true" className="brand-hover-text block truncate">{siteTitle}</span></span><span className="hidden max-w-[240px] truncate text-[11px] text-muted lg:block">{branding.siteSubtitle || 'ایده‌های بهتر، با پرامپت‌های بهتر'}</span></span>
         </Link>
         <div className="hidden md:block">{navigation()}</div>

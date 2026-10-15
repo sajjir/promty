@@ -1,4 +1,5 @@
 import { getUseCase, resourceTypes, normalizeArchivePrompt, normalizeIntent } from './src/lib/archiveCatalog';
+import { getLogoAppearanceError, normalizeLogoAppearance, type LogoAppearance } from './src/lib/logoAppearance';
 import { buildArchiveFacets } from './src/server/repositories/filterPrompts';
 import { archiveFilterKeys, filterValues } from './src/lib/archiveFilters';
 import "dotenv/config";
@@ -113,6 +114,7 @@ interface DBSettings {
   footerAbout?: string;      // متن درباره ما در فوتر
   footerCopyright?: string;  // متن کپی رایت
   siteLogo?: string;         // آدرس لوگو
+  logoAppearance?: LogoAppearance;
   aiTimeoutSeconds?: number; // مدت زمان تایم اوت هوش مصنوعی (پیش‌فرض 60 ثانیه)
 }
 
@@ -2285,6 +2287,7 @@ async function startServer() {
         footerAbout: s.footerAbout || "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
         footerCopyright: s.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
         siteLogo: s.siteLogo || "",
+        logoAppearance: normalizeLogoAppearance(s.logoAppearance),
         aiTimeoutSeconds: typeof s.aiTimeoutSeconds === "number" ? s.aiTimeoutSeconds : 60,
       }
     });
@@ -2304,8 +2307,14 @@ async function startServer() {
       footerAbout,
       footerCopyright,
       siteLogo,
+      logoAppearance,
       aiTimeoutSeconds,
     } = req.body;
+
+    if (logoAppearance !== undefined) {
+      const error = getLogoAppearanceError(logoAppearance);
+      if (error) return res.status(400).json({ success: false, message: error });
+    }
 
     const db = readDB();
     const prev: DBSettings = (db.settings || {}) as DBSettings;
@@ -2327,6 +2336,7 @@ async function startServer() {
       footerAbout: footerAbout !== undefined ? (footerAbout || "") : (prev.footerAbout || "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید."),
       footerCopyright: footerCopyright !== undefined ? (footerCopyright || "") : (prev.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است."),
       siteLogo: siteLogo !== undefined ? siteLogo : (prev.siteLogo || ""),
+      ...(logoAppearance !== undefined ? { logoAppearance: normalizeLogoAppearance({ ...normalizeLogoAppearance(prev.logoAppearance), ...logoAppearance }) } : {}),
       aiTimeoutSeconds: cleanTimeout,
     };
     writeDB(db);
@@ -2379,6 +2389,7 @@ async function startServer() {
       footerAbout: s.footerAbout || "پرامپتی مرجع تخصصی مهندسی پرامپت و گراف دانش هوش مصنوعی در ایران است. ما به شما کمک می‌کنیم تا با دقیق‌ترین پرامپت‌ها، به بهترین نتایج دست یابید.",
       footerCopyright: s.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
       siteLogo: s.siteLogo || "",
+      logoAppearance: normalizeLogoAppearance(s.logoAppearance),
       aiTimeoutSeconds: typeof s.aiTimeoutSeconds === "number" ? s.aiTimeoutSeconds : 60,
     });
   });

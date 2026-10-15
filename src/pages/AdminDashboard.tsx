@@ -12,6 +12,8 @@ import {
   Upload, Image as ImageIcon, FileText, CheckSquare, Square, Pencil, Trash
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import LogoAppearanceControls from '../components/LogoAppearanceControls';
+import { getLogoAppearanceError, normalizeLogoAppearance, type LogoAppearance } from '../lib/logoAppearance';
 
 interface TaxonomyTerm {
   id: string;
@@ -86,6 +88,7 @@ export default function AdminDashboard() {
   const [footerAboutLocal, setFooterAboutLocal] = useState("");
   const [footerCopyrightLocal, setFooterCopyrightLocal] = useState("");
   const [siteLogoLocal, setSiteLogoLocal] = useState("");
+  const [logoAppearanceLocal, setLogoAppearanceLocal] = useState<LogoAppearance>(() => normalizeLogoAppearance());
   const [logoUploading, setLogoUploading] = useState(false);
   const [brandingLoading, setBrandingLoading] = useState(false);
   const [brandingSuccess, setBrandingSuccess] = useState<string | null>(null);
@@ -198,6 +201,7 @@ export default function AdminDashboard() {
         setFooterAboutLocal(s.footerAbout || "");
         setFooterCopyrightLocal(s.footerCopyright || "");
         setSiteLogoLocal(s.siteLogo || "");
+        setLogoAppearanceLocal(normalizeLogoAppearance(s.logoAppearance));
       }
 
       // Fetch Taxonomy Terms
@@ -497,6 +501,8 @@ export default function AdminDashboard() {
   const handleSaveBranding = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
+    const logoError = getLogoAppearanceError(logoAppearanceLocal);
+    if (logoError) { setBrandingError(logoError); return; }
     try {
       setBrandingLoading(true);
       setBrandingSuccess(null);
@@ -515,6 +521,7 @@ export default function AdminDashboard() {
           footerAbout: footerAboutLocal,
           footerCopyright: footerCopyrightLocal,
           siteLogo: siteLogoLocal,
+          logoAppearance: logoAppearanceLocal,
         })
       });
       const data = await res.json();
@@ -527,6 +534,29 @@ export default function AdminDashboard() {
       }
     } catch (err: any) {
       setBrandingError("خطا در برقراری ارتباط با سرور: " + err.message);
+    } finally {
+      setBrandingLoading(false);
+    }
+  };
+
+  const handleSaveLogoAppearance = async () => {
+    const error = getLogoAppearanceError(logoAppearanceLocal);
+    if (error) { setBrandingError(error); return; }
+    setBrandingLoading(true);
+    setBrandingSuccess(null);
+    setBrandingError(null);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ logoAppearance: logoAppearanceLocal }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'ذخیره تنظیمات لوگو ناموفق بود.');
+      await refetchBranding();
+      setBrandingSuccess('تنظیمات اندازه و جلوه لوگو ذخیره و روی سایت اعمال شد.');
+    } catch (error: any) {
+      setBrandingError(error.message || 'ارتباط با سرور برقرار نشد.');
     } finally {
       setBrandingLoading(false);
     }
@@ -1550,6 +1580,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
+                <LogoAppearanceControls src={siteLogoLocal} value={logoAppearanceLocal} onChange={setLogoAppearanceLocal} onSave={handleSaveLogoAppearance} saving={brandingLoading || logoUploading} />
               </div>
 
               {/* Branding Text Fields */}
