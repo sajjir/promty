@@ -4,7 +4,7 @@ import { usePromptLanguage } from "../lib/usePromptLanguage";
 import React from "react";
 import { Link } from "react-router-dom";
 import { Prompt } from "../types";
-import { Megaphone, Globe, Video, Camera, Sparkles, ArrowLeft, Bookmark, Copy } from "lucide-react";
+import { Megaphone, Globe, Video, Camera, Sparkles, ArrowLeft, Bookmark, Copy, Check } from "lucide-react";
 import { getToolIcon, getDomainGradient } from "../lib/toolIcons";
 import { useAuth } from "./AuthContext";
 import { resourceTypeIcons } from "../lib/resourceTypeIcons";
@@ -13,6 +13,8 @@ interface PromptCardProps {
   prompt: Prompt;
   isInitiallyBookmarked?: boolean;
   key?: any;
+  variant?: "grid" | "fan";
+  idPrefix?: string;
 }
 
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -67,9 +69,20 @@ const TRANSLATIONS: Record<string, string> = {
   "n8n ai agent": "اتوماسیون n8n"
 };
 
-export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCardProps) {
+export default function PromptCard({ prompt, isInitiallyBookmarked, variant = "grid", idPrefix }: PromptCardProps) {
   const { user, setPhoneModalOpen } = useAuth();
   const [isBookmarked, setIsBookmarked] = React.useState(isInitiallyBookmarked || false);
+  const [usageCount, setUsageCount] = React.useState(prompt.usageCount || 0);
+  React.useEffect(() => setUsageCount(prompt.usageCount || 0), [prompt.usageCount]);
+  React.useEffect(() => {
+    const syncCopy = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail?.id === prompt.id && typeof detail.usageCount === 'number') setUsageCount(detail.usageCount);
+    };
+    window.addEventListener('promty:prompt-copied', syncCopy);
+    return () => window.removeEventListener('promty:prompt-copied', syncCopy);
+  }, [prompt.id]);
+  const cardId = idPrefix ? `${idPrefix}-${prompt.id}` : prompt.id;
   const [isCopied, setIsCopied] = React.useState(false);
   const [language] = usePromptLanguage();
   const [feedback, setFeedback] = React.useState("");
@@ -100,6 +113,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
       const data = await res.json();
       if (res.ok && data.success) {
         setIsBookmarked(data.bookmarked);
+        window.dispatchEvent(new CustomEvent('promty:bookmark-changed', { detail: { id: prompt.id, bookmarked: data.bookmarked } }));
         setFeedback(data.bookmarked ? "پرامپت نشان شد" : "پرامپت از نشان‌ها حذف شد");
       } else { setFeedback("نشان‌کردن انجام نشد؛ دوباره تلاش کنید"); }
     } catch (err) {
@@ -116,6 +130,12 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
       const error = getPromptCopyError(text);
       if (error) { setFeedback(error + " صفحه پرامپت را باز کنید."); return; }
       await navigator.clipboard.writeText(text);
+      void fetch(`/api/prompts/${prompt.id}/track-copy`, { method: 'POST' }).then(res => res.ok ? res.json() : null).then(data => {
+        if (data?.success && typeof data.usageCount === 'number') {
+          setUsageCount(data.usageCount);
+          window.dispatchEvent(new CustomEvent('promty:prompt-copied', { detail: { id: prompt.id, usageCount: data.usageCount } }));
+        }
+      }).catch(() => {});
       setIsCopied(true);
       setFeedback("پرامپت کپی شد");
       setTimeout(() => setIsCopied(false), 2000);
@@ -128,6 +148,54 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
   const ResourceIcon = resourceTypeIcons[prompt.resourceType || 'prompt'];
   const categoryLabel = getUseCase(prompt.useCase)?.title || 'کاربرد تعیین نشده';
   const IconComponent = categoryIcons[categoryLabel] || Sparkles;
+
+  if (variant === 'fan') {
+    const tones = [['#b88b57','#71502f'],['#be7952','#73472f'],['#8696b1','#414d68'],['#b65d53','#732e2a'],['#a69b7c','#625a45'],['#8b6aac','#4c366b'],['#69978c','#354f4b']];
+    const toneIndex = Array.from(prompt.id).reduce((sum, char) => sum + char.charCodeAt(0),0) % tones.length;
+    const [tone,dark] = tones[toneIndex];
+    const cover = prompt.coverImage || prompt.mediaGallery?.[0]?.replace('gallery-','thumbnail-');
+    const Symbol = getToolIcon(prompt.tools?.[0]);
+    return <article id={`prompt-card-${cardId}`} className="prompt-fan-card"
+      style={{'--fan-tone':tone,'--fan-dark':dark} as React.CSSProperties}>
+      {cover && <img className="prompt-fan-cover" src={cover} alt="" loading="lazy" draggable={false} referrerPolicy="no-referrer" />}
+      <div className="prompt-fan-scrim" aria-hidden="true" />
+      {!cover && <Symbol className="prompt-fan-symbol" aria-hidden="true" />}
+      <div className="prompt-fan-content">
+        <div className="prompt-fan-topline">
+          <span className="prompt-fan-resource"><ResourceIcon size={13} aria-hidden="true" />{resourceTypes[prompt.resourceType || 'prompt'].split(' · ')[0]}</span>
+          <span className="prompt-fan-badge">{prompt.isPremium ? 'ویژه' : 'رایگان'}</span>
+        </div>
+        <h3 className="prompt-fan-title line-clamp-3">{prompt.title}</h3>
+        <span className="prompt-fan-category line-clamp-2">{categoryLabel}</span>
+        <div className="prompt-fan-bottom">
+          <p className="prompt-fan-description line-clamp-2">{prompt.description || 'پرامپت را باز کنید و برای کار خود شخصی‌سازی کنید.'}</p>
+          <div className="prompt-fan-meta">
+            {Array.from(new Set(prompt.tools || [])).slice(0,3).map(tool => {
+              const Tool = getToolIcon(tool); const name = TRANSLATIONS[tool.toLowerCase()] || tool;
+              return <span key={tool} role="img" aria-label={name} title={name}><Tool aria-hidden="true" /></span>;
+            })}
+            <span>{(prompt.outputFormats || []).slice(0,2).map(v => outputLabels[v] || v).join('، ')}</span>
+            <span className="mr-auto">{usageCount.toLocaleString('fa-IR')} کپی</span>
+          </div>
+          <div className="prompt-fan-footer">
+            <Link id={`view-btn-${cardId}`} to={`/prompts/${prompt.id}`} className="prompt-fan-open" draggable={false} aria-label={`مشاهده و استفاده از ${prompt.title}`}>
+              مشاهده و استفاده <ArrowLeft size={14} aria-hidden="true" />
+            </Link>
+            <div className="prompt-fan-actions">
+              <button type="button" className="prompt-fan-action" onClick={handleBookmarkClick}
+                aria-label={isBookmarked ? 'حذف از نشان‌شده‌ها' : 'نشان کردن پرامپت'} aria-pressed={isBookmarked}>
+                <Bookmark size={14} className={isBookmarked ? 'fill-current' : ''} aria-hidden="true" />
+              </button>
+              <button type="button" className="prompt-fan-action" onClick={handleQuickCopy} aria-label={isCopied ? 'کپی شد!' : 'کپی سریع پرامپت'}>
+                {isCopied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className={feedback ? 'prompt-fan-feedback' : 'sr-only'} role="status" aria-live="polite">{feedback}</div>
+    </article>;
+  }
 
   // Three-level cover rendering waterfall
   let coverElement = null;
@@ -168,7 +236,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
 
   return (
     <div
-      id={`prompt-card-${prompt.id}`}
+      id={`prompt-card-${cardId}`}
       className="bg-surface rounded-xl overflow-hidden border border-line hover:border-line transition-all duration-300 hover:shadow-md flex flex-col h-full group"
     >
       <div role="status" aria-live="polite" className={feedback ? "bg-surface-elevated text-primary px-3 py-2 text-xs font-bold border-b border-line" : "sr-only"}>{feedback}</div>
@@ -268,11 +336,11 @@ export default function PromptCard({ prompt, isInitiallyBookmarked }: PromptCard
         {/* Footer info & Button */}
         <div className="flex items-center justify-between mt-auto pt-3 border-t border-line">
           <span className="text-muted text-xs font-mono">
-            {prompt.usageCount} استفاده
+            {usageCount} کپی
           </span>
 
           <Link
-            id={`view-btn-${prompt.id}`}
+            id={`view-btn-${cardId}`}
             to={`/prompts/${prompt.id}`}
             className="flex items-center gap-1 text-xs font-semibold text-brand hover:translate-x-[-4px] transition-transform duration-200"
           >

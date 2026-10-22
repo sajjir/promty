@@ -12,7 +12,7 @@ test('HTTP security: roles, drafts, upload auth, escaped metadata and session re
  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'promty-security-'));
  fs.mkdirSync(path.join(dir,'dist')); fs.writeFileSync(path.join(dir,'dist/index.html'), '<html><head></head><body><div id="root"></div></body></html>');
  const users = [{id:'regular',role:'USER',email:'regular@test.invalid'}, {id:'manager',role:'ADMIN'}, {id:'senior',role:'SUPER_ADMIN'}];
- const prompts = [ {id:'public',title:'<img id="injected" src=x> </script><script>alert(1)</script>', description:'"/><img id="meta-injected">',body:'public-text',isActive:true,tools:['claude'],domains:['ai'],usageCount:0}, {id:'draft',title:'secret-draft-title',body:'secret-draft-body',isActive:false,tools:[],domains:[],usageCount:0} ];
+ const prompts = [ {id:'public',title:'<img id="injected" src=x> </script><script>alert(1)</script>', description:'"/><img id="meta-injected">',body:'public-text',isActive:true,tools:['claude'],domains:['ai'],usageCount:0}, {id:'draft',title:'secret-draft-title',body:'secret-draft-body',isActive:false,tools:[],domains:[],usageCount:999999} ];
  for (let i=0;i<65;i++) prompts.push({id:'fixture'+i,title:'آرشیو آزمایشی '+i,description:'نمونه',body:'sample',isActive:true,tools:[i>=40?'claude':'chatgpt'],domains:['ai'],usageCount:i,createdAt:new Date(2026,0,i+1).toISOString()} as any);
  const state:any = {users,prompts,categories:[],settings:{},savedPrompts:[{id:'saved',userId:'regular',promptId:'draft'}]};
  fs.writeFileSync(path.join(dir,'db.json'),JSON.stringify(state));
@@ -47,6 +47,24 @@ test('HTTP security: roles, drafts, upload auth, escaped metadata and session re
   assert.deepEqual(publicAfterUnrelatedSave.logoAppearance,disabledLogo);
   assert.equal(publicAfterUnrelatedSave.siteSubtitle,'branding-preserved');
   assert.equal(Object.hasOwn(publicAfterUnrelatedSave,'geminiApiKey'),false);
+  const homeDefaults = (await (await call('/api/settings/public')).json()).homepageSections;
+  assert.equal(homeDefaults.length,6);
+  const home = structuredClone(homeDefaults);
+  home[2]={...home[2],title:'منتخب سفارشی آزمون',group:'visual',useCase:'vis-09',limit:4};
+  assert.equal((await call('/api/settings',regular,'POST',{homepageSections:home})).status,403);
+  assert.equal((await call('/api/settings',manager,'POST',{homepageSections:home})).status,200);
+  assert.deepEqual((await (await call('/api/settings/public')).json()).homepageSections,home);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir,'db.json'),'utf8')).settings.homepageSections,home);
+  const homeRows = (await (await call('/api/homepage/sections',senior)).json()).sections;
+  assert.equal(homeRows[0].title,'ترندها');assert.equal(homeRows[0].prompts[0].id,'fixture64');
+  assert.equal(homeRows.find((s:any)=>s.id==='featured-1').title,'منتخب سفارشی آزمون');
+  assert.ok(homeRows.every((s:any)=>s.prompts.every((p:any)=>p.isActive && p.id!=='draft' && !Object.hasOwn(p,'editorial'))));
+  const badHome=structuredClone(home);badHome[2].group='nonexistent';
+  assert.equal((await call('/api/settings',manager,'POST',{homepageSections:badHome})).status,400);
+  assert.equal((await call('/api/settings',manager,'POST',{aiTimeoutSeconds:76})).status,200);
+  assert.deepEqual((await (await call('/api/settings/public')).json()).homepageSections,home);
+  assert.deepEqual((await (await call('/api/settings/public')).json()).logoAppearance,disabledLogo);
+
   assert.equal((await call('/api/auth/phone-register',undefined,'POST',{phone:'09120000000',name:'Fake',email:'admin@test.invalid'})).status,401);
   assert.equal((await call('/api/auth/otp-mock',undefined,'POST',{phone:'09120000000',code:'1234'})).status,404);
   assert.equal((await call('/api/stats',regular)).status,403);

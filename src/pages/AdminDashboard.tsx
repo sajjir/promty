@@ -1,3 +1,5 @@
+import HomepageSectionsControls from '../components/HomepageSectionsControls';
+import { normalizeHomepageSections, getHomepageSectionsError, type HomepageSection } from '../lib/homepageSections';
 import Loader from "../components/Loader";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -79,6 +81,8 @@ export default function AdminDashboard() {
   const [bulkRoleModalOpen, setBulkRoleModalOpen] = useState(false);
   const [bulkTargetRole, setBulkTargetRole] = useState<"SUPER_ADMIN" | "ADMIN" | "USER">("USER");
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+
+  const [homepageSections, setHomepageSections] = useState<HomepageSection[]>(() => normalizeHomepageSections());
 
   // Dedicated Branding state
   const [siteTitleLocal, setSiteTitleLocal] = useState("");
@@ -202,6 +206,7 @@ export default function AdminDashboard() {
         setFooterCopyrightLocal(s.footerCopyright || "");
         setSiteLogoLocal(s.siteLogo || "");
         setLogoAppearanceLocal(normalizeLogoAppearance(s.logoAppearance));
+        setHomepageSections(normalizeHomepageSections(s.homepageSections));
       }
 
       // Fetch Taxonomy Terms
@@ -501,6 +506,8 @@ export default function AdminDashboard() {
   const handleSaveBranding = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
+    const sectionsError = getHomepageSectionsError(homepageSections);
+    if (sectionsError) { setBrandingError(sectionsError); return; }
     const logoError = getLogoAppearanceError(logoAppearanceLocal);
     if (logoError) { setBrandingError(logoError); return; }
     try {
@@ -522,6 +529,7 @@ export default function AdminDashboard() {
           footerCopyright: footerCopyrightLocal,
           siteLogo: siteLogoLocal,
           logoAppearance: logoAppearanceLocal,
+          homepageSections,
         })
       });
       const data = await res.json();
@@ -1665,6 +1673,8 @@ export default function AdminDashboard() {
                     className="w-full text-primary bg-surface-soft rounded-xl px-4 py-2.5 text-xs border border-line outline-none focus:bg-surface focus:border-brand transition"
                   />
                 </div>
+
+                <HomepageSectionsControls value={homepageSections} onChange={setHomepageSections} />
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                   <p className="text-[11px] text-muted">

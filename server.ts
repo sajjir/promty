@@ -1,3 +1,5 @@
+import { normalizeHomepageSections, getHomepageSectionsError, type HomepageSection } from './src/lib/homepageSections';
+import { buildHomepageSections } from './src/server/buildHomepageSections';
 import { getUseCase, resourceTypes, normalizeArchivePrompt, normalizeIntent } from './src/lib/archiveCatalog';
 import { getLogoAppearanceError, normalizeLogoAppearance, type LogoAppearance } from './src/lib/logoAppearance';
 import { buildArchiveFacets } from './src/server/repositories/filterPrompts';
@@ -115,6 +117,7 @@ interface DBSettings {
   footerCopyright?: string;  // متن کپی رایت
   siteLogo?: string;         // آدرس لوگو
   logoAppearance?: LogoAppearance;
+  homepageSections?: HomepageSection[];
   aiTimeoutSeconds?: number; // مدت زمان تایم اوت هوش مصنوعی (پیش‌فرض 60 ثانیه)
 }
 
@@ -2007,6 +2010,17 @@ async function startServer() {
     }
   });
 
+  // Public homepage shelves use current published records for every visitor, including admins.
+  app.get("/api/homepage/sections", async (_req, res) => {
+    try {
+      const { prompts } = await promptRepo.getAll({ isActive: true });
+      const sections = buildHomepageSections(prompts, readDB().settings?.homepageSections);
+      res.json({ success: true, sections });
+    } catch {
+      res.status(503).json({ success: false, message: "دریافت بخش‌های صفحه اصلی موقتاً امکان‌پذیر نیست." });
+    }
+  });
+
   // API - Get Prompt list (all active, or with category filter)
   app.get("/api/prompts", async (req, res) => {
     try {
@@ -2288,6 +2302,7 @@ async function startServer() {
         footerCopyright: s.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
         siteLogo: s.siteLogo || "",
         logoAppearance: normalizeLogoAppearance(s.logoAppearance),
+        homepageSections: normalizeHomepageSections(s.homepageSections),
         aiTimeoutSeconds: typeof s.aiTimeoutSeconds === "number" ? s.aiTimeoutSeconds : 60,
       }
     });
@@ -2308,8 +2323,14 @@ async function startServer() {
       footerCopyright,
       siteLogo,
       logoAppearance,
+      homepageSections,
       aiTimeoutSeconds,
     } = req.body;
+
+    if (homepageSections !== undefined) {
+      const error = getHomepageSectionsError(homepageSections);
+      if (error) return res.status(400).json({ success: false, message: error });
+    }
 
     if (logoAppearance !== undefined) {
       const error = getLogoAppearanceError(logoAppearance);
@@ -2337,6 +2358,7 @@ async function startServer() {
       footerCopyright: footerCopyright !== undefined ? (footerCopyright || "") : (prev.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است."),
       siteLogo: siteLogo !== undefined ? siteLogo : (prev.siteLogo || ""),
       ...(logoAppearance !== undefined ? { logoAppearance: normalizeLogoAppearance({ ...normalizeLogoAppearance(prev.logoAppearance), ...logoAppearance }) } : {}),
+      ...(homepageSections !== undefined ? { homepageSections: normalizeHomepageSections(homepageSections) } : {}),
       aiTimeoutSeconds: cleanTimeout,
     };
     writeDB(db);
@@ -2390,6 +2412,7 @@ async function startServer() {
       footerCopyright: s.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
       siteLogo: s.siteLogo || "",
       logoAppearance: normalizeLogoAppearance(s.logoAppearance),
+      homepageSections: normalizeHomepageSections(s.homepageSections),
       aiTimeoutSeconds: typeof s.aiTimeoutSeconds === "number" ? s.aiTimeoutSeconds : 60,
     });
   });

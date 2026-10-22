@@ -1,3 +1,4 @@
+import { normalizeHomepageSections, type HomepageSection } from '../lib/homepageSections';
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { normalizeLogoAppearance, type LogoAppearance } from '../lib/logoAppearance';
 
@@ -19,6 +20,7 @@ export interface PublicSettings {
   footerCopyright: string;
   siteLogo: string;
   logoAppearance: LogoAppearance;
+  homepageSections: HomepageSection[];
   aiTimeoutSeconds: number;
   isWebhookConfigured: boolean;
 }
@@ -75,6 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     footerCopyright: "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
     siteLogo: "",
     logoAppearance: normalizeLogoAppearance(),
+    homepageSections: normalizeHomepageSections(),
     aiTimeoutSeconds: 60,
     isWebhookConfigured: false,
   });
@@ -101,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           footerCopyright: data.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است.",
           siteLogo: data.siteLogo || "",
           logoAppearance: normalizeLogoAppearance(data.logoAppearance),
+          homepageSections: normalizeHomepageSections(data.homepageSections),
           aiTimeoutSeconds: typeof data.aiTimeoutSeconds === "number" ? data.aiTimeoutSeconds : 60,
           isWebhookConfigured: !!data.isWebhookConfigured,
         });

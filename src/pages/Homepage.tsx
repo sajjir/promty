@@ -1,3 +1,4 @@
+import HomepageShelves from '../components/HomepageShelves';
 import ArchiveMultiSelect from "../components/ArchiveMultiSelect";
 import { archiveFilterKeys, readFilterValues, setFilterValues, SelectionUpdate } from "../lib/archiveFilters";
 import ArchiveDiscovery from "../components/ArchiveDiscovery";
@@ -8,12 +9,13 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Prompt } from "../types";
 import PromptCard from "../components/PromptCard";
+import PromptFanCarousel from "../components/PromptFanCarousel";
 import { useAuth } from "../components/AuthContext";
 import {
   Search, Megaphone, Globe, Video, Camera, Sparkles,
   SlidersHorizontal, X, Clock, Tag, Check,
   Compass, Cpu, ChevronDown, ListFilter, RotateCcw,
-  Sparkle, AlertCircle, HelpCircle, ArrowLeft, Plus, CheckCircle2
+  Sparkle, AlertCircle, HelpCircle, ArrowLeft, Plus, CheckCircle2, Layers, LayoutGrid
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -26,6 +28,7 @@ export default function Homepage() {
   const paramsRef = useRef(new URLSearchParams(searchParams));
   useLayoutEffect(() => { paramsRef.current = new URLSearchParams(searchParams); }, [searchParams]);
   const { user, branding, siteTitle } = useAuth();
+  const latestSection = branding.homepageSections[0];
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -42,6 +45,20 @@ export default function Homepage() {
       })
       .catch((err) => console.error("Error fetching bookmarks:", err));
   }, [user]);
+
+  useEffect(() => {
+    const syncBookmark = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (typeof detail?.id !== 'string' || typeof detail.bookmarked !== 'boolean') return;
+      setBookmarkedIds(previous => {
+        const next = new Set(previous);
+        if (detail.bookmarked) next.add(detail.id); else next.delete(detail.id);
+        return next;
+      });
+    };
+    window.addEventListener('promty:bookmark-changed', syncBookmark);
+    return () => window.removeEventListener('promty:bookmark-changed', syncBookmark);
+  }, []);
 
   // Search parameters parsed from URL
   const searchQuery = searchParams.get("q") || "";
@@ -77,6 +94,7 @@ export default function Homepage() {
 
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [archiveView, setArchiveView] = useState<"fan" | "grid">("fan");
 
   // Dynamic DB Taxonomies & Facet Counts state
   const [dbTaxonomies, setDbTaxonomies] = useState<any[]>([]);
@@ -276,9 +294,9 @@ export default function Homepage() {
         setIsLoadingMore(true);
       }
 
-      const limit = 20;
+      const limit = latestSection.limit;
       const params = new URLSearchParams(searchParams);
-      params.set("page", String(pageNum)); params.set("limit", String(limit)); params.set("sort", sortBy);
+      params.set("page", String(pageNum)); params.set("limit", String(limit)); params.set("sort", sortBy); params.set("isActive", "true");
       const res = await fetch(`/api/prompts?${params}`);
       const response = await res.json();
       if (version !== requestVersion.current) return;
@@ -351,7 +369,7 @@ export default function Homepage() {
     setPrompts([]); setHasMore(false); setLoading(true);
     const timer = setTimeout(() => loadPrompts(1), searchQuery.trim() ? 300 : 0);
     return () => { clearTimeout(timer); ++requestVersion.current; };
-  }, [searchParams.toString()]);
+  }, [searchParams.toString(), latestSection.limit]);
 
   // Sync route parameters (toolSlug, domainSlug) with active filter states
   useEffect(() => {
@@ -824,6 +842,18 @@ export default function Homepage() {
           </div>
         ) : filteredPrompts.length > 0 ? (
           <div className="space-y-8">
+            <div className="flex items-center justify-between gap-3" id="prompt-archive-view">
+              <p className="text-xs text-muted">{archiveView === 'fan' ? 'مرور پرامپت‌ها، یک کارت در هر بار' : 'همهٔ کارت‌ها در یک نگاه'}</p>
+              <div className="archive-view-toggle shrink-0" role="group" aria-label="نحوه نمایش پرامپت‌ها">
+                <button type="button" aria-pressed={archiveView === 'fan'} onClick={() => setArchiveView('fan')}><Layers size={14} aria-hidden="true" />بادبزنی</button>
+                <button type="button" aria-pressed={archiveView === 'grid'} onClick={() => setArchiveView('grid')}><LayoutGrid size={14} aria-hidden="true" />شبکه‌ای</button>
+              </div>
+            </div>
+            {archiveView === 'fan' ? (
+              <PromptFanCarousel prompts={filteredPrompts} bookmarkedIds={bookmarkedIds}
+                title={searchQuery.trim() ? 'نتایج جستجو' : filterHistory.length ? 'نتایج فیلترها' : latestSection.title}
+                description={searchQuery.trim() ? `منابع مرتبط با «${searchQuery.trim()}»` : filterHistory.length ? 'محتواهای منتشرشده مطابق فیلترهای انتخابی شما' : 'تازه‌ترین پرامپت‌ها، مهارت‌ها و راهنماهای منتشرشده'} />
+            ) : (
             <motion.div
               layout
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -841,6 +871,7 @@ export default function Homepage() {
                 </motion.div>
               ))}
             </motion.div>
+            )}
 
             {/* Load More Button */}
             {hasMore && (
@@ -895,6 +926,8 @@ export default function Homepage() {
           </div>
         )}
       </div>
+
+      {!searchQuery.trim() && <HomepageShelves bookmarkedIds={bookmarkedIds} configuration={branding.homepageSections} />}
 
       {/* Community Contribution Modal */}
       <AnimatePresence>
