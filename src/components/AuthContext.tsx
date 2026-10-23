@@ -1,3 +1,4 @@
+import { normalizePromptCardTemplate, type PromptCardTemplate } from '../lib/promptCardTemplates';
 import { normalizeHomepageSections, type HomepageSection } from '../lib/homepageSections';
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { normalizeLogoAppearance, type LogoAppearance } from '../lib/logoAppearance';
@@ -21,6 +22,7 @@ export interface PublicSettings {
   siteLogo: string;
   logoAppearance: LogoAppearance;
   homepageSections: HomepageSection[];
+  promptCardTemplate: PromptCardTemplate;
   aiTimeoutSeconds: number;
   isWebhookConfigured: boolean;
 }
@@ -78,6 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     siteLogo: "",
     logoAppearance: normalizeLogoAppearance(),
     homepageSections: normalizeHomepageSections(),
+    promptCardTemplate: normalizePromptCardTemplate(),
     aiTimeoutSeconds: 60,
     isWebhookConfigured: false,
   });
@@ -105,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           siteLogo: data.siteLogo || "",
           logoAppearance: normalizeLogoAppearance(data.logoAppearance),
           homepageSections: normalizeHomepageSections(data.homepageSections),
+          promptCardTemplate: normalizePromptCardTemplate(data.promptCardTemplate),
           aiTimeoutSeconds: typeof data.aiTimeoutSeconds === "number" ? data.aiTimeoutSeconds : 60,
           isWebhookConfigured: !!data.isWebhookConfigured,
         });

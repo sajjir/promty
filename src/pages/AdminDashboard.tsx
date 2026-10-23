@@ -1,3 +1,5 @@
+import PromptCardTemplateControls from '../components/PromptCardTemplateControls';
+import { normalizePromptCardTemplate, type PromptCardTemplate } from '../lib/promptCardTemplates';
 import HomepageSectionsControls from '../components/HomepageSectionsControls';
 import { normalizeHomepageSections, getHomepageSectionsError, type HomepageSection } from '../lib/homepageSections';
 import Loader from "../components/Loader";
@@ -82,6 +84,7 @@ export default function AdminDashboard() {
   const [bulkTargetRole, setBulkTargetRole] = useState<"SUPER_ADMIN" | "ADMIN" | "USER">("USER");
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
+  const [promptCardTemplate, setPromptCardTemplate] = useState<PromptCardTemplate>(() => normalizePromptCardTemplate());
   const [homepageSections, setHomepageSections] = useState<HomepageSection[]>(() => normalizeHomepageSections());
 
   // Dedicated Branding state
@@ -207,6 +210,7 @@ export default function AdminDashboard() {
         setSiteLogoLocal(s.siteLogo || "");
         setLogoAppearanceLocal(normalizeLogoAppearance(s.logoAppearance));
         setHomepageSections(normalizeHomepageSections(s.homepageSections));
+        setPromptCardTemplate(normalizePromptCardTemplate(s.promptCardTemplate));
       }
 
       // Fetch Taxonomy Terms
@@ -530,6 +534,7 @@ export default function AdminDashboard() {
           siteLogo: siteLogoLocal,
           logoAppearance: logoAppearanceLocal,
           homepageSections,
+          promptCardTemplate,
         })
       });
       const data = await res.json();
@@ -1673,6 +1678,8 @@ export default function AdminDashboard() {
                     className="w-full text-primary bg-surface-soft rounded-xl px-4 py-2.5 text-xs border border-line outline-none focus:bg-surface focus:border-brand transition"
                   />
                 </div>
+
+                <PromptCardTemplateControls value={promptCardTemplate} onChange={setPromptCardTemplate} />
 
                 <HomepageSectionsControls value={homepageSections} onChange={setHomepageSections} />
 

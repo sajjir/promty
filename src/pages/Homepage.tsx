@@ -8,14 +8,13 @@ import PromptBackdrop from '../components/PromptBackdrop';
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Prompt } from "../types";
-import PromptCard from "../components/PromptCard";
-import PromptFanCarousel from "../components/PromptFanCarousel";
+import PromptCollection from "../components/PromptCollection";
 import { useAuth } from "../components/AuthContext";
 import {
   Search, Megaphone, Globe, Video, Camera, Sparkles,
   SlidersHorizontal, X, Clock, Tag, Check,
   Compass, Cpu, ChevronDown, ListFilter, RotateCcw,
-  Sparkle, AlertCircle, HelpCircle, ArrowLeft, Plus, CheckCircle2, Layers, LayoutGrid
+  Sparkle, AlertCircle, HelpCircle, ArrowLeft, Plus, CheckCircle2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -94,7 +93,6 @@ export default function Homepage() {
 
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
-  const [archiveView, setArchiveView] = useState<"fan" | "grid">("fan");
 
   // Dynamic DB Taxonomies & Facet Counts state
   const [dbTaxonomies, setDbTaxonomies] = useState<any[]>([]);
@@ -841,37 +839,10 @@ export default function Homepage() {
             <p className="text-xs font-semibold">موتور در حال واکاوی است...</p>
           </div>
         ) : filteredPrompts.length > 0 ? (
-          <div className="space-y-8">
-            <div className="flex items-center justify-between gap-3" id="prompt-archive-view">
-              <p className="text-xs text-muted">{archiveView === 'fan' ? 'مرور پرامپت‌ها، یک کارت در هر بار' : 'همهٔ کارت‌ها در یک نگاه'}</p>
-              <div className="archive-view-toggle shrink-0" role="group" aria-label="نحوه نمایش پرامپت‌ها">
-                <button type="button" aria-pressed={archiveView === 'fan'} onClick={() => setArchiveView('fan')}><Layers size={14} aria-hidden="true" />بادبزنی</button>
-                <button type="button" aria-pressed={archiveView === 'grid'} onClick={() => setArchiveView('grid')}><LayoutGrid size={14} aria-hidden="true" />شبکه‌ای</button>
-              </div>
-            </div>
-            {archiveView === 'fan' ? (
-              <PromptFanCarousel prompts={filteredPrompts} bookmarkedIds={bookmarkedIds}
-                title={searchQuery.trim() ? 'نتایج جستجو' : filterHistory.length ? 'نتایج فیلترها' : latestSection.title}
-                description={searchQuery.trim() ? `منابع مرتبط با «${searchQuery.trim()}»` : filterHistory.length ? 'محتواهای منتشرشده مطابق فیلترهای انتخابی شما' : 'تازه‌ترین پرامپت‌ها، مهارت‌ها و راهنماهای منتشرشده'} />
-            ) : (
-            <motion.div
-              layout
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {filteredPrompts.map((prompt) => (
-                <motion.div
-                  key={prompt.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <PromptCard prompt={prompt} isInitiallyBookmarked={bookmarkedIds.has(prompt.id)} />
-                </motion.div>
-              ))}
-            </motion.div>
-            )}
+          <div className="space-y-8" id="prompt-archive-view">
+            <PromptCollection template={branding.promptCardTemplate} prompts={filteredPrompts} bookmarkedIds={bookmarkedIds} sectionId="homepage-latest"
+              title={searchQuery.trim() ? 'نتایج جستجو' : filterHistory.length ? 'نتایج فیلترها' : latestSection.title}
+              description={searchQuery.trim() ? `منابع مرتبط با «${searchQuery.trim()}»` : filterHistory.length ? 'محتواهای منتشرشده مطابق فیلترهای انتخابی شما' : 'تازه‌ترین پرامپت‌ها، مهارت‌ها و راهنماهای منتشرشده'} />
 
             {/* Load More Button */}
             {hasMore && (
@@ -927,7 +898,7 @@ export default function Homepage() {
         )}
       </div>
 
-      {!searchQuery.trim() && <HomepageShelves bookmarkedIds={bookmarkedIds} configuration={branding.homepageSections} />}
+      {!searchQuery.trim() && <HomepageShelves bookmarkedIds={bookmarkedIds} configuration={branding.homepageSections} template={branding.promptCardTemplate} />}
 
       {/* Community Contribution Modal */}
       <AnimatePresence>

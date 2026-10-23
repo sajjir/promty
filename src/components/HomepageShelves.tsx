@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Prompt } from '../types';
 import type { HomepageSection } from '../lib/homepageSections';
-import PromptFanCarousel from './PromptFanCarousel';
+import PromptCollection from './PromptCollection';
+import type { PromptCardTemplate } from '../lib/promptCardTemplates';
 import Loader from './Loader';
 
 type Shelf = HomepageSection & {prompts:Prompt[];total:number};
-export default function HomepageShelves({bookmarkedIds,configuration}:{bookmarkedIds:Set<string>;configuration:HomepageSection[]}) {
+export default function HomepageShelves({bookmarkedIds,configuration,template}:{bookmarkedIds:Set<string>;configuration:HomepageSection[];template:PromptCardTemplate}) {
   const [shelves,setShelves] = useState<Shelf[]>([]);
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState(false);
@@ -35,7 +36,7 @@ export default function HomepageShelves({bookmarkedIds,configuration}:{bookmarke
   return <div className="space-y-10" data-homepage-shelves>
     {shelves.map(shelf=><div key={shelf.id} data-homepage-section={shelf.id} className="space-y-3">
       {shelf.prompts.length ? <>
-        <PromptFanCarousel prompts={shelf.prompts} bookmarkedIds={bookmarkedIds} sectionId={`homepage-${shelf.id}`} title={shelf.title}
+        <PromptCollection template={template} prompts={shelf.prompts} bookmarkedIds={bookmarkedIds} sectionId={`homepage-${shelf.id}`} title={shelf.title}
           description={shelf.source==='trending' ? 'محتواهایی با بیشترین کپی ثبت‌شده از زمان انتشار' : 'جدیدترین محتواهای منتشرشده در دستهٔ منتخب'} />
         {shelf.total > shelf.prompts.length && <Link className="inline-block text-xs text-brand font-bold" to={shelf.source==='trending' ? '/?sort=usage#prompt-archive-view' : `/?group=${encodeURIComponent(shelf.group)}${shelf.useCase ? '&useCase='+encodeURIComponent(shelf.useCase) : ''}#prompt-archive-view`}>مشاهدهٔ همهٔ {shelf.total.toLocaleString('fa-IR')} منبع ←</Link>}
       </> : <section className="rounded-3xl border border-line bg-surface p-8 text-center" aria-label={shelf.title}><h2 className="text-lg font-bold text-primary">{shelf.title}</h2><p className="mt-3 text-sm text-muted">{shelf.source==='trending' ? 'هنوز کپی‌ای برای نمایش در ترندها ثبت نشده است.' : 'در این دسته هنوز محتوایی منتشر نشده است.'}</p></section>}

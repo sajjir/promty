@@ -1,3 +1,4 @@
+import { normalizePromptCardTemplate, getPromptCardTemplateError, type PromptCardTemplate } from './src/lib/promptCardTemplates';
 import { normalizeHomepageSections, getHomepageSectionsError, type HomepageSection } from './src/lib/homepageSections';
 import { buildHomepageSections } from './src/server/buildHomepageSections';
 import { getUseCase, resourceTypes, normalizeArchivePrompt, normalizeIntent } from './src/lib/archiveCatalog';
@@ -118,6 +119,7 @@ interface DBSettings {
   siteLogo?: string;         // آدرس لوگو
   logoAppearance?: LogoAppearance;
   homepageSections?: HomepageSection[];
+  promptCardTemplate?: PromptCardTemplate;
   aiTimeoutSeconds?: number; // مدت زمان تایم اوت هوش مصنوعی (پیش‌فرض 60 ثانیه)
 }
 
@@ -2303,6 +2305,7 @@ async function startServer() {
         siteLogo: s.siteLogo || "",
         logoAppearance: normalizeLogoAppearance(s.logoAppearance),
         homepageSections: normalizeHomepageSections(s.homepageSections),
+        promptCardTemplate: normalizePromptCardTemplate(s.promptCardTemplate),
         aiTimeoutSeconds: typeof s.aiTimeoutSeconds === "number" ? s.aiTimeoutSeconds : 60,
       }
     });
@@ -2324,8 +2327,14 @@ async function startServer() {
       siteLogo,
       logoAppearance,
       homepageSections,
+      promptCardTemplate,
       aiTimeoutSeconds,
     } = req.body;
+
+    if (promptCardTemplate !== undefined) {
+      const error = getPromptCardTemplateError(promptCardTemplate);
+      if (error) return res.status(400).json({ success: false, message: error });
+    }
 
     if (homepageSections !== undefined) {
       const error = getHomepageSectionsError(homepageSections);
@@ -2359,6 +2368,7 @@ async function startServer() {
       siteLogo: siteLogo !== undefined ? siteLogo : (prev.siteLogo || ""),
       ...(logoAppearance !== undefined ? { logoAppearance: normalizeLogoAppearance({ ...normalizeLogoAppearance(prev.logoAppearance), ...logoAppearance }) } : {}),
       ...(homepageSections !== undefined ? { homepageSections: normalizeHomepageSections(homepageSections) } : {}),
+      ...(promptCardTemplate !== undefined ? { promptCardTemplate } : {}),
       aiTimeoutSeconds: cleanTimeout,
     };
     writeDB(db);
@@ -2413,6 +2423,7 @@ async function startServer() {
       siteLogo: s.siteLogo || "",
       logoAppearance: normalizeLogoAppearance(s.logoAppearance),
       homepageSections: normalizeHomepageSections(s.homepageSections),
+      promptCardTemplate: normalizePromptCardTemplate(s.promptCardTemplate),
       aiTimeoutSeconds: typeof s.aiTimeoutSeconds === "number" ? s.aiTimeoutSeconds : 60,
     });
   });

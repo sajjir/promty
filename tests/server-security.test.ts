@@ -47,6 +47,19 @@ test('HTTP security: roles, drafts, upload auth, escaped metadata and session re
   assert.deepEqual(publicAfterUnrelatedSave.logoAppearance,disabledLogo);
   assert.equal(publicAfterUnrelatedSave.siteSubtitle,'branding-preserved');
   assert.equal(Object.hasOwn(publicAfterUnrelatedSave,'geminiApiKey'),false);
+  assert.equal((await (await call('/api/settings/public')).json()).promptCardTemplate,'grid');
+  assert.equal((await call('/api/settings',regular,'POST',{promptCardTemplate:'fan'})).status,403);
+  assert.equal((await call('/api/settings',manager,'POST',{promptCardTemplate:'fan'})).status,200);
+  assert.equal((await (await call('/api/settings/public')).json()).promptCardTemplate,'fan');
+  assert.equal((await (await call('/api/settings',manager)).json()).settings.promptCardTemplate,'fan');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir,'db.json'),'utf8')).settings.promptCardTemplate,'fan');
+  for (const invalid of ['unknown',null,{},'']) {
+    assert.equal((await call('/api/settings',manager,'POST',{promptCardTemplate:invalid})).status,400);
+  }
+  assert.equal((await call('/api/settings',manager,'POST',{aiTimeoutSeconds:76})).status,200);
+  assert.equal((await (await call('/api/settings/public')).json()).promptCardTemplate,'fan');
+  assert.equal((await call('/api/settings',manager,'POST',{promptCardTemplate:'grid'})).status,200);
+  assert.equal((await (await call('/api/settings/public')).json()).promptCardTemplate,'grid');
   const homeDefaults = (await (await call('/api/settings/public')).json()).homepageSections;
   assert.equal(homeDefaults.length,6);
   const home = structuredClone(homeDefaults);
