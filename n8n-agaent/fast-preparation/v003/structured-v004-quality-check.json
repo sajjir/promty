@@ -1,0 +1,11 @@
+{
+  "scope": "UI-rendered record with nonbreaking display spaces normalized; live n8n structural pass and manual bilingual review",
+  "sourceDefaultReconstructionExact": true,
+  "referenceImageRequired": true,
+  "useCase": "vis-09",
+  "topLevelKeys": 18,
+  "fieldCount": 1,
+  "faRequiredConceptChecks": 14,
+  "needsAdminReview": true,
+  "productionPublished": false
+}

@@ -1,0 +1,173 @@
+{
+  "kind": "local data, reference-policy simulation and saved-XLSX checks; no live Sheets/LLM test",
+  "passed": 40,
+  "checks": [
+    {
+      "case": "all stable term IDs unique",
+      "passed": true
+    },
+    {
+      "case": "parents reference real groups",
+      "passed": true
+    },
+    {
+      "case": "replacement IDs exist",
+      "passed": true
+    },
+    {
+      "case": "170 selectable use cases",
+      "passed": true
+    },
+    {
+      "case": "six legacy use cases retained",
+      "passed": true
+    },
+    {
+      "case": "Arabic/Persian yeh normalization",
+      "passed": true
+    },
+    {
+      "case": "Arabic/Persian kaf normalization",
+      "passed": true
+    },
+    {
+      "case": "ZWNJ and spaces normalize together",
+      "passed": true
+    },
+    {
+      "case": "diacritics and tatweel normalize",
+      "passed": true
+    },
+    {
+      "case": "Latin case and punctuation normalize",
+      "passed": true
+    },
+    {
+      "case": "exact lookup finds real photo-restyling concept",
+      "passed": true
+    },
+    {
+      "case": "Arabic query reuses Persian domain",
+      "passed": true
+    },
+    {
+      "case": "existing alias is reused",
+      "passed": true
+    },
+    {
+      "case": "pending matches are visible to deduplication",
+      "passed": true
+    },
+    {
+      "case": "below configured caps permits a proposal",
+      "passed": true
+    },
+    {
+      "case": "per-run cap stops additions",
+      "passed": true
+    },
+    {
+      "case": "per-day cap stops additions",
+      "passed": true
+    },
+    {
+      "case": "pending cap stops additions",
+      "passed": true
+    },
+    {
+      "case": "missing policy stops new writes",
+      "passed": true
+    },
+    {
+      "case": "existing lookup works independently of write policy",
+      "passed": true
+    },
+    {
+      "case": "complete synthetic receipt shape is accepted",
+      "passed": true
+    },
+    {
+      "case": "unconfirmed receipt cannot prove registration",
+      "passed": true
+    },
+    {
+      "case": "missing receipt ID cannot prove registration",
+      "passed": true
+    },
+    {
+      "case": "two identical in-memory requests use one queue key",
+      "passed": true
+    },
+    {
+      "case": "context field examples are not global active taxonomy terms",
+      "passed": true
+    },
+    {
+      "case": "field option JSON parses: line_weight",
+      "passed": true
+    },
+    {
+      "case": "field option JSON parses: shading_style",
+      "passed": true
+    },
+    {
+      "case": "saved XLSX has five named sheets",
+      "passed": true
+    },
+    {
+      "case": "saved registry has 280 data rows",
+      "passed": true
+    },
+    {
+      "case": "header freeze pane exported",
+      "passed": true
+    },
+    {
+      "case": "status/namespace validations exported",
+      "passed": true
+    },
+    {
+      "case": "native Excel table exported",
+      "passed": true
+    },
+    {
+      "case": "formula and cached value preserved B9",
+      "passed": true
+    },
+    {
+      "case": "formula and cached value preserved B10",
+      "passed": true
+    },
+    {
+      "case": "formula and cached value preserved B11",
+      "passed": true
+    },
+    {
+      "case": "formula and cached value preserved B13",
+      "passed": true
+    },
+    {
+      "case": "formula and cached value preserved B14",
+      "passed": true
+    },
+    {
+      "case": "formula and cached value preserved B15",
+      "passed": true
+    },
+    {
+      "case": "formula and cached value preserved B17",
+      "passed": true
+    },
+    {
+      "case": "no saved cell formula errors",
+      "passed": true
+    }
+  ],
+  "xlsxSha256": "e443676cc8c9e4cb88268b0fc4f4f9b8591d7fd83a0e8fde5d6a51eeed460d08",
+  "xlsxBytes": 42466,
+  "limits": [
+    "Semantic matching by a model was not executed.",
+    "The in-memory key test does not prove concurrent Google Sheets writes are serialized.",
+    "No native Google Sheets import was performed, as requested."
+  ]
+}

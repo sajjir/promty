@@ -2,6 +2,11 @@ export interface FieldSchema {
   key: string;
   label: string;
   type: 'text' | 'textarea' | 'color' | 'select' | 'radio' | 'switch' | 'slider' | 'multiselect' | 'url';
+  sourceText?: string; // Exact original span replaced by this field
+  defaultValue?: string;
+  defaultValueFa?: string;
+  advanced?: boolean;
+  allowCustom?: boolean;
   placeholder?: string;
   required?: boolean;
   options?: string[]; // for select, radio, multiselect
@@ -9,7 +14,23 @@ export interface FieldSchema {
   max?: number;       // for slider
 }
 
+export interface PromptEditorial {
+  sourceText?: string; // Admin-only original, never a claimed model reconstruction
+  fixedConstraints?: string[];
+  improvementSuggestions?: { title: string; reason: string; proposedChange: string }[];
+  referenceImageReason?: string;
+  referenceImageEvidence?: string;
+  fidelity?: { status: "verified" | "needs-review"; reason: string };
+  catalogVersion: string;
+  classificationReason: string;
+  needsReview: boolean;
+  reviewNotes: string[];
+  execution: { requiredCapabilities: string[]; routes: Record<string, unknown>[] };
+}
+
 export interface Prompt {
+  relatedUseCases?: string[];
+  editorial?: PromptEditorial;
   useCase?: string;
   resourceType?: 'prompt' | 'skill' | 'agent-guide';
   isDemo?: boolean;

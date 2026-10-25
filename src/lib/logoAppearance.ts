@@ -26,8 +26,8 @@ const integerBetween = (value: unknown, min: number, max: number) => typeof valu
 const rules: Record<keyof LogoAppearance, { valid: (value: unknown) => boolean; error: string }> = {
   gradientEnabled: { valid: value => typeof value === 'boolean', error: 'وضعیت گرادیان باید روشن یا خاموش باشد.' },
   animationEnabled: { valid: value => typeof value === 'boolean', error: 'وضعیت انیمیشن باید روشن یا خاموش باشد.' },
-  desktopSize: { valid: value => integerBetween(value, 24, 64), error: 'اندازه لوگوی دسکتاپ باید بین ۲۴ و ۶۴ پیکسل باشد.' },
-  mobileSize: { valid: value => integerBetween(value, 24, 52), error: 'اندازه لوگوی موبایل باید بین ۲۴ و ۵۲ پیکسل باشد.' },
+  desktopSize: { valid: value => integerBetween(value, 24, 133), error: 'اندازه لوگوی دسکتاپ باید بین ۲۴ و ۱۳۳ پیکسل باشد.' },
+  mobileSize: { valid: value => integerBetween(value, 24, 133), error: 'اندازه لوگوی موبایل باید بین ۲۴ و ۱۳۳ پیکسل باشد.' },
   gradientColors: { valid: value => Array.isArray(value) && value.length === 4 && value.every(color => typeof color === 'string' && /^#[\da-f]{6}$/i.test(color)), error: 'چهار رنگ معتبر با قالب #RRGGBB انتخاب کنید.' },
   gradientAngle: { valid: value => integerBetween(value, 0, 360), error: 'زاویه گرادیان باید بین ۰ و ۳۶۰ درجه باشد.' },
   animationType: { valid: value => ['flow', 'diagonal', 'breathe'].includes(value as string), error: 'نوع انیمیشن معتبر نیست.' },

@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-24",
+  "workflowId": "gaaunEOXwrtDtqqS",
+  "published": false,
+  "successfulContentResponses": 0,
+  "latencyCriterionMet": false,
+  "runs": [
+    {
+      "kind": "manual_full_cartoon",
+      "n8nStatus": "success",
+      "n8nDurationMs": 28579,
+      "contentOk": false,
+      "resultCode": "MODEL_REQUEST_FAILED",
+      "httpStatus": 502,
+      "reportedDurationMs": 26657,
+      "modelNodeMs": 23780,
+      "cause": "timeout of 23700ms exceeded"
+    },
+    {
+      "kind": "diagnostic_step",
+      "status": "not_completed_or_confirmed",
+      "cause": "intermittent Offline / Problem running workflow / browser communication timeout",
+      "countAsBenchmark": false
+    }
+  ],
+  "credentialRetest": "UI reported Connection tested successfully",
+  "fullRequestBodyRestoredInUI": true,
+  "persistedReadbackVerified": false,
+  "sourceWorkflowChanged": false,
+  "localDashboardEndToEndVerified": false
+}

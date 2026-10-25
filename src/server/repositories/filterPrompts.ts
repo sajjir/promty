@@ -22,7 +22,8 @@ export function filterPrompts(prompts: Prompt[], filters: PromptFilters = {}): P
     matches(filters.domain, p.domains || []) &&
     matches(filterValues(filters.intent).map(normalizeIntent), [...(p.intents || []), p.intent]) &&
     matches(filters.difficulty, [p.difficulty]) &&
-    matches(filters.language, [p.language])
+    matches(filters.language, [p.language]) &&
+    (!filterValues(filters.referenceImage).some(value => value.toLowerCase() === 'required') || p.requiresReferenceImage === true)
   );
   if (filters.q?.trim()) list = SearchService.search(list, filters.q).prompts;
   return [...list].sort((a, b) => {
@@ -52,6 +53,7 @@ export function buildArchiveFacets(prompts: Prompt[], filters: PromptFilters = {
       useCases: count(rows(['useCase']), p => [p.useCase]),
       resourceTypes: count(rows(['resourceType']), p => [p.resourceType || 'prompt']),
       outputFormats: count(rows(['outputFormat']), p => p.outputFormats || []),
+      referenceImage: count(rows(['referenceImage']), p => p.requiresReferenceImage === true ? ['required'] : []),
     },
     facets: {
       tools: count(rows(['tool']), p => (p.tools || []).map(value => value.toLowerCase())),

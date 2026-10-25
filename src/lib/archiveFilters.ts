@@ -1,5 +1,5 @@
 /** Repeated URL keys represent OR choices within a facet; facets combine with AND. */
-export const archiveFilterKeys = ['group', 'useCase', 'resourceType', 'outputFormat', 'tool', 'domain', 'intent', 'difficulty', 'language'] as const;
+export const archiveFilterKeys = ['group', 'useCase', 'resourceType', 'outputFormat', 'tool', 'domain', 'intent', 'difficulty', 'language', 'referenceImage'] as const;
 export type FilterSelection = string | string[];
 export type SelectionUpdate = string[] | ((current: string[]) => string[]);
 export function filterValues(value: unknown): string[] {

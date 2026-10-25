@@ -1,0 +1,903 @@
+{
+  "version": "release-7e06770-2026-10-18",
+  "groups": [
+    {
+      "slug": "business",
+      "title": "کسب‌وکار و مدیریت"
+    },
+    {
+      "slug": "product",
+      "title": "معرفی محصول",
+      "parent": "business"
+    },
+    {
+      "slug": "social",
+      "title": "سوشال مدیا و جامعه‌سازی"
+    },
+    {
+      "slug": "publishing",
+      "title": "نوشتن، محتوا و نشر"
+    },
+    {
+      "slug": "visual",
+      "title": "طراحی بصری و تولید رسانه"
+    },
+    {
+      "slug": "ux",
+      "title": "طراحی محصول و تجربه کاربری"
+    },
+    {
+      "slug": "software",
+      "title": "توسعه نرم‌افزار و اتوماسیون"
+    },
+    {
+      "slug": "data",
+      "title": "داده، تحلیل و پژوهش"
+    },
+    {
+      "slug": "education",
+      "title": "آموزش و یادگیری"
+    },
+    {
+      "slug": "personal",
+      "title": "رشد فردی، مسیر شغلی و زندگی روزمره"
+    }
+  ],
+  "useCases": [
+    {
+      "slug": "business-ideas",
+      "title": "کشف و ارزیابی ایده کسب‌وکار",
+      "group": "business"
+    },
+    {
+      "slug": "bus-02",
+      "title": "تحقیق بازار و نیاز مشتری",
+      "group": "business"
+    },
+    {
+      "slug": "bus-03",
+      "title": "تحلیل رقبا و جایگزین‌ها",
+      "group": "business"
+    },
+    {
+      "slug": "business-plan",
+      "title": "تدوین برنامه کسب‌وکار",
+      "group": "business"
+    },
+    {
+      "slug": "bus-05",
+      "title": "تعریف پیشنهاد ارزش",
+      "group": "business"
+    },
+    {
+      "slug": "bus-06",
+      "title": "تدوین جایگاه و پیام برند",
+      "group": "business"
+    },
+    {
+      "slug": "bus-07",
+      "title": "برنامه‌ریزی عرضه محصول",
+      "group": "business"
+    },
+    {
+      "slug": "bus-08",
+      "title": "طراحی قیمت و بسته پیشنهادی",
+      "group": "business"
+    },
+    {
+      "slug": "bus-09",
+      "title": "طراحی کمپین بازاریابی",
+      "group": "business"
+    },
+    {
+      "slug": "bus-10",
+      "title": "نوشتن متن تبلیغ و صفحه فروش",
+      "group": "business"
+    },
+    {
+      "slug": "bus-11",
+      "title": "طراحی ایمیل بازاریابی",
+      "group": "business"
+    },
+    {
+      "slug": "product-image",
+      "title": "ساخت تصویر محصول",
+      "group": "product"
+    },
+    {
+      "slug": "product-video",
+      "title": "ساخت ویدیوی محصول",
+      "group": "product"
+    },
+    {
+      "slug": "product-script",
+      "title": "نوشتن سناریوی معرفی محصول",
+      "group": "product"
+    },
+    {
+      "slug": "bus-15",
+      "title": "نوشتن توضیحات محصول",
+      "group": "product"
+    },
+    {
+      "slug": "bus-16",
+      "title": "تهیه کاتالوگ و مقایسه محصولات",
+      "group": "product"
+    },
+    {
+      "slug": "bus-17",
+      "title": "آماده‌سازی جلسه فروش",
+      "group": "business"
+    },
+    {
+      "slug": "bus-18",
+      "title": "نوشتن پیشنهاد همکاری",
+      "group": "business"
+    },
+    {
+      "slug": "bus-19",
+      "title": "تمرین مذاکره و پاسخ به اعتراض",
+      "group": "business"
+    },
+    {
+      "slug": "bus-20",
+      "title": "پاسخ‌گویی به درخواست و شکایت مشتری",
+      "group": "business"
+    },
+    {
+      "slug": "bus-21",
+      "title": "ساخت پرسش‌های متداول کسب‌وکار",
+      "group": "business"
+    },
+    {
+      "slug": "sales-analysis",
+      "title": "تحلیل عملکرد فروش",
+      "group": "business"
+    },
+    {
+      "slug": "bus-23",
+      "title": "تدوین دستورالعمل اجرای کار",
+      "group": "business"
+    },
+    {
+      "slug": "bus-24",
+      "title": "برنامه‌ریزی پروژه و ظرفیت تیم",
+      "group": "business"
+    },
+    {
+      "slug": "bus-25",
+      "title": "تبدیل جلسه کاری به تصمیم و اقدام",
+      "group": "business"
+    },
+    {
+      "slug": "bus-26",
+      "title": "آماده‌سازی فرایند استخدام",
+      "group": "business"
+    },
+    {
+      "slug": "bus-27",
+      "title": "طراحی ورود و آموزش نیروی جدید",
+      "group": "business"
+    },
+    {
+      "slug": "bus-28",
+      "title": "تهیه بودجه و سناریوی مالی کسب‌وکار",
+      "group": "business"
+    },
+    {
+      "slug": "soc-01",
+      "title": "تدوین استراتژی شبکه اجتماعی",
+      "group": "social"
+    },
+    {
+      "slug": "content-calendar",
+      "title": "برنامه‌ریزی تقویم سوشال مدیا",
+      "group": "social"
+    },
+    {
+      "slug": "social-content",
+      "title": "تهیه بسته محتوای شبکه اجتماعی",
+      "group": "social"
+    },
+    {
+      "slug": "soc-04",
+      "title": "نوشتن کپشن و شروع جذاب",
+      "group": "social"
+    },
+    {
+      "slug": "instagram-post",
+      "title": "ساخت پست و کاروسل",
+      "group": "social"
+    },
+    {
+      "slug": "instagram-story",
+      "title": "ساخت استوری",
+      "group": "social"
+    },
+    {
+      "slug": "soc-07",
+      "title": "ساخت ریلز و ویدیوی کوتاه اجتماعی",
+      "group": "social"
+    },
+    {
+      "slug": "soc-08",
+      "title": "آماده‌سازی لایو و گفتگوی اجتماعی",
+      "group": "social"
+    },
+    {
+      "slug": "social-profile",
+      "title": "ساخت عکس پروفایل شبکه اجتماعی",
+      "group": "social"
+    },
+    {
+      "slug": "soc-10",
+      "title": "نوشتن بیو و معرفی پروفایل",
+      "group": "social"
+    },
+    {
+      "slug": "soc-11",
+      "title": "تدوین برند شخصی در سوشال مدیا",
+      "group": "social"
+    },
+    {
+      "slug": "soc-12",
+      "title": "طراحی برنامه رشد مخاطب",
+      "group": "social"
+    },
+    {
+      "slug": "soc-13",
+      "title": "طراحی مسیر فروش در شبکه اجتماعی",
+      "group": "social"
+    },
+    {
+      "slug": "soc-14",
+      "title": "پاسخ‌گویی به کامنت و پیام",
+      "group": "social"
+    },
+    {
+      "slug": "soc-15",
+      "title": "تدوین قواعد و مدیریت جامعه",
+      "group": "social"
+    },
+    {
+      "slug": "soc-16",
+      "title": "آماده‌سازی همکاری با تولیدکننده محتوا",
+      "group": "social"
+    },
+    {
+      "slug": "soc-17",
+      "title": "تحلیل عملکرد محتوای اجتماعی",
+      "group": "social"
+    },
+    {
+      "slug": "soc-18",
+      "title": "تبدیل محتوا برای چند شبکه اجتماعی",
+      "group": "social"
+    },
+    {
+      "slug": "article-writing",
+      "title": "نوشتن مقاله و محتوای وب",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-02",
+      "title": "برنامه‌ریزی محتوای وب و نشر",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-03",
+      "title": "تهیه بریف مقاله برای جستجوی وب",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-04",
+      "title": "بازبینی محتوای وب برای خوانایی و سئو",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-05",
+      "title": "بازنویسی متن برای مخاطب و لحن",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-06",
+      "title": "ویراستاری و اصلاح نگارشی",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-07",
+      "title": "خلاصه‌سازی متن و سند",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-08",
+      "title": "ترجمه متن",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-09",
+      "title": "بومی‌سازی متن برای مخاطب مقصد",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-10",
+      "title": "نوشتن راهنمای استفاده و مستند فنی",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-11",
+      "title": "نوشتن نامه و سند رسمی",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-12",
+      "title": "تهیه متن سخنرانی و ارائه",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-13",
+      "title": "طراحی ساختار کتاب",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-14",
+      "title": "نوشتن و توسعه فصل کتاب",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-15",
+      "title": "بازبینی انسجام و تدوین کتاب",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-16",
+      "title": "نوشتن داستان و توسعه روایت",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-17",
+      "title": "نوشتن فیلمنامه و نمایشنامه",
+      "group": "publishing"
+    },
+    {
+      "slug": "wrt-18",
+      "title": "تهیه خبرنامه تحریریه‌ای",
+      "group": "publishing"
+    },
+    {
+      "slug": "reference-portrait",
+      "title": "ساخت پرتره با تصویر مرجع",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-02",
+      "title": "طراحی فضا و صحنه بصری",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-03",
+      "title": "طراحی شخصیت و کاراکتر",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-04",
+      "title": "ساخت کانسپت آرت و تصویرسازی",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-05",
+      "title": "ساخت آیکون و گرافیک برداری",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-06",
+      "title": "طراحی لوگو و نشان بصری",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-07",
+      "title": "طراحی پوستر و طرح گرافیکی",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-08",
+      "title": "ساخت مودبرد و جهت هنری",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-09",
+      "title": "بازآفرینی تصویر با سبک و مرجع",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-10",
+      "title": "ترمیم و بهبود کیفیت تصویر",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-11",
+      "title": "ویرایش سوژه و پس‌زمینه تصویر",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-12",
+      "title": "اصلاح کادر و گسترش تصویر",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-13",
+      "title": "طراحی استوری‌بورد",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-14",
+      "title": "تولید ویدیوی خلاقه",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-15",
+      "title": "تدوین و بازبینی ویدیو",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-16",
+      "title": "بازقاب‌بندی ویدیو برای اندازه جدید",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-17",
+      "title": "ساخت گفتار و نریشن",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-18",
+      "title": "ساخت موسیقی برای یک اثر",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-19",
+      "title": "طراحی افکت و فضای صوتی",
+      "group": "visual"
+    },
+    {
+      "slug": "vis-20",
+      "title": "پاک‌سازی و بازبینی کیفیت صوت",
+      "group": "visual"
+    },
+    {
+      "slug": "ux-01",
+      "title": "طراحی برنامه تحقیق تجربه کاربری",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-02",
+      "title": "آماده‌سازی مصاحبه کاربر",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-03",
+      "title": "تحلیل شواهد و بازخورد کاربران",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-04",
+      "title": "تدوین پرسونای مبتنی بر شواهد",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-05",
+      "title": "ترسیم سفر کاربر",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-06",
+      "title": "طراحی معماری اطلاعات و ناوبری",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-07",
+      "title": "طراحی جریان انجام کار",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-08",
+      "title": "ساخت وایرفریم و نمونه اولیه",
+      "group": "ux"
+    },
+    {
+      "slug": "ui-building",
+      "title": "ساخت رابط کاربری",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-10",
+      "title": "تدوین دیزاین سیستم",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-11",
+      "title": "طراحی رابط واکنش‌گرا",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-12",
+      "title": "نوشتن میکروکپی رابط",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-13",
+      "title": "طراحی فرم و حالت‌های رابط",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-14",
+      "title": "طراحی آزمون کاربردپذیری",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-15",
+      "title": "بازبینی کاربردپذیری رابط",
+      "group": "ux"
+    },
+    {
+      "slug": "ux-16",
+      "title": "ارزیابی دسترس‌پذیری رابط",
+      "group": "ux"
+    },
+    {
+      "slug": "mobile-app",
+      "title": "ساخت اپلیکیشن موبایل",
+      "group": "software"
+    },
+    {
+      "slug": "dev-02",
+      "title": "ساخت اپلیکیشن وب",
+      "group": "software"
+    },
+    {
+      "slug": "dev-03",
+      "title": "ساخت برنامه دسکتاپ و ابزار محلی",
+      "group": "software"
+    },
+    {
+      "slug": "dev-04",
+      "title": "تبدیل نیازمندی به مشخصات نرم‌افزار",
+      "group": "software"
+    },
+    {
+      "slug": "dev-05",
+      "title": "طراحی معماری و ماژول‌های نرم‌افزار",
+      "group": "software"
+    },
+    {
+      "slug": "dev-06",
+      "title": "ساخت API و سرویس بک‌اند",
+      "group": "software"
+    },
+    {
+      "slug": "dev-07",
+      "title": "طراحی مدل داده و مهاجرت پایگاه داده",
+      "group": "software"
+    },
+    {
+      "slug": "dev-08",
+      "title": "پیاده‌سازی احراز هویت و سطح دسترسی",
+      "group": "software"
+    },
+    {
+      "slug": "dev-09",
+      "title": "فهم و مستندسازی کد موجود",
+      "group": "software"
+    },
+    {
+      "slug": "dev-10",
+      "title": "رفع باگ و تحلیل لاگ خطا",
+      "group": "software"
+    },
+    {
+      "slug": "dev-11",
+      "title": "بازبینی کیفیت کد",
+      "group": "software"
+    },
+    {
+      "slug": "dev-12",
+      "title": "بازآرایی کد",
+      "group": "software"
+    },
+    {
+      "slug": "dev-13",
+      "title": "طراحی و نوشتن آزمون نرم‌افزار",
+      "group": "software"
+    },
+    {
+      "slug": "dev-14",
+      "title": "بررسی امنیت دفاعی نرم‌افزار",
+      "group": "software"
+    },
+    {
+      "slug": "dev-15",
+      "title": "بهینه‌سازی عملکرد نرم‌افزار",
+      "group": "software"
+    },
+    {
+      "slug": "dev-16",
+      "title": "انتقال فناوری و ارتقای وابستگی‌ها",
+      "group": "software"
+    },
+    {
+      "slug": "dev-17",
+      "title": "آماده‌سازی ساخت و انتشار نرم‌افزار",
+      "group": "software"
+    },
+    {
+      "slug": "dev-18",
+      "title": "تنظیم زیرساخت و محیط اجرای برنامه",
+      "group": "software"
+    },
+    {
+      "slug": "dev-19",
+      "title": "ساخت گردش کار خودکار",
+      "group": "software"
+    },
+    {
+      "slug": "dev-20",
+      "title": "اتصال سرویس‌ها و ساخت یکپارچه‌سازی",
+      "group": "software"
+    },
+    {
+      "slug": "dev-21",
+      "title": "طراحی دستیار و گردش کار ایجنتی",
+      "group": "software"
+    },
+    {
+      "slug": "dev-22",
+      "title": "تدوین راهنمای ایجنت توسعه پروژه",
+      "group": "software"
+    },
+    {
+      "slug": "dat-01",
+      "title": "استخراج اطلاعات ساختاریافته از اسناد",
+      "group": "data"
+    },
+    {
+      "slug": "dat-02",
+      "title": "پاک‌سازی و یکسان‌سازی داده",
+      "group": "data"
+    },
+    {
+      "slug": "dat-03",
+      "title": "ترکیب مجموعه‌داده‌ها",
+      "group": "data"
+    },
+    {
+      "slug": "dat-04",
+      "title": "ساخت فرمول و محاسبه صفحه گسترده",
+      "group": "data"
+    },
+    {
+      "slug": "dat-05",
+      "title": "نوشتن پرس‌وجو برای تحلیل داده",
+      "group": "data"
+    },
+    {
+      "slug": "dat-06",
+      "title": "تحلیل اکتشافی مجموعه‌داده",
+      "group": "data"
+    },
+    {
+      "slug": "dat-07",
+      "title": "مقایسه آماری و آزمون فرضیه",
+      "group": "data"
+    },
+    {
+      "slug": "dat-08",
+      "title": "طراحی و تحلیل آزمایش",
+      "group": "data"
+    },
+    {
+      "slug": "dat-09",
+      "title": "ساخت نمودار و داشبورد تحلیلی",
+      "group": "data"
+    },
+    {
+      "slug": "dat-10",
+      "title": "تهیه گزارش تحلیلی مستند",
+      "group": "data"
+    },
+    {
+      "slug": "dat-11",
+      "title": "تدوین سؤال و برنامه پژوهش",
+      "group": "data"
+    },
+    {
+      "slug": "dat-12",
+      "title": "جستجو و مرور منابع معتبر",
+      "group": "data"
+    },
+    {
+      "slug": "dat-13",
+      "title": "مقایسه و ترکیب یافته‌های منابع",
+      "group": "data"
+    },
+    {
+      "slug": "dat-14",
+      "title": "بررسی صحت ادعا و ارجاع",
+      "group": "data"
+    },
+    {
+      "slug": "dat-15",
+      "title": "طراحی پرسش‌نامه پژوهشی",
+      "group": "data"
+    },
+    {
+      "slug": "dat-16",
+      "title": "تحلیل متن و پاسخ‌های پژوهشی",
+      "group": "data"
+    },
+    {
+      "slug": "learning-plan",
+      "title": "تدوین برنامه یادگیری یک مهارت",
+      "group": "education"
+    },
+    {
+      "slug": "edu-02",
+      "title": "توضیح مفهوم با سطح‌بندی",
+      "group": "education"
+    },
+    {
+      "slug": "edu-03",
+      "title": "تمرین با مربی پرسش‌محور",
+      "group": "education"
+    },
+    {
+      "slug": "edu-04",
+      "title": "ساخت تمرین و مسئله آموزشی",
+      "group": "education"
+    },
+    {
+      "slug": "edu-05",
+      "title": "دریافت بازخورد بر پاسخ و تکلیف",
+      "group": "education"
+    },
+    {
+      "slug": "edu-06",
+      "title": "آماده‌سازی برای آزمون",
+      "group": "education"
+    },
+    {
+      "slug": "edu-07",
+      "title": "تمرین زبان و مکالمه",
+      "group": "education"
+    },
+    {
+      "slug": "edu-08",
+      "title": "ساخت فلش‌کارت و برنامه مرور",
+      "group": "education"
+    },
+    {
+      "slug": "edu-09",
+      "title": "طراحی برنامه درس و دوره",
+      "group": "education"
+    },
+    {
+      "slug": "edu-10",
+      "title": "تهیه طرح درس و فعالیت کلاس",
+      "group": "education"
+    },
+    {
+      "slug": "edu-11",
+      "title": "انطباق آموزش با نیاز یادگیرنده",
+      "group": "education"
+    },
+    {
+      "slug": "edu-12",
+      "title": "ساخت آزمون و معیار ارزیابی",
+      "group": "education"
+    },
+    {
+      "slug": "edu-13",
+      "title": "تحلیل پیشرفت یادگیری",
+      "group": "education"
+    },
+    {
+      "slug": "edu-14",
+      "title": "تولید محتوای آموزشی چندرسانه‌ای",
+      "group": "education"
+    },
+    {
+      "slug": "personal-goal",
+      "title": "برنامه‌ریزی برای یک هدف شخصی",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-02",
+      "title": "طراحی عادت و پیگیری استمرار",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-03",
+      "title": "اولویت‌بندی کارهای شخصی",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-04",
+      "title": "برنامه‌ریزی روز و هفته",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-05",
+      "title": "بازاندیشی و ژورنال‌نویسی هدایت‌شده",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-06",
+      "title": "مقایسه گزینه‌های تصمیم شخصی",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-07",
+      "title": "بررسی مسیر و تغییر شغل",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-08",
+      "title": "نوشتن و بهبود رزومه",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-09",
+      "title": "نوشتن معرفی و نامه درخواست شغل",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-10",
+      "title": "تمرین مصاحبه شغلی",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-11",
+      "title": "تهیه پورتفولیو حرفه‌ای",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-12",
+      "title": "آماده‌سازی مذاکره پیشنهاد شغلی",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-13",
+      "title": "برنامه‌ریزی سفر",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-14",
+      "title": "برنامه‌ریزی غذا و خرید روزمره",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-15",
+      "title": "سامان‌دهی خانه و کارهای شخصی",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-16",
+      "title": "برنامه‌ریزی مناسبت و رویداد شخصی",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-17",
+      "title": "مقایسه کالا برای خرید شخصی",
+      "group": "personal"
+    },
+    {
+      "slug": "lif-18",
+      "title": "تنظیم بودجه شخصی",
+      "group": "personal"
+    }
+  ],
+  "resourceTypes": [
+    "prompt",
+    "skill",
+    "agent-guide"
+  ]
+}

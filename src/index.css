@@ -91,7 +91,10 @@
   ::selection { background: var(--ui-brand-soft); color: var(--ui-primary); }
 }
 @layer components {
-  .site-header { background: var(--ui-header); backdrop-filter: blur(12px); }
+  .site-header { --header-row-height: max(64px, calc(var(--header-logo-mobile, 44px) + 16px)); background: var(--ui-header); backdrop-filter: blur(12px); }
+  .site-header-row { min-height: var(--header-row-height); padding-block: 4px; }
+  .header-navigation-panel { max-height: calc(100dvh - var(--header-row-height)); }
+  @media (min-width: 768px) { .site-header { --header-row-height: max(72px, calc(var(--header-logo-desktop, 50px) + 16px)); } }
   .brand-mark { background: linear-gradient(135deg,#6c47ff,#8b5cf6); }
   .home-hero { background-image: var(--ui-hero); }
   .header-account-link { display: block; border-radius: 8px; padding: 10px 12px; color: var(--ui-secondary); font-size: 14px; }

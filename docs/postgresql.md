@@ -1,35 +1,31 @@
-# مهاجرت به PostgreSQL
+# PostgreSQL پرامتی
 
-هدف تأییدشده: PostgreSQL برای prompts/users/categories/taxonomies/presets/bookmarks. settings و graph فعلی JSON، رسانه روی dl و داده امنیتی .private هستند؛ همه این‌ها باید پشتیبان داشته باشند.
+آخرین بررسی: ۲۰۲۶-۱۰-۱۴. محتوای اصلی، حساب‌ها، taxonomy، نشان‌ها و نسخه‌های شخصی در لوکال اکنون واقعاً PostgreSQL هستند. سرور هنوز JSON است؛ فعال‌سازی سرور اجرا نشده است.
 
-## اجرای محلی جدا
-Docker این میزبان نصب است ولی کاربر فعلی مجوز socket ندارد؛ sudo رمز سیستم می‌خواهد. رمز را به چت ارسال نکنید. PostgreSQL محلی باید در volume مستقل، فقط 127.0.0.1:55432 منتشر شود. database جدا مانند promty_local باشد، نه پایگاه سرور. رمز دیتابیس در فایل خصوصی باشد.
-پس از آماده‌شدن runtime، DATABASE_URL را به پایگاه محلی تنظیم کنید؛ برای پایگاه تازه و خالی schema را ابتدا جدا بررسی و ایجاد کنید. db push فقط روی پایگاه local خالی مجاز است، نه Production.
+## لوکال فعال
 
-## انتقال داده واقعی
-۱. مشخص‌کردن ذخیره‌ساز فعلی PM2 و تعداد رکوردهای منبع/مقصد، بدون چاپ secrets.
-۲. توقف نویسنده‌ها در زمان نگهداریِ تأییدشده و بکاپ از JSON، PostgreSQL موجود، dl، .env و .private.
-۳. rehearsal روی پایگاه جدا و خالی. هیچ جدول PostgreSQL قدیمی reset یا overwrite نشود. شناسه‌ها، روابط parent، نقش‌ها، فارسی، زمان و usageCount حفظ شوند.
-۴. ابزار انتقال به صورت پیش‌فرض dry-run است؛ اجرای واقعی به تأیید، backup منطبق با منبع و مقصد خالی نیاز دارد. خطای یک رکورد کل transaction را لغو کند. schema مقصد باید از قبل آماده باشد.
-۵. پس از تطبیق تعداد و شناسه‌ها/بدنه‌ها، DATABASE_URL محیط فعال PM2 تنظیم شود. خطای PostgreSQL باعث توقف می‌شود؛ fallback به JSON مجاز نیست.
-۶. تست API و مرورگر مدیر/انتشار/نشان/نسخه شخصی؛ حفظ db.json برای settings/graph و بازگشت. هنگام بازگشت داده نوشته‌شده پس از cutover نباید گم شود؛ ابتدا export/تطبیق لازم است.
+- رابط زنده: http://localhost:5173 ؛ API: loopback:3005.
+- PostgreSQL 17.11 مستقل از سرویس‌های سیستم، فقط `127.0.0.1:55432`، پایگاه `promty_local`.
+- runtime و داده: `/home/sajj/developing/promty/.local-postgres`؛ بسته‌های رسمی Debian از فهرست امضاشده، با کنترل SHA256، در پوشه کاربر استخراج شده‌اند. نصب سیستمی یا sudo/Docker انجام نشده است.
+- رمز و DATABASE_URL: فایل خصوصی `~/.config/promty/local-postgres.env` با مجوز 0600، خارج Git. مقدار اتصال چاپ نشود.
+- اجرای API: `python3 /home/sajj/developing/promty/.local-preview/start-api.py`. این راه‌انداز مقصد را به پایگاه لوکال محدود می‌کند، PostgreSQL موجود را در صورت نیاز روشن می‌کند و نشست محلی را با کلید خصوصی پایدار صادر می‌کند؛ پایگاه را reset/seed نمی‌کند.
+- اجرای رابط از ریشه مخزن: `./node_modules/.bin/vite --config local-preview.config.ts --host 127.0.0.1 --port 5173 --strictPort`.
 
-تا فراهم‌شدن runtime و اطلاعات مقصد، اجرای PostgreSQL یا انتقال داده انجام‌شده اعلام نشود. فعال‌سازی روی سرور به طرح و تأیید جدا نیاز دارد.
+۲۳ نمونه محلی، شامل پرامپت مرجع `7hhsjazg1` با فارسی و پنج فیلد، به پایگاه مستقل منتقل شدند. بکاپ JSON پیش از انتقال در `.local-preview/.private/postgres-backups` محفوظ است. تنظیمات، روابط گراف، رسانه و state امنیتی همچنان فایل هستند؛ db.json و dl و .private حذف نشوند.
 
-## فرمان ابزار انتقال
-طرح خواندنی بدون اتصال/نوشتن:
-```bash
-node scripts/migrate-json-to-postgres.mjs --source /absolute/path/db.json
-```
-پس از تأیید مالک، بکاپ منطبق، schema آماده و مقصد خالی:
-```bash
-node scripts/migrate-json-to-postgres.mjs --source /absolute/path/db.json --backup /absolute/private/backup.json --apply --confirm-empty-target
-```
-DATABASE_URL از محیط خصوصی خوانده می‌شود. ابزار داده را merge/overwrite نمی‌کند؛ تنظیمات/روابط گراف را در JSON نگه می‌دارد. منبع هنگام انتقال نباید نویسنده فعال داشته باشد. صحت count داخل transaction بررسی می‌شود؛ مقایسه بدنه و آزمون رفتار مرحله مستقل است.
+## آزمون‌های انجام‌شده
 
-## آماده‌سازی runtime توسط مالک روی همین کامپیوتر
-در این محیط Docker بدون sudo در دسترس نیست. مالک می‌تواند این فرمان را در ترمینال خودش اجرا کند؛ رمز sudo وارد گفتگو نشود:
-```bash
-sudo docker compose --env-file /home/sajj/.config/promty/local-postgres.env -f /home/sajj/Documents/Codex/promty/ui-preview/compose.postgres-local.yml up -d
-```
-فقط یک container/volume جدید محلی و پورت loopback:55432 ایجاد می‌شود. فایل رمز و DATABASE_URL در ~/.config/promty و خارج Git هستند. اجرای این فرمان هنوز انجام نشده و pull تصویر ممکن است به شبکه نیاز داشته باشد. پس از آماده‌شدن، Project Brain schema محلی و rehearsal مهاجرت را اجرا کند. production یا volumeهای دیگر را تغییر ندهید؛ down -v استفاده نشود.
+تطبیق همه ۲۳ شناسه، عنوان، بدنه فارسی/انگلیسی، fieldsSchema و نقش حساب با منبع؛ ورود مدیر؛ ساخت و پیش‌نمایش draft؛ منع دسترسی عمومی؛ انتشار؛ فیلتر کاربرد/نوع منبع؛ ویرایش فارسی؛ ثبت preset و نشان در PostgreSQL؛ عدم انتشار؛ حذف رکورد موقت. داده آزمایش چرخه پاک شد و ۲۳ نمونه باقی ماند. API پس از restart نیز داده‌ها را نگه داشت.
+
+SQL schema کاملِ تولیدشده از Prisma روی پایگاه جدا `promty_fresh_check_20261014` اتمیک اجرا شد. راه‌اندازی تازه صفر پرامپت، ۸۲ taxonomy و ورود مدیر پیکربندی‌شده را تأیید کرد. این rehearsal لوکال است؛ نسخه PostgreSQL سرور 16.15 است و هنوز روی آن اجرا نشده. آزمون تعاملی مرورگر و پیامک واقعی جدا هستند.
+
+## تصمیم سرور: پایگاه تازه
+
+مالک صریحاً اعلام کرد داده‌های قبلی لازم نیست؛ پایگاه جدید بر اساس استاندارد آرشیو کاربردمحور ایجاد شود. پرامپت‌ها، کاربران، نشان‌ها و presetهای قدیمی به مقصد جدید وارد نمی‌شوند؛ منابع قدیمی برای بکاپ/بازگشت محفوظ می‌مانند. نمونه‌های لوکال نیز به Production انتقال نمی‌یابند.
+[طرح دقیق و محدوده تأیید](postgresql-production-plan.md). تغییر داده، فایل یا PM2 سرور فقط پس از تأیید صریح همین طرح مجاز است.
+
+## ابزار انتقال برای محیط‌های دیگر
+
+`node scripts/migrate-json-to-postgres.mjs --source /absolute/path/db.json` فقط طرح خواندنی می‌دهد. Apply نیازمند backup منطبق، مقصد دارای schema و کاملاً خالی، و `--apply --confirm-empty-target --backup /absolute/private/backup.json` است. منبع هنگام انتقال نباید نویسنده فعال داشته باشد. تراکنش از merge/overwrite جلوگیری می‌کند. ابزار روی ۲۳ نمونه لوکال آزموده شد؛ در طرح پایگاه تازه سرور استفاده نمی‌شود.
+
+اتصال PostgreSQL ناموفق نباید به JSON برگردد. Production به DATABASE_URL نیاز دارد؛ STORAGE_BACKEND=json فقط سازگاری صریح و موقت است.

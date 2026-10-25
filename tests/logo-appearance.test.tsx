@@ -22,7 +22,7 @@ test('missing or damaged saved settings preserve the approved default appearance
 
 test('settings reject unsafe CSS, unknown properties and invalid sizing or duration', () => {
   for (const patch of [
-    null, [], { desktopSize: 65 }, { mobileSize: 53 }, { desktopSize: '50' },
+    null, [], { desktopSize: 134 }, { mobileSize: 134 }, { desktopSize: '50' },
     { desktopSize: 42.5 }, { mobileSize: NaN }, { durationSeconds: Infinity },
     { durationSeconds: 0 }, { durationSeconds: 41 }, { gradientEnabled: 'false' },
     { animationEnabled: 1 }, { animationType: 'url(https://invalid.test)' },
@@ -31,7 +31,7 @@ test('settings reject unsafe CSS, unknown properties and invalid sizing or durat
     { gradientColors: ['#402fb5);background:url(https://invalid.test)', '#6c47ff', '#cf30aa', '#dfa2da'] },
     { gradientColors: ['#000000'] },
   ]) assert.ok(getLogoAppearanceError(patch), JSON.stringify(patch));
-  for (const patch of [{}, { gradientEnabled: false }, { animationEnabled: false }, { desktopSize: 64, mobileSize: 52, durationSeconds: 4, gradientAngle: 360, animationType: 'diagonal' }]) {
+  for (const patch of [{}, { gradientEnabled: false }, { animationEnabled: false }, { desktopSize: 133, mobileSize: 133, durationSeconds: 4, gradientAngle: 360, animationType: 'diagonal' }]) {
     assert.equal(getLogoAppearanceError(patch), null);
   }
 });

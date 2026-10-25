@@ -1,0 +1,118 @@
+{
+  "date": "2026-10-24",
+  "workflowId": "gaaunEOXwrtDtqqS",
+  "published": false,
+  "successfulContentResponses": 0,
+  "latencyCriterionMet": false,
+  "runs": [
+    {
+      "kind": "manual_full_cartoon",
+      "n8nStatus": "success",
+      "n8nDurationMs": 28579,
+      "contentOk": false,
+      "resultCode": "MODEL_REQUEST_FAILED",
+      "httpStatus": 502,
+      "reportedDurationMs": 26657,
+      "modelNodeMs": 23780,
+      "cause": "timeout of 23700ms exceeded"
+    },
+    {
+      "kind": "diagnostic_step",
+      "status": "not_completed_or_confirmed",
+      "cause": "intermittent Offline / Problem running workflow / browser communication timeout",
+      "countAsBenchmark": false
+    },
+    {
+      "kind": "manual_full_cartoon_browser_reconnected",
+      "modelNodeMs": 5817,
+      "reportedDurationMs": 8399,
+      "contentOk": false,
+      "resultCode": "MODEL_REQUEST_FAILED",
+      "providerHttpStatus": 503,
+      "providerMessage": "This model is currently experiencing high demand.",
+      "workflowBodyExpressionReadback": "={{ JSON.stringify($json.request) }}",
+      "syntaxErrorCleared": true
+    },
+    {
+      "kind": "manual_full_cartoon_second_retry",
+      "model": "models/gemini-3.8-flash",
+      "modelNodeMs": 24034,
+      "contentOk": false,
+      "cause": "timeout of 24000ms exceeded"
+    },
+    {
+      "kind": "flash_lite_v001",
+      "model": "models/gemini-3.5-flash-lite",
+      "n8nDurationMs": 16299,
+      "contentOk": false,
+      "resultCode": "INVALID_MODEL_OUTPUT",
+      "reason": "PersianLabel instead of label; inline options inside placeholders",
+      "promptTokens": 5339,
+      "completionTokens": 1476
+    },
+    {
+      "kind": "flash_lite_v002",
+      "model": "models/gemini-3.5-flash-lite",
+      "n8nDurationMs": 12322,
+      "reportedDurationMs": 7758,
+      "catalogMs": 3169,
+      "modelMs": 4589,
+      "structuralOk": true,
+      "qualityAccepted": false,
+      "reason": "Missing AVOID/preservation clauses; contradictory rich-shading style option",
+      "promptTokens": 5512,
+      "completionTokens": 842
+    },
+    {
+      "kind": "flash_lite_v003",
+      "model": "models/gemini-3.5-flash-lite",
+      "n8nDurationMs": 6454,
+      "reportedDurationMs": 2490,
+      "contentOk": false,
+      "providerHttpStatus": 503,
+      "reason": "Model high demand"
+    },
+    {
+      "kind": "flash_lite_v003_second",
+      "n8nDurationMs": 16837,
+      "modelNodeMs": 8157,
+      "contentOk": false,
+      "resultCode": "INVALID_MODEL_OUTPUT",
+      "reason": "Unquoted labelFa in editorial; model also invented tools absent from source"
+    },
+    {
+      "kind": "flash_lite_structured_v004_first",
+      "model": "models/gemini-3.5-flash-lite",
+      "n8nDurationMs": 15045,
+      "structuralOk": true,
+      "sourceDefaultReconstructionExact": true,
+      "referenceAndExclusionsReviewed": true,
+      "reviewStatus": "draft_requires_admin_review"
+    },
+    {
+      "kind": "flash_lite_structured_v004_second",
+      "model": "models/gemini-3.5-flash-lite",
+      "n8nDurationMs": 22343,
+      "structuralOk": true,
+      "sourceDefaultReconstructionExact": true,
+      "allOptionsAccepted": false,
+      "reason": "Vibrant color option conflicts with retained fixed pastel palette"
+    }
+  ],
+  "credentialRetest": "UI reported Connection tested successfully",
+  "fullRequestBodyRestoredInUI": true,
+  "persistedReadbackVerified": false,
+  "sourceWorkflowChanged": false,
+  "localDashboardEndToEndVerified": false,
+  "browserAccessRestored": true,
+  "syntaxErrorCleared": true,
+  "structuralSuccessResponses": 3,
+  "qualityAcceptedResponses": 0,
+  "completeSourceDefaultUnder30Responses": 2,
+  "productionPublished": false,
+  "exactAppliedPrepareRequestReadback": true,
+  "currentSystemRevision": "v004-proposed",
+  "providerSchemaEnabled": true,
+  "currentModel": "models/gemini-3.5-flash-lite",
+  "currentWorkflowStatus": "draft_test_only"
+}

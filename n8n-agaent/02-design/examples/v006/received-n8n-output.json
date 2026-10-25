@@ -1,0 +1,57 @@
+[
+  {
+    "title": "تبدیل عکس به تصویرسازی دوبعدی کارتونی پاستلی",
+    "description": "تبدیل عکس پرتره یا منظره به تصویرسازی دوبعدی دستی با رنگ‌های ملایم پاستلی، خطوط محیطی مشکی و حفظ کامل چهره‌ها، ترکیب‌بندی و پس‌زمینه.",
+    "intent": "visual-generation",
+    "domains": [
+      "design",
+      "photography"
+    ],
+    "tools": [
+      "midjourney",
+      "flux",
+      "stable-diffusion"
+    ],
+    "task": "تبدیل عکس به تصویرسازی کارتونی دوبعدی با پالت پاستلی",
+    "language": "english",
+    "difficulty": "intermediate",
+    "outputFormats": [
+      "image"
+    ],
+    "tags": [
+      "تصویرسازی",
+      "کارتون",
+      "تبدیل-عکس",
+      "سبک-پاستلی",
+      "دو-بعدی",
+      "طراحی-دستی"
+    ],
+    "requiresReferenceImage": true,
+    "body": "Convert the entire uploaded photograph into a clean, colorful, hand-drawn 2D cartoon illustration. Preserve the original composition, camera angle, poses, facial expressions, recognizable identities, hairstyles, clothing, accessories, and all important background elements.\n\nILLUSTRATION STYLE:\n• Clean black outlines with [[line_weight]] line weight.\n• Flat pastel colors with [[shading_style]].\n• Simplified characters with cute proportions, expressive faces, and natural poses.\n• Smooth, slightly imperfect lines for an authentic illustrated feel.\n• Simplify realistic textures into clean shapes while retaining recognizable details.\n• Recreate the original environment, including buildings, trees, fountains, pathways, and other objects, in the same cartoon style.\n• Use a soft pastel palette with light blue skies, muted greens, warm skin tones, and gentle pinks.\n• Add subtle artistic details while maintaining the original scene’s atmosphere.\n\nPRESERVE THE ORIGINAL:\nKeep the same number of people, their positions, body proportions, clothing colors, interactions, and relative sizes. Maintain the original background layout and perspective. Do not add, remove, or reposition important objects.\n\nOUTPUT REQUIREMENTS:\nA polished, full-frame 2D illustration with consistent outlines, flat colors, and a playful, storybook aesthetic. The entire image must be illustrated, with zero photorealistic elements.\n\nAVOID: 3D rendering, photorealism, excessive shading, watercolor textures, blurry lines, distorted faces, extra fingers or limbs, changed outfits, altered poses, missing background details, and unwanted text or watermarks.\n\nAspect ratio: Match the uploaded photo exactly.\n\nPro tip: Upload one photo at a time and use this same prompt to transform different photos into a consistent cartoon style.",
+    "bodyFa": "کل عکس بارگذاری‌شده را به یک تصویرسازی کارتونی دوبعدی، تمیز، رنگارنگ و طراحی‌شده با دست تبدیل کن. ترکیب‌بندی اصلی، زاویه دوربین، ژست‌ها، حالت‌های چهره، هویت‌های قابل‌تشخیص، مدل موها، لباس‌ها، اکسسوری‌ها و تمام عناصر مهم پس‌زمینه را دقیقاً حفظ کن.\n\nسبک تصویرسازی:\n• خطوط دورگیری تمیز و مشکی با ضخامت خط [[line_weight]].\n• رنگ‌های تخت پاستلی با [[shading_style]].\n• شخصیت‌های ساده‌شده با تناسبات فانتزی و دوست‌داشتنی، چهره‌های رسا و ژست‌های طبیعی.\n• خطوط نرم و با نقص‌های جزئیِ طبیعی برای حس واقعی طراحی دستی.\n• ساده‌سازی بافت‌های واقع‌گرایانه به فرم‌های تمیز و در عین حال حفظ جزئیات قابل تشخیص.\n• بازآفرینی محیط اصلی شامل ساختمان‌ها، درختان، آب‌نماها، مسیرها و سایر اشیا به همان سبک کارتونی.\n• استفاده از پالت رنگی نرم پاستلی با آسمان آبی روشن، سبزهای ملایم، رنگ پوست گرم و صورتی‌های لطیف.\n• افزودن جزئیات هنری ظریف در عین حفظ اتمسفر و حس صحنه اصلی.\n\nموارد الزامی برای حفظ از عکس اصلی:\nتعداد افراد، موقعیت مکانی، تناسبات اندام، رنگ لباس‌ها، تعاملات و اندازه‌های نسبی آن‌ها را بدون تغییر نگه‌دار. چیدمان پس‌زمینه و پرسپکتیو اولیه را حفظ کن. اشیای مهم را اضافه، حذف یا جابه‌جا نکن.\n\nالزامات خروجی:\nیک تصویرسازی دوبعدی صیقل‌خورده و تمام‌کادر با خطوط محیطی یکدست، رنگ‌های تخت و جلوهٔ داستانی و پرنشاط شبیه کتاب قصه. تمام تصویر باید حالت مصور داشته باشد و هیچ عنصر واقع‌گرایانه یا شبه‌عکس در آن نباشد.\n\nنبایدها (Negative Prompt): رندر سه‌بعدی، واقع‌گرایی فوتورئال، سایه‌زنی اغراق‌آمیز، بافت‌های آبرنگی، خطوط تار، چهره‌های دفرمه، انگشتان یا اندام اضافه، تغییر لباس، تغییر ژست، حذف جزئیات پس‌زمینه، متن و واترمارک ناخواسته.\n\nنسبت ابعاد: دقیقاً مطابق با عکس بارگذاری‌شده.\n\nنکته کاربردی: در هر نوبت یک عکس آپلود کنید و با همین دستور عکس‌های مختلف را به سبک کارتونی هماهنگ تبدیل نمایید.",
+    "fieldsSchema": [
+      {
+        "key": "line_weight",
+        "label": "ضخامت و پرداخت خطوط دورگیری",
+        "type": "select",
+        "required": true,
+        "options": [
+          "slightly varied, hand-drawn|دستی با تغییرات ظریف ضخامت",
+          "fine, gently varied, hand-drawn|دستی و نازک با تغییرات ملایم",
+          "slightly bolder, hand-drawn|دستی و کمی ضخیم‌تر"
+        ]
+      },
+      {
+        "key": "shading_style",
+        "label": "سبک سایه‌زنی",
+        "type": "select",
+        "required": true,
+        "options": [
+          "minimal cel shading|سایه‌زنی تخت و حداقلی",
+          "very light cel shading|سایه‌زنی تخت و بسیار کم",
+          "subtle cel shading on shadow edges|سایه‌زنی تخت و ظریف در لبهٔ سایه‌ها"
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,49 @@
+{
+  "title": "تبدیل عکس به کارتون دستی دوبعدی",
+  "description": "تبدیل کامل عکس به تصویرسازی کارتونی پاستلی، با حفظ هویت افراد، ترکیب‌بندی و جزئیات مهم صحنه.",
+  "intent": "visual-generation",
+  "domains": [
+    "design",
+    "photography"
+  ],
+  "tools": [],
+  "task": "تبدیل عکس به تصویرسازی کارتونی دوبعدی با حفظ ترکیب‌بندی و هویت افراد",
+  "language": "english",
+  "difficulty": "beginner",
+  "outputFormats": [
+    "image"
+  ],
+  "tags": [
+    "تبدیل عکس به کارتون",
+    "تصویرسازی دوبعدی",
+    "سبک پاستلی",
+    "حفظ هویت"
+  ],
+  "requiresReferenceImage": true,
+  "body": "Convert the entire uploaded photograph into a clean, colorful, hand-drawn 2D cartoon illustration. Preserve the original composition, camera angle, poses, facial expressions, recognizable identities, hairstyles, clothing, accessories, and all important background elements.\n\nILLUSTRATION STYLE:\n•Clean black outlines with [[line_weight]] line weight.\n•Flat pastel colors with [[shading_style]].\n•Simplified characters with a cute illustrated appearance, expressive faces, and natural poses, without changing their original body proportions.\n•Smooth, slightly imperfect lines for an authentic illustrated feel.\n•Simplify realistic textures into clean shapes while retaining recognizable details.\n•Recreate the original environment, including buildings, trees, fountains, pathways, and other objects where present, in the same cartoon style.\n•Use a soft pastel palette with light blue skies, muted greens, warm skin tones, and gentle pinks.\n•Add subtle artistic details while maintaining the original scene’s atmosphere.\n\nPRESERVE THE ORIGINAL:\nKeep the same number of people, their positions, body proportions, clothing colors, interactions, and relative sizes. Maintain the original background layout and perspective. Do not add, remove, or reposition important objects.\n\nOUTPUT REQUIREMENTS:\nA polished, full-frame 2D illustration with consistent outlines, flat colors, and a playful, storybook aesthetic. The entire image must be illustrated, with zero photorealistic elements.\n\nAVOID: 3D rendering, photorealism, excessive shading, watercolor textures, blurry lines, distorted faces, extra fingers or limbs, changed outfits, altered poses, missing background details, and unwanted text or watermarks.\n\nAspect ratio: Match the uploaded photo exactly.\n\nPro tip: Upload one photo at a time and use this same prompt to transform different photos into a consistent cartoon style.",
+  "bodyFa": "کل عکس بارگذاری‌شده را به یک تصویرسازی کارتونی دوبعدی تمیز، رنگارنگ و با ظاهر طراحی دستی تبدیل کنید. ترکیب‌بندی اصلی، زاویهٔ دوربین، ژست‌ها، حالت چهره‌ها، هویت قابل تشخیص افراد، مدل مو، لباس‌ها، لوازم جانبی و همهٔ عناصر مهم پس‌زمینه را حفظ کنید.\n\nسبک تصویرسازی:\n• خطوط دور مشکی و تمیز با ضخامت [[line_weight]].\n• رنگ‌های تخت پاستلی با [[shading_style]].\n• شخصیت‌ها را با ظاهری بامزه و تصویرسازی‌شده، چهره‌های گویا و ژست‌های طبیعی ساده‌سازی کنید، بدون آنکه تناسبات اصلی بدن آن‌ها تغییر کند.\n• برای ایجاد حس طراحی دستی، خطوط نرم و اندکی ناصاف باشند.\n• بافت‌های واقع‌گرایانه را به شکل‌های ساده و تمیز تبدیل کنید و جزئیات قابل تشخیص را نگه دارید.\n• محیط اصلی، از جمله ساختمان‌ها، درختان، فواره‌ها، مسیرها و دیگر اشیاء را در صورت وجود در عکس، با همان سبک کارتونی بازآفرینی کنید.\n• از پالت پاستلی ملایم شامل آسمان آبی روشن، سبزهای ملایم، رنگ‌های گرم پوست و صورتی‌های لطیف استفاده کنید.\n• ضمن حفظ حال‌وهوای صحنهٔ اصلی، جزئیات هنری ظریفی اضافه کنید.\n\nحفظ تصویر اصلی:\nتعداد افراد، جایگاه آن‌ها، تناسبات بدن، رنگ لباس‌ها، تعاملات و اندازه‌های نسبی را حفظ کنید. چیدمان و پرسپکتیو اصلی پس‌زمینه ثابت بماند. اشیای مهم را اضافه، حذف یا جابه‌جا نکنید.\n\nالزامات خروجی:\nیک تصویرسازی دوبعدی پرداخت‌شده و تمام‌کادر، با خطوط دور هماهنگ، رنگ‌های تخت و حال‌وهوای شاد کتاب داستان ارائه کنید. تمام تصویر باید تصویرسازی‌شده باشد و هیچ عنصر فوتورئالیستی نداشته باشد.\n\nپرهیز کنید از: رندر سه‌بعدی، فوتورئالیسم، سایه‌زنی زیاد، بافت آبرنگی، خطوط تار، چهره‌های بدشکل، انگشت یا اندام اضافی، تغییر لباس‌ها، تغییر ژست‌ها، حذف جزئیات پس‌زمینه و متن یا واترمارک ناخواسته.\n\nنسبت ابعاد: دقیقاً مطابق عکس بارگذاری‌شده باشد.\n\nنکتهٔ کاربردی: هر بار یک عکس بارگذاری کنید و برای تبدیل عکس‌های مختلف به سبک کارتونی یکدست، همین پرامت را به کار ببرید.",
+  "fieldsSchema": [
+    {
+      "key": "line_weight",
+      "label": "ضخامت خطوط دور",
+      "type": "select",
+      "required": true,
+      "options": [
+        "slightly varied, hand-drawn|طراحی دستی با تغییرات ظریف ضخامت",
+        "fine, gently varied, hand-drawn|دستی، نازک و با تغییرات ملایم ضخامت",
+        "slightly bolder, hand-drawn|دستی و کمی ضخیم‌تر"
+      ]
+    },
+    {
+      "key": "shading_style",
+      "label": "سایه‌زنی ملایم",
+      "type": "select",
+      "required": true,
+      "options": [
+        "minimal cel shading|سایه‌زنی تخت و حداقلی",
+        "very light cel shading|سایه‌زنی تخت و بسیار کم",
+        "subtle cel shading on shadow edges|سایه‌زنی تخت و ظریف در لبهٔ سایه‌ها"
+      ]
+    }
+  ]
+}

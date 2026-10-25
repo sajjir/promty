@@ -1,0 +1,70 @@
+{
+  "date": "2026-10-25",
+  "status": "applied-to-draft-test-only",
+  "workflowId": "93Uq9lGFxbSJMGoY",
+  "published": false,
+  "nodeCount": 11,
+  "modelCallsPerRun": 1,
+  "model": "models/gemini-3.5-flash-lite",
+  "timeoutSeconds": 30,
+  "maxSourceCharacters": 6000,
+  "exactReadback": true,
+  "finalExportSha256": "72a2a66e4717425f21276a9a1c79e206f845b5b48266bb41871e72d3e3609792",
+  "checks": {
+    "typescript": "passed",
+    "build": "passed",
+    "relatedTests": 31,
+    "runtimeContract": "passed",
+    "postgresDraft": "passed",
+    "anonymousDraft404": true,
+    "unreviewedPublication422": true
+  },
+  "liveRuns": [
+    {
+      "input": "caption",
+      "processingMs": 9225,
+      "fields": 6,
+      "primaryUseCase": "soc-04",
+      "referenceImage": false,
+      "sourceReconstruction": "exact"
+    },
+    {
+      "input": "product-image",
+      "processingMs": 7997,
+      "fields": 0,
+      "primaryUseCase": "product-image",
+      "referenceImage": true,
+      "sourceReconstruction": "exact"
+    },
+    {
+      "input": "product-description",
+      "processingMs": 7758,
+      "fields": 5,
+      "primaryUseCase": "bus-15",
+      "referenceImage": false,
+      "sourceReconstruction": "exact"
+    },
+    {
+      "input": "cartoon-original",
+      "processingMs": 7670,
+      "dashboardRoundTripMsRounded": 8700,
+      "fields": 0,
+      "primaryUseCase": "vis-09",
+      "referenceImage": true,
+      "sourceReconstruction": "exact"
+    }
+  ],
+  "localDraft": {
+    "id": "cmvnkwnkq0001tqbjj5ntcszw",
+    "active": false,
+    "fields": 5,
+    "needsReview": true
+  },
+  "limits": [
+    "Source-language reconstruction is checked independently; translation and all semantic alternatives still need admin review.",
+    "Caption language metadata was incorrectly persian; the application flags script/language contradictions instead of silently claiming certainty.",
+    "Provider failures remain possible; incomplete, invalid or late results are not imported.",
+    "Only four final-version inputs were benchmarked; no concurrency, p95 or all-types guarantee.",
+    "Test webhook needs Listen per call; permanent endpoint not published."
+  ]
+}

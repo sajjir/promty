@@ -1,0 +1,10 @@
+{
+  "sourceDefaultReconstructionExact": true,
+  "topLevelKeys": 18,
+  "sourceLanguageComplete": true,
+  "referenceImageRequired": true,
+  "useCase": "vis-09",
+  "semanticAlternativeOptionIssue": "Vibrant flat colors conflicts with unchanged soft pastel palette requirement; admin review required",
+  "allOptionsAccepted": false,
+  "publicationApproved": false
+}

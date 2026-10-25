@@ -1,0 +1,188 @@
+{
+  "kind": "local structural/reference checks, not model runs",
+  "fixtures": [
+    {
+      "name": "complete manually authored reference",
+      "expected": "accept",
+      "observed": "accept",
+      "reason": null
+    },
+    {
+      "name": "unknown primary",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "primary membership"
+    },
+    {
+      "name": "unknown related",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "related uses"
+    },
+    {
+      "name": "primary repeated as related",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "related uses"
+    },
+    {
+      "name": "duplicate related",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "related uses"
+    },
+    {
+      "name": "more than two related",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "related uses"
+    },
+    {
+      "name": "unrelated parent-group identifier",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "primary membership"
+    },
+    {
+      "name": "unknown resource type",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "resource type"
+    },
+    {
+      "name": "missing primary without review",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "missing primary needs review"
+    },
+    {
+      "name": "explicit unresolved classification",
+      "expected": "accept",
+      "observed": "accept",
+      "reason": null
+    },
+    {
+      "name": "explicit empty catalog forbids fallback category",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "primary membership"
+    },
+    {
+      "name": "empty catalog with unresolved review",
+      "expected": "accept",
+      "observed": "accept",
+      "reason": null
+    },
+    {
+      "name": "unused field",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "body/schema parity"
+    },
+    {
+      "name": "duplicate field",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "duplicate fields"
+    },
+    {
+      "name": "Persian token dropped",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "language token parity"
+    },
+    {
+      "name": "different occurrence counts",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "language token parity"
+    },
+    {
+      "name": "unsupported field property",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "field properties"
+    },
+    {
+      "name": "empty option label",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "bilingual option shape"
+    },
+    {
+      "name": "duplicate option insertion",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "duplicate insertion values"
+    },
+    {
+      "name": "required false",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "field type/required"
+    },
+    {
+      "name": "unapproved tool",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "taxonomy membership tools"
+    },
+    {
+      "name": "unknown root property",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "root properties"
+    },
+    {
+      "name": "comma-separated taxonomy lists",
+      "expected": "accept",
+      "observed": "accept",
+      "reason": null
+    },
+    {
+      "name": "suggested route shape",
+      "expected": "accept",
+      "observed": "accept",
+      "reason": null
+    },
+    {
+      "name": "candidate cannot invent a tested result",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "unsupported tested claim"
+    },
+    {
+      "name": "matching synthetic supplied evidence",
+      "expected": "accept",
+      "observed": "accept",
+      "reason": null
+    },
+    {
+      "name": "mismatched evidence environment",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "unsupported tested claim"
+    },
+    {
+      "name": "suggested route cannot carry a tested date",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "suggested evidence"
+    },
+    {
+      "name": "boolean reference flag required",
+      "expected": "reject",
+      "observed": "reject",
+      "reason": "reference image type"
+    }
+  ],
+  "passed": 29,
+  "renderedCombinations": 9,
+  "renderedLanguageVariants": 18,
+  "limits": [
+    "Reference output is manually authored.",
+    "Grammar and semantic intent require editorial review; assertions cover only known defects.",
+    "No n8n, LLM, image model, or live publication was executed.",
+    "Application import, persistence, SEO, and the legacy Code node were not upgraded."
+  ]
+}

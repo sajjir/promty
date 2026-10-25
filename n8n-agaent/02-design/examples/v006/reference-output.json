@@ -1,0 +1,69 @@
+{
+  "title": "تبدیل عکس به تصویرسازی دوبعدی کارتونی پاستلی",
+  "description": "تبدیل عکس به تصویرسازی کارتونی دوبعدی با رنگ‌های پاستلی و خطوط دستی، با هدف حفظ هویت افراد، ترکیب‌بندی و عناصر مهم صحنه.",
+  "intent": "visual-generation",
+  "domains": [
+    "design",
+    "photography"
+  ],
+  "tools": [],
+  "task": "تبدیل عکس به تصویرسازی کارتونی دوبعدی با پالت پاستلی",
+  "language": "english",
+  "difficulty": "beginner",
+  "outputFormats": [
+    "image"
+  ],
+  "tags": [
+    "تصویرسازی",
+    "کارتون",
+    "تبدیل-عکس",
+    "سبک-پاستلی",
+    "دو-بعدی",
+    "طراحی-دستی"
+  ],
+  "requiresReferenceImage": true,
+  "body": "Convert the entire uploaded photograph into a clean, colorful, hand-drawn 2D cartoon illustration. Preserve the original composition, camera angle, poses, facial expressions, recognizable identities, hairstyles, clothing, accessories, and all important background elements.\n\nILLUSTRATION STYLE:\n• Use [[line_weight]].\n• Apply [[shading_style]].\n• Simplify characters into cute illustrated forms with expressive faces and natural poses while preserving their original body proportions.\n• Smooth, slightly imperfect lines for an authentic illustrated feel.\n• Simplify realistic textures into clean shapes while retaining recognizable details.\n• Recreate the original environment, including buildings, trees, fountains, pathways, and other objects only where they exist in the source, in the same cartoon style.\n• Apply a soft pastel treatment to the existing color families. Where present, render skies, greenery, and pink details in gentle pastel tones while keeping clothing hues and recognizable skin tones faithful to the photo; do not add these elements if absent.\n• Limit subtle artistic details to linework and simplified textures of existing elements, maintaining the original atmosphere without adding objects.\n\nPRESERVE THE ORIGINAL:\nKeep the same number of people, their positions, body proportions, clothing colors, interactions, and relative sizes. Maintain the original background layout and perspective. Do not add, remove, or reposition important objects.\n\nOUTPUT REQUIREMENTS:\nA polished, full-frame 2D illustration with consistent outlines, flat colors, and a playful, storybook aesthetic. The entire image must be illustrated, with zero photorealistic elements.\n\nAVOID: 3D rendering, photorealism, excessive shading, watercolor textures, blurry lines, distorted faces, extra fingers or limbs, changed outfits, altered poses, missing background details, and unwanted text or watermarks.\n\nAspect ratio: Match the uploaded photo exactly.\n\nPro tip: Upload one photo at a time and use this same prompt to transform different photos into a consistent cartoon style.",
+  "bodyFa": "کل عکس بارگذاری‌شده را به یک تصویرسازی کارتونی دوبعدی، تمیز، رنگارنگ و طراحی‌شده با دست تبدیل کن. ترکیب‌بندی اصلی، زاویه دوربین، ژست‌ها، حالت‌های چهره، هویت‌های قابل‌تشخیص، مدل موها، لباس‌ها، اکسسوری‌ها و تمام عناصر مهم پس‌زمینه را دقیقاً حفظ کن.\n\nسبک تصویرسازی:\n• از [[line_weight]] استفاده کن.\n• از [[shading_style]] استفاده کن.\n• شخصیت‌ها را با ظاهر تصویرسازی‌شده و دوست‌داشتنی، چهره‌های رسا و ژست‌های طبیعی ساده‌سازی کن؛ تناسبات اصلی بدن آن‌ها تغییر نکند.\n• خطوط نرم و با نقص‌های جزئیِ طبیعی برای حس واقعی طراحی دستی.\n• ساده‌سازی بافت‌های واقع‌گرایانه به فرم‌های تمیز و در عین حال حفظ جزئیات قابل تشخیص.\n• محیط اصلی، از جمله ساختمان‌ها، درختان، آب‌نماها، مسیرها و سایر اشیا را فقط در صورت وجود در عکس، با همان سبک کارتونی بازآفرینی کن.\n• خانواده‌های رنگی موجود را با پرداخت پاستلی ملایم بازآفرینی کن. آسمان، پوشش گیاهی و جزئیات صورتی را تنها در صورت وجود با طیف‌های پاستلی ملایم نشان بده؛ فام لباس‌ها و رنگ پوست قابل‌تشخیص افراد به عکس وفادار بماند و این عناصر را در صورت نبودن اضافه نکن.\n• جزئیات هنری ظریف را به خطوط و بافت‌های ساده‌شده عناصر موجود محدود کن؛ حس صحنه حفظ شود و شیء تازه‌ای اضافه نشود.\n\nموارد الزامی برای حفظ از عکس اصلی:\nتعداد افراد، موقعیت مکانی، تناسبات اندام، رنگ لباس‌ها، تعاملات و اندازه‌های نسبی آن‌ها را بدون تغییر نگه‌دار. چیدمان پس‌زمینه و پرسپکتیو اولیه را حفظ کن. اشیای مهم را اضافه، حذف یا جابه‌جا نکن.\n\nالزامات خروجی:\nیک تصویرسازی دوبعدی صیقل‌خورده و تمام‌کادر با خطوط محیطی یکدست، رنگ‌های تخت و جلوهٔ داستانی و پرنشاط شبیه کتاب قصه. تمام تصویر باید حالت مصور داشته باشد و هیچ عنصر واقع‌گرایانه یا شبه‌عکس در آن نباشد.\n\nنبایدها (Negative Prompt): رندر سه‌بعدی، واقع‌گرایی فوتورئال، سایه‌زنی اغراق‌آمیز، بافت‌های آبرنگی، خطوط تار، چهره‌های دفرمه، انگشتان یا اندام اضافه، تغییر لباس، تغییر ژست، حذف جزئیات پس‌زمینه، متن و واترمارک ناخواسته.\n\nنسبت ابعاد: دقیقاً مطابق با عکس بارگذاری‌شده.\n\nنکته کاربردی: در هر نوبت یک عکس آپلود کنید و با همین دستور عکس‌های مختلف را به سبک کارتونی هماهنگ تبدیل نمایید.",
+  "fieldsSchema": [
+    {
+      "key": "line_weight",
+      "label": "پرداخت خطوط دور",
+      "type": "select",
+      "required": true,
+      "options": [
+        "clean black hand-drawn outlines with slightly varied line weight|خطوط دور مشکی، تمیز و دستی با تغییرات ظریف ضخامت",
+        "fine black hand-drawn outlines with gently varied line weight|خطوط دور مشکی، نازک و دستی با تغییرات ملایم ضخامت",
+        "slightly bolder black hand-drawn outlines without heavy comic-book borders|خطوط دور مشکی و دستیِ کمی ضخیم‌تر، بدون حاشیه‌های سنگین کمیک"
+      ]
+    },
+    {
+      "key": "shading_style",
+      "label": "سبک سایه‌زنی",
+      "type": "select",
+      "required": true,
+      "options": [
+        "flat pastel colors with minimal cel shading|رنگ‌های تخت پاستلی با سایه‌زنی تخت و حداقلی",
+        "flat pastel colors with very light cel shading|رنگ‌های تخت پاستلی با سایه‌زنی تخت و بسیار کم",
+        "flat pastel colors with subtle cel shading limited to existing shadow edges|رنگ‌های تخت پاستلی با سایه‌زنی تخت و ظریف، محدود به لبه‌های سایه‌های موجود"
+      ]
+    }
+  ],
+  "useCase": "vis-09",
+  "relatedUseCases": [
+    "vis-04"
+  ],
+  "resourceType": "prompt",
+  "editorial": {
+    "catalogVersion": "release-7e06770-2026-10-18",
+    "classificationReason": "کار اصلی، بازآفرینی عکس موجود با سبک کارتونی است؛ تصویرسازی مسیر مرتبط مستقیمی برای یافتن همین محتواست. متن یک دستور قابل شخصی‌سازی است و فرایند مستقل Skill یا راهنمای پایدار ایجنت ارائه نمی‌کند.",
+    "needsReview": false,
+    "reviewNotes": [],
+    "execution": {
+      "requiredCapabilities": [
+        "پذیرش عکس مرجع",
+        "ویرایش تمام کادر با هدایت متنی و حفظ ساختار صحنه"
+      ],
+      "routes": []
+    }
+  }
+}

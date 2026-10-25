@@ -1,0 +1,1 @@
+={{ JSON.stringify({sourceText: $('Prepare Input').first().json.sourceText, catalog: $json.catalog, requiredInputKeys: $json.requiredInputKeys}) }}

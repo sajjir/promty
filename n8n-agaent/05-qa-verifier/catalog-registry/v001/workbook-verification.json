@@ -1,0 +1,48 @@
+{
+  "outputPath": "/home/sajj/developing/promty/releases/catalog-registry-2026-10-18/outputs/01a1208c-00c7-7552-96d7-ed69a129818d/Promty-Catalog-Registry.xlsx",
+  "sheets": [
+    "راهنما",
+    "واژگان",
+    "فیلدها",
+    "پیشنهادها",
+    "قواعد"
+  ],
+  "registryTerms": 280,
+  "summaryValues": [
+    10,
+    170,
+    6,
+    82,
+    9,
+    3,
+    280,
+    2,
+    0
+  ],
+  "proposalCounterRecalculation": "0 -> 1 -> 0",
+  "tables": [
+    {
+      "sheet": "واژگان",
+      "name": "CatalogTerms",
+      "range": "A1:L281"
+    },
+    {
+      "sheet": "فیلدها",
+      "name": "ContextFieldExamples",
+      "range": "A1:J3"
+    }
+  ],
+  "rowsPerNamespace": {
+    "group": 10,
+    "useCase": 176,
+    "intent": 9,
+    "tool": 16,
+    "domain": 29,
+    "language": 2,
+    "difficulty": 4,
+    "outputFormat": 22,
+    "resourceType": 3,
+    "fieldType": 9
+  },
+  "liveGoogleSheetCreated": false
+}

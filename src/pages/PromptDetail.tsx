@@ -8,6 +8,7 @@ import { useParams, Link } from "react-router-dom";
 import { Prompt } from "../types";
 import PromptWizard, { getPromptCopyError } from "../components/PromptWizard";
 import { renderPrompt } from "../lib/renderPrompt";
+import { getPromptFieldDefaults, localizePromptFieldValues } from "../lib/promptFieldDefaults";
 import PromptCard from "../components/PromptCard";
 import { useAuth } from "../components/AuthContext";
 import { Z } from "../lib/zIndex";
@@ -373,18 +374,7 @@ export default function PromptDetail() {
   // Initialize wizardValues dictionary with appropriate defaults when prompt changes
   useEffect(() => {
     if (prompt && prompt.fieldsSchema) {
-      const initial: Record<string, string> = {};
-      prompt.fieldsSchema.forEach((field) => {
-        if (field.type === "switch") {
-          initial[field.key] = "خیر";
-        } else if (field.type === "slider") {
-          initial[field.key] = String(field.min ?? 10);
-        } else if ((field.type === "select" || field.type === "radio") && field.options && field.options.length > 0) {
-          initial[field.key] = parseOption(field.options[0]).value;
-        } else {
-          initial[field.key] = "";
-        }
-      });
+      const initial = getPromptFieldDefaults(prompt.fieldsSchema);
       setWizardValues(initial);
       setLiveValues(initial);
       setActivePresetId(null);
@@ -681,13 +671,7 @@ export default function PromptDetail() {
     }
   }, [id]);
 
-  const displayValues = { ...liveValues };
-  if (promptLang === 'fa') {
-    for (const field of prompt?.fieldsSchema || []) {
-      const option = field.options?.find(value => value.split('|')[0].trim() === liveValues[field.key]);
-      if (option?.includes('|') && !/^\d+(?::\d+)?$/.test(liveValues[field.key] || '')) displayValues[field.key] = option.split('|')[1].trim();
-    }
-  }
+  const displayValues = localizePromptFieldValues(prompt?.fieldsSchema || [], liveValues, promptLang);
 
   // Sync final rendered body with live template and wizard inputs
   useEffect(() => {
@@ -933,6 +917,7 @@ export default function PromptDetail() {
               <div className="order-3 pt-2" ref={wizardRef}>
                 <PromptWizard
                   showCopyButton={false}
+                  language={promptLang}
                   fields={prompt.fieldsSchema}
                   promptBody={((promptLang === "fa" && prompt.bodyFa) ? prompt.bodyFa : prompt.body)}
                   onRendered={() => { /* Page renders the selected language centrally. */ }}

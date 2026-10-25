@@ -1,0 +1,43 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "routing_category": {
+      "type": "string",
+      "enum": [
+        "design",
+        "programming",
+        "general"
+      ]
+    },
+    "content_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_language": {
+      "type": "string",
+      "enum": [
+        "persian",
+        "english",
+        "mixed",
+        "other"
+      ]
+    },
+    "routing_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "routing_note": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "routing_category",
+    "content_type",
+    "source_language",
+    "routing_confidence",
+    "routing_note"
+  ]
+}

@@ -18,6 +18,8 @@ export class PrismaPromptRepository implements IPromptRepository {
   private mapPrismaPrompt(dbPrompt: any): Prompt {
     return normalizeArchivePrompt({
       useCase: dbPrompt.useCase || undefined,
+      relatedUseCases: dbPrompt.relatedUseCases || [],
+      editorial: dbPrompt.editorial || undefined,
       resourceType: dbPrompt.resourceType || "prompt",
       isDemo: dbPrompt.isDemo || false,
       id: dbPrompt.id,
@@ -78,6 +80,8 @@ export class PrismaPromptRepository implements IPromptRepository {
       const dbPrompt = await this.prisma.prompt.create({
         data: {
           useCase: promptData.useCase || null,
+          relatedUseCases: promptData.relatedUseCases || [],
+          ...(promptData.editorial ? { editorial: promptData.editorial as any } : {}),
           resourceType: promptData.resourceType || "prompt",
           isDemo: promptData.isDemo || false,
           title: promptData.title,
@@ -117,6 +121,8 @@ export class PrismaPromptRepository implements IPromptRepository {
     try {
       updates = normalizeArchivePrompt(updates);
       const data: any = {};
+      if (updates.relatedUseCases !== undefined) data.relatedUseCases = updates.relatedUseCases;
+      if (updates.editorial !== undefined) data.editorial = updates.editorial;
       for (const key of ["useCase", "resourceType", "isDemo"] as const) if (updates[key] !== undefined) data[key] = updates[key];
       if (updates.title !== undefined) data.title = updates.title;
       if (updates.description !== undefined) data.description = updates.description;

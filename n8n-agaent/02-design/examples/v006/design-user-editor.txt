@@ -1,0 +1,1 @@
+{{ JSON.stringify({ sourceText: $('Webhook').first().json.body.sourceText, allowedTaxonomies: $('Webhook').first().json.body.allowedTaxonomies ?? {}, classificationCatalog: $('Webhook').first().json.body.classificationCatalog ?? null, executionEvidence: $('Webhook').first().json.body.executionEvidence ?? [] }) }}

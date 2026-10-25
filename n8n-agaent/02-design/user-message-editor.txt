@@ -1,0 +1,1 @@
+{{ JSON.stringify({ sourceText: $('Prepare Input').first().json.sourceText, allowedTaxonomies: $('Registry').first().json.allowedTaxonomies, catalogContext: $('Registry').first().json.catalogContext, executionEvidence: $('Prepare Input').first().json.executionEvidence }) }}

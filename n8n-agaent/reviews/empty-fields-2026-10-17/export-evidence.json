@@ -1,0 +1,161 @@
+{
+  "sourceSha256": "92f85d7c9a42c736ed3d01468a6812c05551d7607941e73ec04243f83e1ede4c",
+  "workflowName": "promty",
+  "pinDataNodeNames": [],
+  "model": {
+    "modelName": "models/gemini-3.8-flash",
+    "options": {}
+  },
+  "codeMatchesProposedV002": true,
+  "connections": {
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Design",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "programming",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "general",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "QA/Verifier",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "RouterNode",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "programming": {
+      "main": [
+        [
+          {
+            "node": "QA/Verifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "RouterNode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RouterNode": {
+      "main": [
+        [
+          {
+            "node": "RouteSwitch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RouterOutputParser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "RouterNode",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RouteSwitch": {
+      "main": [
+        [
+          {
+            "node": "Design",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "programming",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "general",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "general": {
+      "main": [
+        [
+          {
+            "node": "QA/Verifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Design": {
+      "main": [
+        [
+          {
+            "node": "QA/Verifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QA/Verifier": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook2": {
+      "main": [
+        []
+      ]
+    }
+  }
+}

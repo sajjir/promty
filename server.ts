@@ -1,6 +1,8 @@
 import { normalizePromptCardTemplate, getPromptCardTemplateError, type PromptCardTemplate } from './src/lib/promptCardTemplates';
 import { normalizeHomepageSections, getHomepageSectionsError, type HomepageSection } from './src/lib/homepageSections';
 import { buildHomepageSections } from './src/server/buildHomepageSections';
+import { normalizeAgentAnalysis } from './src/lib/normalizeAgentAnalysis';
+import { readAgentResponse } from './src/server/readAgentResponse';
 import { getUseCase, resourceTypes, normalizeArchivePrompt, normalizeIntent } from './src/lib/archiveCatalog';
 import { getLogoAppearanceError, normalizeLogoAppearance, type LogoAppearance } from './src/lib/logoAppearance';
 import { buildArchiveFacets } from './src/server/repositories/filterPrompts';
@@ -2054,7 +2056,7 @@ async function startServer() {
 
       res.json({
         success: true,
-        data: prompts,
+        data: isAdmin ? prompts : prompts.map(({ editorial, sourceText, ...publicPrompt }) => publicPrompt),
         pagination: {
           total: totalCount,
           page,
@@ -2088,7 +2090,8 @@ async function startServer() {
         return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
       }
 
-      res.json({ prompt });
+      const { editorial, sourceText, ...publicPrompt } = prompt;
+      res.json({ prompt: isManager((req as any).user) ? prompt : publicPrompt });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err.message });
     }
@@ -2119,6 +2122,7 @@ async function startServer() {
         return res.status(400).json({ success: false, message: "فیلدهای اجباری ارسال نشده‌اند." });
       }
 
+      if (promptData.isActive && promptData.editorial?.needsReview) return res.status(422).json({success:false,message:'نتیجهٔ تحلیل هنوز نیازمند بازبینی است؛ ابتدا پیش‌نویس ذخیره کنید یا بازبینی را تأیید کنید.'});
       const created = await promptRepo.create(promptData);
       res.status(201).json({ success: true, prompt: created });
     } catch (err: any) {
@@ -2137,6 +2141,7 @@ async function startServer() {
 
       // Must be approved by admin, so isActive is false
       promptData.isActive = false;
+      delete promptData.editorial;
 
       const created = await promptRepo.create(promptData);
       res.status(201).json({ success: true, message: "پرامپت شما با موفقیت ثبت شد و پس از تایید مدیر منتشر خواهد شد.", prompt: created });
@@ -2268,6 +2273,8 @@ async function startServer() {
         return res.status(404).json({ success: false, message: "پرامپت پیدا نشد." });
       }
 
+      const nextEditorial = updates.editorial ?? prompt.editorial;
+      if ((updates.isActive ?? prompt.isActive) && nextEditorial?.needsReview) return res.status(422).json({success:false,message:'پیش از انتشار، بازبینی محتوای تحلیل‌شده را تأیید کنید.'});
       const updated = await promptRepo.update(id, updates);
       res.json({ success: true, prompt: updated });
     } catch (err: any) {
@@ -2430,11 +2437,13 @@ async function startServer() {
 
   // API - Analyze Raw Prompt Source using n8n Webhook or Gemini API direct fallback
   app.post("/api/analyze-source", adminAuth, async (req, res) => {
+    const analysisStartedAt = Date.now();
     const { sourceText } = req.body;
-    if (!sourceText) {
+    if (typeof sourceText !== 'string' || !sourceText.trim()) {
       return res.status(400).json({ success: false, message: "متن خام پرامپت ارسال نشده است." });
     }
 
+    if (sourceText.length > 6000) return res.status(422).json({success:false,message:'مسیر آماده‌سازی سریع تا ۶۰۰۰ نویسه می‌پذیرد؛ متن بلندتر خودکار خلاصه نمی‌شود. آن را به وظایف مستقل تقسیم یا دستی آماده کنید.'});
     const db = readDB();
     const settings = db.settings;
     
@@ -2488,13 +2497,14 @@ async function startServer() {
         const outputFormatsStr = tOutputFormats.length > 0 ? tOutputFormats.join(", ") : OUTPUT_FORMAT_OPTIONS.join(", ");
 
         // Send raw text and allowed taxonomies to n8n Webhook with configurable timeout
-        const timeoutSeconds = Math.max(10, Math.min(300, Number(settings?.aiTimeoutSeconds) || 60));
+        const timeoutSeconds = Math.max(10, Math.min(30, Number(settings?.aiTimeoutSeconds) || 30));
+        const remainingMs = timeoutSeconds * 1000 - (Date.now() - analysisStartedAt);
+        if (remainingMs < 1000) throw new Error("بودجهٔ زمانی تحلیل تمام شد؛ هیچ محتوایی کوتاه یا جایگزین نشد.");
         const abortController = new AbortController();
-        const timeoutId = setTimeout(() => abortController.abort(), timeoutSeconds * 1000);
+        const timeoutId = setTimeout(() => abortController.abort(), remainingMs);
 
-        let response: Response;
         try {
-          response = await fetch(analyzeUrl, {
+          const response = await fetch(analyzeUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
@@ -2514,6 +2524,13 @@ async function startServer() {
             }),
             signal: abortController.signal
           });
+          if (!response.ok) {
+            const errorBody = await response.json().catch(() => null) as any;
+            throw new Error(typeof errorBody?.message === 'string' ? errorBody.message.slice(0,500) : `خطا در ارتباط با سرویس n8n: وضعیت ${response.status}`);
+          }
+          // Keep the deadline active until the complete stream has been read.
+          const structuredJSON = normalizeAgentAnalysis(await readAgentResponse(response), {sourceText});
+          return res.json({ success: true, data: structuredJSON });
         } catch (fetchErr: any) {
           if (fetchErr.name === "AbortError" || fetchErr.message?.includes("aborted")) {
             throw new Error(`زمان پاسخگویی ایجنت هوش مصنوعی بیش از ${timeoutSeconds} ثانیه به طول انجامید (Timeout). لطفاً وب‌هوک n8n را بررسی نمایید.`);
@@ -2523,46 +2540,6 @@ async function startServer() {
           clearTimeout(timeoutId);
         }
 
-        if (!response.ok) {
-          throw new Error(`خطا در ارتباط با سرویس n8n: وضعیت ${response.status}`);
-        }
-
-        const responseData = await response.json();
-        
-        let structuredJSON = responseData;
-        if (Array.isArray(responseData) && responseData.length > 0) {
-          structuredJSON = responseData[0];
-        }
-        
-        if (structuredJSON.output && typeof structuredJSON.output === "object") {
-          structuredJSON = structuredJSON.output;
-        } else if (structuredJSON.output && typeof structuredJSON.output === "string") {
-           try { structuredJSON = JSON.parse(structuredJSON.output); } catch(e) {}
-        } else if (structuredJSON.text && typeof structuredJSON.text === "string") {
-           try { structuredJSON = JSON.parse(structuredJSON.text); } catch(e) {}
-        }
-
-        // Soft-normalize in case the n8n agent still returns legacy singular fields
-        if (structuredJSON && typeof structuredJSON === "object") {
-          if (!Array.isArray(structuredJSON.tools) && structuredJSON.tool) {
-            structuredJSON.tools = [structuredJSON.tool];
-          }
-          if (!Array.isArray(structuredJSON.domains) && structuredJSON.domain) {
-            structuredJSON.domains = [structuredJSON.domain];
-          }
-          if (!Array.isArray(structuredJSON.outputFormats) && structuredJSON.outputFormat) {
-            structuredJSON.outputFormats = [structuredJSON.outputFormat];
-          }
-        }
-
-        if (structuredJSON && structuredJSON.body) {
-          structuredJSON.body = structuredJSON.body.replace(/\[\[(.*?)\]\]/g, "{{$1}}");
-        }
-
-        return res.json({
-          success: true,
-          data: structuredJSON
-        });
 
       } else if (geminiKey.length > 0) {
         // Direct Gemini API fallback

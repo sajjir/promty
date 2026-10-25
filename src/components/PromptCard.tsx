@@ -4,7 +4,7 @@ import { usePromptLanguage } from "../lib/usePromptLanguage";
 import React from "react";
 import { Link } from "react-router-dom";
 import { Prompt } from "../types";
-import { Megaphone, Globe, Video, Camera, Sparkles, ArrowLeft, Bookmark, Copy, Check } from "lucide-react";
+import { Megaphone, Globe, Video, Camera, Sparkles, ArrowLeft, Bookmark, Copy, Check, ImagePlus } from "lucide-react";
 import { getToolIcon, getDomainGradient } from "../lib/toolIcons";
 import { useAuth } from "./AuthContext";
 import { resourceTypeIcons } from "../lib/resourceTypeIcons";
@@ -167,6 +167,9 @@ export default function PromptCard({ prompt, isInitiallyBookmarked, variant = "g
         </div>
         <h3 className="prompt-fan-title line-clamp-3">{prompt.title}</h3>
         <span className="prompt-fan-category line-clamp-2">{categoryLabel}</span>
+        {prompt.requiresReferenceImage === true && <span data-reference-image="required" className="mt-2 inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-black/20 px-2 py-1 text-[10px] text-white">
+          <ImagePlus className="h-3 w-3 shrink-0" aria-hidden="true" />نیازمند تصویر ورودی
+        </span>}
         <div className="prompt-fan-bottom">
           <p className="prompt-fan-description line-clamp-2">{prompt.description || 'پرامپت را باز کنید و برای کار خود شخصی‌سازی کنید.'}</p>
           <div className="prompt-fan-meta">
@@ -312,6 +315,9 @@ export default function PromptCard({ prompt, isInitiallyBookmarked, variant = "g
 
         {/* Metadata Badges tag */}
         <div className="flex flex-wrap gap-1.5 mb-4">
+          {prompt.requiresReferenceImage === true && <span data-reference-image="required" className="inline-flex items-center gap-1 rounded-lg border border-brand/30 bg-brand-soft px-2 py-1 text-xs font-semibold text-brand">
+            <ImagePlus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />نیازمند تصویر ورودی
+          </span>}
           {!!prompt.tools?.length && <span className="flex flex-wrap items-center gap-1" role="group" aria-label="ابزارهای سازگار">
             {Array.from(new Set(prompt.tools)).map(tool => {
               const ToolIcon = getToolIcon(tool);

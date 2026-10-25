@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { ChevronDown, Search } from 'lucide-react';
+import { ChevronDown, Search, ImagePlus } from 'lucide-react';
 import { useCases, useCaseGroups, useCaseInGroups, resourceTypes, outputLabels, groupAncestors, getUseCase, expandGroupFilters, type ResourceType } from '../lib/archiveCatalog';
 import { readFilterValues, type SelectionUpdate } from '../lib/archiveFilters';
 import { resourceTypeIcons } from '../lib/resourceTypeIcons';
@@ -51,6 +51,7 @@ export default function ArchiveDiscovery({ params, counts, onChange }: {
   const tabsViewport = useRef<HTMLDivElement>(null);
   const groups = expandGroupFilters(readFilterValues(params, 'group'));
   const selectedUseCases = readFilterValues(params, 'useCase');
+  const needsReferenceImage = readFilterValues(params, 'referenceImage').includes('required');
   const roots = useCaseGroups.filter(group => !group.parent);
   const activeRoots = roots.filter(root => groups.some(selected => groupAncestors(selected).includes(root.slug)) || selectedUseCases.some(slug => groupAncestors(getUseCase(slug)?.group).includes(root.slug)));
   // URL order records the last selected category, including restored filter links.
@@ -82,6 +83,20 @@ export default function ArchiveDiscovery({ params, counts, onChange }: {
     <div><h2 className="font-bold text-lg text-primary">چه کاری می‌خواهید انجام دهید؟</h2>
       <p className="text-sm text-muted mt-1">ابتدا دسته را انتخاب کنید؛ کاربردهای آخرین دسته انتخاب‌شده در کادر زیر نمایش داده می‌شوند.</p>
       <p className="text-xs text-muted mt-2">می‌توانید چند دسته یا کاربرد را انتخاب کنید؛ ابزار، نوع منبع و خروجی فیلترهای مکمل‌اند.</p></div>
+    <div className="rounded-xl border border-brand/30 bg-brand-soft/40 p-3 sm:p-4 space-y-2" aria-label="فیلتر تصویر ورودی">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="flex items-center gap-2 text-sm font-bold text-primary"><ImagePlus className="h-4 w-4 text-brand" aria-hidden="true" />با تصویر خودتان کار می‌کنید؟</span>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="نیاز به تصویر ورودی">
+          <button type="button" aria-pressed={!needsReferenceImage} onClick={() => onChange('referenceImage', [])}
+            className={`min-h-11 rounded-lg border px-3 py-2 text-xs font-semibold ${!needsReferenceImage ? 'border-brand bg-surface text-brand' : 'border-line bg-surface text-secondary'}`}>همه منابع</button>
+          <button type="button" aria-pressed={needsReferenceImage} onClick={() => onChange('referenceImage', ['required'])}
+            className={`min-h-11 rounded-lg border px-3 py-2 text-xs font-semibold ${needsReferenceImage ? 'border-brand bg-brand-solid text-white' : 'border-line bg-surface text-secondary hover:border-brand'}`}>
+            نیازمند تصویر ورودی <span className="mr-1.5">({(counts.referenceImage?.required || 0).toLocaleString('fa-IR')})</span>
+          </button>
+        </div>
+      </div>
+      <p className="text-xs text-muted leading-relaxed">برای ویرایش، تحلیل یا بازآفرینی عکس و اسکرین‌شات خودتان. این گزینه نیاز به تصویر ورودی را مشخص می‌کند؛ خروجی می‌تواند تصویر، متن یا کد باشد.</p>
+    </div>
     <div className="flex flex-wrap gap-2" aria-label="گروه کاربردها">
       <button type="button" aria-pressed={!groups.length} onClick={() => onChange('group', [])} className={`min-h-11 rounded-xl border px-3 py-2 text-sm ${!groups.length ? 'border-brand bg-brand-soft text-brand' : 'border-line text-secondary'}`}>همه کاربردها</button>
       {roots.map(item => <button key={item.slug} type="button" aria-pressed={groups.includes(item.slug)} onClick={() => toggleGroup(item.slug)}

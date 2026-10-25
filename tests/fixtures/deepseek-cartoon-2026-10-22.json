@@ -1,0 +1,78 @@
+[
+  {
+    "title": "تبدیل عکس آپلودشده به کارتون دوبعدی دست‌کشیده با پالت پاستلی",
+    "description": "پرامپتی برای تبدیل کل یک عکس آپلودشده به تصویرسازی کارتونی دوبعدیِ دست‌کشیده با رنگ‌های تخت پاستلی؛ هدف آن حفظ ترکیب‌بندی، زاویه دوربین، حالت‌ها، هویت‌های قابل تشخیص، لباس‌ها و عناصر مهم پس‌زمینه است و نسبت تصویر خروجی مطابق عکس ورودی در نظر گرفته می‌شود.",
+    "useCase": "vis-09",
+    "relatedUseCases": [],
+    "resourceType": "prompt",
+    "intent": "visual-generation",
+    "domains": [
+      "design",
+      "photography"
+    ],
+    "tools": [],
+    "task": "کاربر یک عکس را آپلود می‌کند و این پرامپت را روی آن اجرا می‌کند تا یک تصویرسازی کارتونی دوبعدیِ تمام‌قاب با همان نسبت تصویر عکس ورودی بگیرد؛ با اجرای همین پرامپت روی عکس‌های دیگر، سبک کارتونی یکدستی تکرار می‌شود.",
+    "language": "english",
+    "difficulty": "beginner",
+    "outputFormats": [
+      "image"
+    ],
+    "tags": [
+      "تبدیل عکس به کارتون",
+      "تصویرسازی دوبعدی دست‌کشیده",
+      "پالت پاستلی",
+      "حفظ ترکیب‌بندی",
+      "تصویر مرجع"
+    ],
+    "requiresReferenceImage": true,
+    "body": "PROMPT:\nConvert the entire uploaded photograph into a clean, colorful, hand-drawn 2D cartoon illustration. Preserve the original composition, camera angle, poses, facial expressions, recognizable identities, hairstyles, clothing, accessories, and all important background elements.\n\nILLUSTRATION STYLE:\n• Use [[line_weight]].\n• Apply [[shading_style]].\n• Simplified characters with a cute illustrated appearance, expressive faces, and natural poses, without changing the original body proportions.\n• Smooth, slightly imperfect lines for an authentic illustrated feel.\n• Simplify realistic textures into clean shapes while retaining recognizable details.\n• Recreate the original environment, including buildings, trees, fountains, pathways, and other objects where they actually appear in the original photo, in the same cartoon style.\n• Use a soft pastel palette that follows the photo's existing color families, including light blue skies where present, muted greens, warm skin tones, and gentle pinks.\n• Add subtle artistic detailing only while rendering the existing content, without introducing new objects, and keep the original scene's atmosphere.\n\nPRESERVE THE ORIGINAL:\nKeep the same number of people, their positions, body proportions, clothing colors, interactions, and relative sizes. Maintain the original background layout and perspective. Do not add, remove, or reposition important objects.\n\nOUTPUT REQUIREMENTS:\nA polished, full-frame 2D illustration with consistent outlines, flat colors, and a playful, storybook aesthetic. The entire image must be illustrated, with zero photorealistic elements.\n\nAVOID: 3D rendering, photorealism, excessive shading, watercolor textures, blurry lines, distorted faces, extra fingers or limbs, changed outfits, altered poses, missing background details, and unwanted text or watermarks.\n\nAspect ratio: match the uploaded photo exactly.\n\nPro tip: Upload one photo at a time and use this same prompt to transform different photos into a consistent cartoon style.",
+    "bodyFa": "پرامپت:\nعکس آپلودشده را به‌طور کامل به یک تصویرسازی کارتونی دوبعدیِ تمیز، رنگی و دست‌کشیده تبدیل کن. ترکیب‌بندی اصلی، زاویه دوربین، حالت‌ها، حالات چهره، هویت‌های قابل تشخیص، مدل مو، لباس، اکسسوری و همه عناصر مهم پس‌زمینه را حفظ کن.\n\nسبک تصویرسازی:\n• از [[line_weight]] استفاده کن.\n• از [[shading_style]] استفاده کن.\n• شخصیت‌های ساده‌شده با ظاهری بامزه و تصویرسازی‌شده، چهره‌های گویا و حالت‌های طبیعی، بدون تغییر در تناسب‌های بدن اصلی.\n• خطوط روان و کمی ناکامل برای حس دست‌ساز و اصیل.\n• بافت‌های واقع‌گرایانه را به شکل‌های تمیز ساده‌سازی کن، اما جزئیات قابل تشخیص را نگه دار.\n• محیط اصلی، از جمله ساختمان‌ها، درختان، فواره‌ها، مسیرها و سایر اشیاء را — همان‌جا که در عکس اصلی حضور دارند — با همان سبک کارتونی بازآفرینی کن.\n• از پالت پاستلی ملایمی استفاده کن که از خانواده‌های رنگی موجود در عکس پیروی می‌کند، از جمله آسمان آبی روشن در صورت وجود، سبزهای خاموش، تُن‌های گرم پوست و صورتی‌های ملایم.\n• جزئیات هنری ظریف اضافه کن، اما فقط برای بازآفرینی همان محتوای موجود و بدون افزودن شیء تازه، و فضای صحنه اصلی را حفظ کن.\n\nحفظ اصل تصویر:\nهمان تعداد افراد، جایگاه‌شان، تناسب‌های بدن، رنگ لباس‌ها، تعامل‌ها و اندازه‌های نسبی را نگه دار. چیدمان و پرسپکتیو پس‌زمینه اصلی را حفظ کن. اشیاء مهم را اضافه، حذف یا جابه‌جا نکن.\n\nالزامات خروجی:\nیک تصویرسازی دوبعدیِ پرداخت‌شده و تمام‌قاب با خطوط دور یکدست، رنگ‌های تخت و زیبایی‌شناسی بازیگوش و شبیه کتاب داستان. کل تصویر باید تصویرسازی شود، بدون هیچ عنصر واقع‌گرایانه.\n\nپرهیز کن از: رندر سه‌بعدی، واقع‌گرایی عکاسی، سایه‌زنی بیش از حد، بافت‌های آبرنگی، خطوط محو، چهره‌های تغییرشکل‌یافته، انگشتان یا اندام‌های اضافی، لباس‌های تغییر یافته، حالت‌های تغییر‌یافته، جزئیات پس‌زمینه‌ی حذف‌شده، و متن یا واترمارک ناخواسته.\n\nنسبت تصویر: دقیقاً مطابق عکس آپلودشده.\n\nنکته: هر بار یک عکس آپلود کن و با همین پرامپت عکس‌های مختلف را به سبک کارتونی یکدست تبدیل کن.",
+    "fieldsSchema": [
+      {
+        "key": "line_weight",
+        "label": "ضخامت و جنس خط دور",
+        "type": "select",
+        "required": true,
+        "options": [
+          "clean black hand-drawn outlines with slightly varied line weight|خطوط دور مشکی، تمیز و دستی با تغییرات ظریف ضخامت",
+          "fine black hand-drawn outlines with gently varied line weight|خطوط دور مشکی، نازک و دستی با تغییرات ملایم ضخامت",
+          "slightly bolder black hand-drawn outlines without heavy comic-book borders|خطوط دور مشکی و دستیِ کمی ضخیم‌تر، بدون حاشیه‌های سنگین کمیک"
+        ]
+      },
+      {
+        "key": "shading_style",
+        "label": "سبک سایه‌زنی",
+        "type": "select",
+        "required": true,
+        "options": [
+          "flat pastel colors with minimal cel shading|رنگ‌های تخت پاستلی با سایه‌زنی سل و حداقلی",
+          "flat pastel colors with very light cel shading|رنگ‌های تخت پاستلی با سایه‌زنی سل و بسیار کم",
+          "flat pastel colors with subtle cel shading limited to existing shadow edges|رنگ‌های تخت پاستلی با سایه‌زنی سل و ظریف، محدود به لبه‌های سایه‌های موجود"
+        ]
+      }
+    ],
+    "editorial": {
+      "catalogVersion": "promty-registry-2026-10-18-v1",
+      "classificationReason": "کار اصلی، بازآفرینی کل یک عکس موجود در سبک کارتونی مشخص بر پایه همان تصویر مرجع است؛ ورودی الزامی یک عکس آپلودشده و خروجی یک تصویر است، بنابراین useCase فعال «vis-09» (بازآفرینی تصویر با سبک و مرجع) به‌عنوان طبقه اصلی انتخاب شد. نوع منبع، دستور/قالب انجام یک کار مشخص است و مهارت یا راهنمای ایجنت نیست؛ هیچ ابزار یا ویدیویی در منبع مطرح نشده است. برای کاربردهای مرتبط، تنها گزینه نزدیک «reference-portrait» بود که به‌طور ماهوی به پرتره و چهره محدود است و افزودن آن دامنه این کاربرد (تبدیل کل عکس صحنه) را نادرست تنگ می‌کرد؛ بنابراین هیچ کاربرد مرتبطی انتخاب نشد.",
+      "needsReview": false,
+      "reviewNotes": [
+        "در متن منبع هیچ ابزار، محیط اجرایی یا مدل مشخصی نام برده نشده و executionEvidence خالی است؛ بنابراین routes خالی و tools خالی ثبت شد.",
+        "ورودی الزامی یک عکس آپلودشده به‌عنوان تصویر مرجع است؛ پرامپت فقط دستور اجرا روی همان عکس است و امکان آپلود چند عکس در یک اجرا در منبع تأیید نشده است.",
+        "حفظ دقیق هویت افراد، تناسب‌های بدن و رنگ‌های لباس در متن به‌عنوان هدف بیان شده است و تضمین نتیجه نیست.",
+        "تناقض متن منبع میان «تناسب‌های بامزه» در بخش سبک و «حفظ تناسب‌های بدن» در بخش حفظ اصل تصویر، با کمترین تغییر به «ظاهر بامزه و تصویرسازی‌شده بدون تغییر تناسب‌های بدن اصلی» اصلاح شد.",
+        "«افزودن جزئیات هنری ظریف» با ممنوعیت افزودن اشیاء مهم تناقض داشت؛ به «فقط بازآفرینی همان محتوای موجود و بدون افزودن شیء تازه» محدود شد.",
+        "پالت پاستلی و آسمان آبی روشن به حضور همان رنگ‌ها در عکس اصلی مشروط شد تا رنگ‌های شناسای‌پذیر لباس و پوست تغییر نکند و ساختمان‌ها/فواره‌ها فقط در صورت وجود در عکس اصلی بازآفرینی شوند.",
+        "دو کنترل انتخاب‌پذیر «ضخامت و جنس خط دور» و «سبک سایه‌زنی» برای شخصی‌سازی سبک نگه داشته شد؛ همه گزینه‌ها در محدوده خط دست‌کشیده مشکی و سایه‌زنی سلِ حداقلی می‌مانند و هویت، تعداد افراد، حالت‌ها، رنگ‌ها، نسبت تصویر و سبک ثابت را تغییر نمی‌دهند.",
+        "جست‌وجوی فارسی ساده در کاتالوگ برای واژه «کارتون» نتیجه‌ای نداشت، اما مفهوم با useCase فعال vis-09 پوشش داده می‌شود؛ پیشنهاد تغییر کاتالوگ ثبت نشد."
+      ],
+      "execution": {
+        "requiredCapabilities": [
+          "پذیرش یک عکس آپلودشده به‌عنوان تصویر مرجع",
+          "تولید تصویرسازی کارتونی دوبعدی با حفظ ترکیب‌بندی، زاویه دوربین، حالت‌ها و عناصر مهم پس‌زمینه",
+          "حفظ نسبت تصویر عکس ورودی در خروجی"
+        ],
+        "routes": []
+      }
+    }
+  }
+]

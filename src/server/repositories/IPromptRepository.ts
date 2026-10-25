@@ -6,6 +6,7 @@ export interface PromptFilters {
   useCase?: FilterSelection; group?: FilterSelection; resourceType?: FilterSelection; outputFormat?: FilterSelection;
   category?: string; isActive?: boolean; page?: number; limit?: number;
   q?: string; tool?: FilterSelection; domain?: FilterSelection; intent?: FilterSelection; difficulty?: FilterSelection; language?: FilterSelection;
+  referenceImage?: FilterSelection; // Currently only "required"; false/missing is not proof of no image prerequisite.
   sort?: string;
 }
 export interface IPromptRepository {

@@ -107,6 +107,7 @@ export default function Homepage() {
     if (type === "group") return useCaseGroups.find(g => g.slug === slug)?.title || slug;
     if (type === "resourceType") return resourceTypes[slug as keyof typeof resourceTypes] || slug;
     if (type === "outputFormat") return outputLabels[slug] || slug;
+    if (type === "referenceImage" && slug === "required") return "نیازمند تصویر ورودی";
     const term = dbTaxonomies.find(
       (t) => t.slug?.toLowerCase() === slug.toLowerCase() && t.type?.toLowerCase() === type.toLowerCase()
     );
@@ -898,7 +899,7 @@ export default function Homepage() {
         )}
       </div>
 
-      {!searchQuery.trim() && <HomepageShelves bookmarkedIds={bookmarkedIds} configuration={branding.homepageSections} template={branding.promptCardTemplate} />}
+      {!searchQuery.trim() && filterHistory.length === 0 && <HomepageShelves bookmarkedIds={bookmarkedIds} configuration={branding.homepageSections} template={branding.promptCardTemplate} />}
 
       {/* Community Contribution Modal */}
       <AnimatePresence>

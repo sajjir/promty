@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FieldSchema } from "../types";
 import { renderPrompt } from "../lib/renderPrompt";
+import { getPromptFieldDefaults, localizePromptFieldValues, missingAdvancedFields } from "../lib/promptFieldDefaults";
 import { useAuth } from "./AuthContext";
 import { Wand2, X, AlertCircle, CheckCircle, Save, Sparkles, FolderPlus, RotateCcw, Copy } from "lucide-react";
 import { Z } from "../lib/zIndex";
@@ -32,6 +33,7 @@ export function getPromptCopyError(text: string, fields: FieldSchema[] = [], val
 
 interface PromptWizardProps {
   showCopyButton?: boolean;
+  language?: "fa" | "en";
   fields: FieldSchema[];
   promptBody: string;
   onRendered: (rendered: string) => void;
@@ -47,6 +49,7 @@ interface PromptWizardProps {
 
 export default function PromptWizard({
   showCopyButton = true,
+  language = "en",
   fields,
   promptBody,
   onRendered,
@@ -62,6 +65,7 @@ export default function PromptWizard({
   const { user, setPhoneModalOpen } = useAuth();
   
   // State to track customized text input fields instead of selects
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [customMode, setCustomMode] = useState<Record<string, boolean>>({});
 
   // Fallback states if not passed as props (e.g. in Admin live form preview)
@@ -92,7 +96,7 @@ export default function PromptWizard({
     if (finalValues) {
       const updatedCustomMode: Record<string, boolean> = {};
       fields.forEach((field) => {
-        if (field.type === "select") {
+        if (field.type === "select" && field.allowCustom !== false) {
           const val = finalValues[field.key];
           if (val) {
             const optionsList = field.options || [];
@@ -113,27 +117,16 @@ export default function PromptWizard({
   // Initialize local fallback values when fields change (if uncontrolled)
   useEffect(() => {
     if (values === undefined) {
-      const initial: Record<string, string> = {};
-      fields.forEach((field) => {
-        if (field.type === "switch") {
-          initial[field.key] = "خیر";
-        } else if (field.type === "slider") {
-          initial[field.key] = String(field.min ?? 10);
-        } else if ((field.type === "select" || field.type === "radio") && field.options && field.options.length > 0) {
-          initial[field.key] = parseOption(field.options[0]).value;
-        } else {
-          initial[field.key] = "";
-        }
-      });
+      const initial = getPromptFieldDefaults(fields);
       setLocalValues(initial);
     }
   }, [fields, values]);
 
   // Perform live client-side replacement when values or promptBody change
   useEffect(() => {
-    const rendered = renderPrompt(promptBody, finalValues);
+    const rendered = renderPrompt(promptBody, localizePromptFieldValues(fields, finalValues, language));
     onRendered(rendered);
-  }, [finalValues, promptBody]);
+  }, [finalValues, promptBody, fields, language]);
 
   const updateValues = (newValuesOrUpdater: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => {
     if (typeof newValuesOrUpdater === "function") {
@@ -158,18 +151,7 @@ export default function PromptWizard({
   };
 
   const resetForm = () => {
-    const initial: Record<string, string> = {};
-    fields.forEach((field) => {
-      if (field.type === "switch") {
-        initial[field.key] = "خیر";
-      } else if (field.type === "slider") {
-        initial[field.key] = String(field.min ?? 10);
-      } else if ((field.type === "select" || field.type === "radio") && field.options && field.options.length > 0) {
-        initial[field.key] = parseOption(field.options[0]).value;
-      } else {
-        initial[field.key] = "";
-      }
-    });
+    const initial = getPromptFieldDefaults(fields);
     updateValues(initial);
     setCustomMode({});
     if (setActivePresetId) {
@@ -273,32 +255,12 @@ export default function PromptWizard({
     }
   };
 
-  return (
-    <div id="prompt-wizard-container" className="bg-surface-soft border border-line rounded-xl p-5 space-y-4 animate-fade-in text-right" dir="rtl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-line pb-3 gap-2">
-        <h4 className="text-sm font-bold text-primary flex items-center gap-1.5">
-          <span>✏️</span>
-          <span>شخصی‌سازی مقادیر پرامپت</span>
-        </h4>
-        <span className="text-[10px] text-muted">تغییرات در همان لحظه اعمال می‌شود</span>
-      </div>
+  useEffect(() => {
+    if (missingAdvancedFields(fields, finalValues).length) setAdvancedOpen(true);
+  }, [fields, finalValues]);
 
-      {successMessage && (
-        <div className="flex items-center gap-2 p-3 bg-success-soft text-success-text border border-success-text rounded-lg text-xs font-bold">
-          <CheckCircle className="w-4 h-4 shrink-0 text-success-text" />
-          <span>{successMessage}</span>
-        </div>
-      )}
-
-      {errorMessage && (
-        <div className="flex items-center gap-2 p-3 bg-danger-soft text-danger-text border border-danger-text rounded-lg text-xs font-bold">
-          <AlertCircle className="w-4 h-4 shrink-0 text-danger-text" />
-          <span>{errorMessage}</span>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {fields.map((field) => {
+  const renderFields = (items: FieldSchema[]) => <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {items.map((field) => {
           const value = finalValues[field.key] || "";
 
           return (
@@ -318,7 +280,7 @@ export default function PromptWizard({
                   className="w-full text-xs p-2.5 bg-surface border border-line focus:border-brand focus:ring-1 focus:ring-brand rounded-lg outline-none transition"
                 />
               ) : field.type === "select" ? (
-                customMode[field.key] ? (
+                customMode[field.key] && field.allowCustom !== false ? (
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
@@ -346,7 +308,7 @@ export default function PromptWizard({
                     value={value}
                     onChange={(e) => {
                       const val = e.target.value;
-                      if (val === "__CUSTOM__") {
+                      if (val === "__CUSTOM__" && field.allowCustom !== false) {
                         setCustomMode((prev) => ({ ...prev, [field.key]: true }));
                         handleInputChange(field.key, "");
                       } else {
@@ -364,7 +326,7 @@ export default function PromptWizard({
                         </option>
                       );
                     })}
-                    <option value="__CUSTOM__" className="text-brand font-bold">+ تایپ مقدار دلخواه...</option>
+                    {field.allowCustom !== false && <option value="__CUSTOM__" className="text-brand font-bold">+ تایپ مقدار دلخواه...</option>}
                   </select>
                 )
               ) : field.type === "color" ? (
@@ -483,14 +445,44 @@ export default function PromptWizard({
             </div>
           );
         })}
+      </div>;
+
+  return (
+    <div id="prompt-wizard-container" className="bg-surface-soft border border-line rounded-xl p-5 space-y-4 animate-fade-in text-right" dir="rtl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-line pb-3 gap-2">
+        <h4 className="text-sm font-bold text-primary flex items-center gap-1.5">
+          <span>✏️</span>
+          <span>شخصی‌سازی مقادیر پرامپت</span>
+        </h4>
+        <span className="text-[10px] text-muted">تغییرات در همان لحظه اعمال می‌شود</span>
       </div>
+
+      {successMessage && (
+        <div className="flex items-center gap-2 p-3 bg-success-soft text-success-text border border-success-text rounded-lg text-xs font-bold">
+          <CheckCircle className="w-4 h-4 shrink-0 text-success-text" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="flex items-center gap-2 p-3 bg-danger-soft text-danger-text border border-danger-text rounded-lg text-xs font-bold">
+          <AlertCircle className="w-4 h-4 shrink-0 text-danger-text" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {renderFields(fields.filter(field => !field.advanced))}
+      {fields.some(field => field.advanced) && <details open={advancedOpen} onToggle={event => setAdvancedOpen(event.currentTarget.open)} className="rounded-lg border border-line p-3 space-y-3">
+        <summary className="cursor-pointer text-sm font-bold text-primary">تنظیمات بیشتر ({fields.filter(field => field.advanced).length}){missingAdvancedFields(fields, finalValues).length > 0 && <span className="text-danger-text mr-2">نیاز به تکمیل دارد</span>}</summary>
+        <div className="pt-3">{renderFields(fields.filter(field => field.advanced))}</div>
+      </details>}
 
       {/* Glowing Final Copy Button */}
       {showCopyButton && (
       <button
         type="button"
         onClick={async () => {
-          const finalRenderedText = renderPrompt(promptBody, finalValues);
+          const finalRenderedText = renderPrompt(promptBody, localizePromptFieldValues(fields, finalValues, language));
           const error = getPromptCopyError(finalRenderedText, fields, finalValues, promptBody);
           if (error) { setErrorMessage(error); return; }
           try { await navigator.clipboard.writeText(finalRenderedText); }

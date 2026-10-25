@@ -1,0 +1,21 @@
+{
+  "status": "imported_draft_first_run_failed",
+  "basisWorkflowId": "93Uq9lGFxbSJMGoY",
+  "basisSnapshotDate": "2026-10-24",
+  "model": "models/gemini-3.8-flash",
+  "candidateNodes": 11,
+  "modelRequestsPerRun": 1,
+  "sheetReadsPerRun": 2,
+  "modelAutoRetries": 0,
+  "semanticSecondModelReview": false,
+  "serverDeadlineSeconds": 30,
+  "realLatencyMeasured": true,
+  "published": false,
+  "sha256": "b4a3942581e24f65ec2a26af5886a40485fa6645aee03fcbe68642551b9fc437",
+  "systemChars": 5040,
+  "priorDesignSystemChars": 14098,
+  "priorQASystemChars": 18276,
+  "liveWorkflowId": "gaaunEOXwrtDtqqS",
+  "latencyCriterionMet": false,
+  "readbackVerified": false
+}

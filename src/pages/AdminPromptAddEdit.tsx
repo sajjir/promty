@@ -1,3 +1,6 @@
+import AgentAnalysisProposal from '../components/AgentAnalysisProposal';
+import { normalizeAgentAnalysis } from '../lib/normalizeAgentAnalysis';
+import type { PromptEditorial } from '../types';
 import { useCases, useCaseGroups, getUseCase, resourceTypes, ResourceType, normalizeIntent, groupAncestors, getGroup } from "../lib/archiveCatalog";
 import Loader from "../components/Loader";
 import React, { useState, useEffect } from "react";
@@ -48,7 +51,7 @@ export default function AdminPromptAddEdit() {
   const [schemaJson, setSchemaJson] = useState("");
   const [sampleImage, setSampleImage] = useState("");
   const [isPremium, setIsPremium] = useState(false);
-  const [isActive, setIsActive] = useState(true);
+  const [isActive, setIsActive] = useState(false);
 
   // Smart Media Engine states
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -62,6 +65,13 @@ export default function AdminPromptAddEdit() {
   const [analyzingSource, setAnalyzingSource] = useState(false);
   const [analysisError, setAnalysisError] = useState("");
   const [analysisSuccess, setAnalysisSuccess] = useState(false);
+  const [analysisDurationMs, setAnalysisDurationMs] = useState<number | null>(null);
+  const [editorial, setEditorial] = useState<PromptEditorial | undefined>();
+  const [analysisProposal, setAnalysisProposal] = useState<ReturnType<typeof normalizeAgentAnalysis> | null>(null);
+  const [undoAnalysis, setUndoAnalysis] = useState<any>(null);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const [previewLanguage, setPreviewLanguage] = useState<'fa'|'en'>('fa');
+  const [relatedUseCases, setRelatedUseCases] = useState<string[]>([]);
 
   // Status states
   const [categories, setCategories] = useState<Category[]>([]);
@@ -120,7 +130,7 @@ export default function AdminPromptAddEdit() {
 
         if (isEditMode) {
           // Fetch existing prompt
-          const res = await fetch(`/api/prompts/${id}`);
+          const res = await fetch(`/api/prompts/${id}`, {headers:{Authorization:`Bearer ${token}`}});
           if (res.ok) {
             const data = await res.json();
             const p = data.prompt;
@@ -133,6 +143,8 @@ export default function AdminPromptAddEdit() {
             setTools(Array.isArray(p.tools) ? p.tools : (p.tool ? [p.tool] : []));
             setTask(p.task || "");
             setUseCase(p.useCase || "");
+            setRelatedUseCases(p.relatedUseCases || []);
+            setEditorial(p.editorial);
             setResourceType(p.resourceType || "prompt");
             setLanguage((p.language || "persian").toLowerCase());
             setDifficulty((p.difficulty || "beginner").toLowerCase());
@@ -147,7 +159,7 @@ export default function AdminPromptAddEdit() {
             setExistingGallery(Array.isArray(p.mediaGallery) ? p.mediaGallery : []);
             setIsPremium(p.isPremium);
             setIsActive(p.isActive);
-            setSourceText(p.sourceText || "");
+            setSourceText(p.editorial?.sourceText || p.sourceText || "");
             if (p.parentId) {
               setParentId(p.parentId);
             }
@@ -156,7 +168,7 @@ export default function AdminPromptAddEdit() {
           }
         } else if (forkedFrom) {
           // Fetch parent prompt data to pre-fill form for Forking
-          const res = await fetch(`/api/prompts/${forkedFrom}`);
+          const res = await fetch(`/api/prompts/${forkedFrom}`, {headers:{Authorization:`Bearer ${token}`}});
           if (res.ok) {
             const data = await res.json();
             const p = data.prompt;
@@ -169,6 +181,8 @@ export default function AdminPromptAddEdit() {
             setTools(Array.isArray(p.tools) ? p.tools : (p.tool ? [p.tool] : []));
             setTask(p.task || "");
             setUseCase(p.useCase || "");
+            setRelatedUseCases(p.relatedUseCases || []);
+            setEditorial(p.editorial);
             setResourceType(p.resourceType || "prompt");
             setLanguage((p.language || "persian").toLowerCase());
             setDifficulty((p.difficulty || "beginner").toLowerCase());
@@ -180,8 +194,8 @@ export default function AdminPromptAddEdit() {
             setSchemaJson(JSON.stringify(p.fieldsSchema || [], null, 2));
             setSampleImage(p.sampleImage || "");
             setIsPremium(p.isPremium);
-            setIsActive(p.isActive);
-            setSourceText(p.sourceText || p.body || ""); // Pre-fill with parent's sourceText or body as fallback
+            setIsActive(false);
+            setSourceText(p.editorial?.sourceText || p.sourceText || p.body || ""); // Pre-fill with parent's sourceText or body as fallback
             setParentId(forkedFrom);
           } else {
             setError("خطا در دریافت اطلاعات پرامپت مادر برای انشعاب.");
@@ -240,9 +254,13 @@ export default function AdminPromptAddEdit() {
   // Source AI Analysis action
   const handleAnalyzeSource = async () => {
     if (!sourceText.trim()) return;
+    const requestStartedAt = performance.now();
     setAnalyzingSource(true);
+    setAnalysisDurationMs(null);
     setAnalysisError("");
     setAnalysisSuccess(false);
+    setAnalysisProposal(null);
+    const submittedSource = sourceText;
 
     try {
       const res = await fetch("/api/analyze-source", {
@@ -251,27 +269,14 @@ export default function AdminPromptAddEdit() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ sourceText })
+        body: JSON.stringify({ sourceText: submittedSource })
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        const parsed = data.data;
-        setTitle(parsed.title || "");
-        setDescription(parsed.description || "");
-        setIntent(normalizeIntent(parsed.intent || "writing"));
-        setIntents((Array.isArray(parsed.intents) ? parsed.intents : (parsed.intent ? [parsed.intent] : ["writing"])).map(normalizeIntent));
-        setDomains(Array.isArray(parsed.domains) ? parsed.domains : (parsed.domain ? [parsed.domain] : []));
-        setTools(Array.isArray(parsed.tools) ? parsed.tools : (parsed.tool ? [parsed.tool] : []));
-        setTask(parsed.task || "");
-        setLanguage((parsed.language || "persian").toLowerCase());
-        setDifficulty((parsed.difficulty || "beginner").toLowerCase());
-        setOutputFormats(Array.isArray(parsed.outputFormats) ? parsed.outputFormats : (parsed.outputFormat ? [parsed.outputFormat] : ["text"]));
-        setTagsInput(parsed.tags ? parsed.tags.join(", ") : "");
-        setBody(parsed.body || "");
-        setBodyFa((parsed.bodyFa || "").replace(/\[\[(.*?)\]\]/g, "{{$1}}"));
-        setRequiresReferenceImage(!!parsed.requiresReferenceImage);
-        setSchemaJson(JSON.stringify(parsed.fieldsSchema || [], null, 2));
+        const parsed = normalizeAgentAnalysis(data.data, {sourceText:submittedSource});
+        setAnalysisDurationMs(Math.round(performance.now() - requestStartedAt));
+        setAnalysisProposal(parsed);
         setAnalysisSuccess(true);
       } else {
         setAnalysisError(data.message || "خطا در تجزیه و تحلیل متن خام پرامپت.");
@@ -283,6 +288,51 @@ export default function AdminPromptAddEdit() {
       setAnalyzingSource(false);
     }
   };
+
+  const captureAnalysisForm = () => ({title,description,useCase,resourceType,relatedUseCases,editorial,intent,intents,domains,tools,task,language,difficulty,outputFormats,requiresReferenceImage,tags:tagsInput.split(',').map(v=>v.trim()).filter(Boolean),body,bodyFa,fieldsSchema:parsedSchema,isActive,sourceText,schemaJson,reviewConfirmed});
+  const applyAnalysisFields = (parsed: ReturnType<typeof normalizeAgentAnalysis>) => {
+        setUseCase(parsed.useCase || "");
+        setResourceType(parsed.resourceType || "prompt");
+        setRelatedUseCases(parsed.relatedUseCases || []);
+        setEditorial(parsed.editorial);
+        setTitle(parsed.title || "");
+        setDescription(parsed.description || "");
+        setIntent(normalizeIntent(parsed.intent || "writing"));
+        setIntents((Array.isArray(parsed.intents) ? parsed.intents : (parsed.intent ? [parsed.intent] : ["writing"])).map(normalizeIntent));
+        setDomains(parsed.domains || []);
+        setTools(parsed.tools || []);
+        setTask(parsed.task || "");
+        setLanguage((parsed.language || "persian").toLowerCase());
+        setDifficulty((parsed.difficulty || "beginner").toLowerCase());
+        setOutputFormats(parsed.outputFormats || []);
+        setTagsInput(parsed.tags ? parsed.tags.join(", ") : "");
+        setBody(parsed.body || "");
+        setBodyFa((parsed.bodyFa || "").replace(/\[\[(.*?)\]\]/g, "{{$1}}"));
+        setRequiresReferenceImage(!!parsed.requiresReferenceImage);
+        setSchemaJson(JSON.stringify(parsed.fieldsSchema || [], null, 2));
+  };
+  const applyProposal = () => {
+    if (!analysisProposal) return;
+    setError("");
+    setUndoAnalysis(captureAnalysisForm());
+    applyAnalysisFields(analysisProposal);
+    setSourceText(analysisProposal.editorial?.sourceText || sourceText);
+    setIsActive(false);
+    setReviewConfirmed(false);
+    setAnalysisProposal(null);
+  };
+  const restoreAnalysis = () => {
+    if (!undoAnalysis) return;
+    setError("");
+    applyAnalysisFields(undoAnalysis);
+    setSourceText(undoAnalysis.sourceText);
+    setSchemaJson(undoAnalysis.schemaJson);
+    setIsActive(undoAnalysis.isActive);
+    setReviewConfirmed(undoAnalysis.reviewConfirmed);
+    setUndoAnalysis(null);
+    setAnalysisSuccess(false);
+  };
+  useEffect(() => { setReviewConfirmed(false); }, [body,bodyFa,schemaJson,useCase,resourceType,requiresReferenceImage]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -297,6 +347,8 @@ export default function AdminPromptAddEdit() {
       return;
     }
 
+    if (analysisProposal) { setError('پیشنهاد تحلیل را ابتدا اعمال یا کنار بگذارید.'); return; }
+    if (isActive && editorial && !reviewConfirmed) { setError('پیش از انتشار، متن، ترجمه و گزینه‌های شخصی‌سازی را بازبینی و تأیید کنید.'); return; }
     setSaving(true);
 
     // Prepare payload
@@ -308,6 +360,8 @@ export default function AdminPromptAddEdit() {
     const payload = {
       title,
       description,
+      relatedUseCases,
+      editorial: editorial ? {...editorial, needsReview: isActive && reviewConfirmed ? false : true} : undefined,
       category: getUseCase(useCase)!.title,
       useCase,
       resourceType,
@@ -327,7 +381,7 @@ export default function AdminPromptAddEdit() {
       sampleImage,
       isPremium,
       isActive,
-      sourceText,
+      sourceText: undefined,
       parentId,
     };
 
@@ -480,8 +534,27 @@ export default function AdminPromptAddEdit() {
         {analysisSuccess && (
           <div className="p-3 bg-success-soft text-success-text text-xs font-bold rounded-xl border border-success-text flex items-center gap-1.5 animate-fade-in">
             <Check className="w-4 h-4 text-success-text" />
-            <span>با موفقیت پردازش شد! فیلدهای پایین با اطلاعات استخراج شده مقداردهی اولیه شدند.</span>
+            <span>تحلیل دریافت شد{analysisDurationMs !== null ? `؛ ${(analysisDurationMs / 1000).toLocaleString("fa-IR",{maximumFractionDigits:1})} ثانیه` : ""}. نتیجه را بازبینی کنید و سپس در فرم اعمال کنید.</span>
           </div>
+        )}
+
+        {analysisProposal && <AgentAnalysisProposal draft={analysisProposal} onApply={applyProposal} onDismiss={()=>setAnalysisProposal(null)} />}
+        {undoAnalysis && <button type="button" onClick={restoreAnalysis} className="rounded-lg border border-line px-4 py-2 text-xs font-bold">بازگردانی فرم به قبل از اعمال تحلیل</button>}
+
+        {editorial && (
+          <section aria-label="گزارش بازبینی ایجنت" className="p-4 rounded-xl border border-line bg-surface-soft text-xs space-y-3">
+            <h3 className="font-bold text-primary">گزارش بازبینی ایجنت {editorial.needsReview ? '— نیازمند بررسی' : '— آمادهٔ بررسی نهایی شما'}</h3>
+            <p className="text-secondary leading-relaxed">{editorial.classificationReason}</p>
+            <p className="leading-7">{editorial.fidelity?.reason || 'حفظ متن اصلی هنوز مستقل بررسی نشده است.'}</p>
+            {!!editorial.fixedConstraints?.length && <div><h4 className="font-bold mb-2">قیود ثابت محتوا</h4><ul className="list-disc list-inside space-y-2">{editorial.fixedConstraints.map((v,i)=><li key={i}>{v}</li>)}</ul></div>}
+            {!!editorial.improvementSuggestions?.length && <details><summary className="font-bold cursor-pointer">پیشنهادهای بهبود؛ اعمال نشده در متن</summary><div className="space-y-4 mt-3">{editorial.improvementSuggestions.map((v,i)=><article key={i} className="space-y-2"><h4 className="font-bold">{v.title}</h4><p>{v.reason}</p><p>{v.proposedChange}</p></article>)}</div></details>}
+            {relatedUseCases.length > 0 && <p>کاربردهای مرتبط: {relatedUseCases.map(slug => getUseCase(slug)?.title || slug).join('، ')}</p>}
+            <details><summary className="cursor-pointer font-bold">یادداشت‌ها و نیازمندی‌های اجرا</summary>
+              <ul className="list-disc list-inside mt-3 space-y-2 text-secondary">{editorial.reviewNotes.map((note, i) => <li key={i}>{note}</li>)}</ul>
+              <p className="mt-3">نیازمندی‌ها: {editorial.execution.requiredCapabilities.join('؛ ')}</p>
+              <p className="mt-2 text-muted">مرجع طبقه‌بندی: {editorial.catalogVersion} — این گزارش، اثبات اجرای پرامپت در ابزار مقصد نیست.</p>
+            </details>
+          </section>
         )}
 
         {analysisError && (
@@ -825,6 +898,8 @@ export default function AdminPromptAddEdit() {
             <p className="text-[11px] text-muted">این متن در صفحه پرامپت با انتخاب «نسخه پارسی» نمایش داده می‌شود. نام متغیرها را مانند نسخه اصلی نگه دارید.</p>
           </div>
 
+          {editorial && <label className="flex items-start gap-3 rounded-xl border border-line bg-surface-soft p-4 text-xs leading-7"><input type="checkbox" checked={reviewConfirmed} onChange={event=>setReviewConfirmed(event.target.checked)} className="mt-2" /><span>متن کامل، ترجمه، نیاز به تصویر و تمام گزینه‌های شخصی‌سازی را بازبینی کرده‌ام و انتشار را تأیید می‌کنم. این تأیید، نشان آزمون اجرای واقعی در ابزار مقصد ایجاد نمی‌کند.</span></label>}
+
           {/* Checkboxes Row */}
           <div className="grid grid-cols-2 gap-4 pt-2">
             <label id="premium-toggle-label" className="flex items-center gap-2.5 p-3.5 bg-surface-soft border border-line rounded-xl cursor-pointer select-none">
@@ -848,7 +923,7 @@ export default function AdminPromptAddEdit() {
                 className="w-4 h-4 text-success-text border-line-strong focus:ring-success-text rounded cursor-pointer"
               />
               <div className="space-y-0.5 cursor-pointer">
-                <span className="text-xs font-bold text-primary block">نمایش عمومی در سایت (Active)</span>
+                <span className="text-xs font-bold text-primary block">انتشار عمومی پس از بازبینی</span>
                 <span className="text-[10px] text-muted block font-normal">نمایش در نتایج جستجو و لیست‌ها</span>
               </div>
             </label>
@@ -860,7 +935,8 @@ export default function AdminPromptAddEdit() {
         <div className="lg:col-span-6 space-y-6">
           
           {/* JSON Wizard Editor */}
-          <div className="bg-surface p-6 border border-line rounded-2xl shadow-sm space-y-4">
+          <details className="bg-surface p-6 border border-line rounded-2xl shadow-sm space-y-4">
+            <summary className="cursor-pointer text-sm font-bold text-primary">تنظیمات پیشرفتهٔ فیلدها (JSON)</summary>
             <div className="flex items-center justify-between pb-2 border-b border-line">
               <h3 className="text-xs font-bold text-primary flex items-center gap-1">
                 <Code className="w-4 h-4 text-brand" />
@@ -891,21 +967,23 @@ export default function AdminPromptAddEdit() {
             ) : (
               <div className="flex items-center gap-1.5 text-xs text-success-text font-extrabold">
                 <Check className="w-4 h-4" />
-                <span>ساختار آرایه JSON کاملاً معتبر است ✓</span>
+                <span>ساختار پایهٔ فیلدها خوانده شد؛ متن و گزینه‌ها را در پیش‌نمایش بررسی کنید.</span>
               </div>
             )}
-          </div>
+          </details>
 
           {/* Interactive Live Preview */}
-          {parsedSchema.length > 0 && (
+          {(body || bodyFa) && (
             <div className="bg-surface p-6 border border-line rounded-2xl shadow-sm space-y-3">
               <h4 className="text-xs font-bold text-primary">🕵️ پیش‌نمایش زنده فرم محصول (Live Preview)</h4>
-              <p className="text-[10px] text-muted">فرم پایین به صورت خودکار از روی فیلدهای بالا شبیه‌سازی و رندر گردیده است:</p>
+              <div className="flex gap-2" role="group" aria-label="زبان پیش‌نمایش فرم"><button type="button" aria-pressed={previewLanguage==='fa'} onClick={()=>setPreviewLanguage('fa')} className="border border-line rounded-lg px-3 py-2 text-xs">فارسی</button><button type="button" aria-pressed={previewLanguage==='en'} onClick={()=>setPreviewLanguage('en')} className="border border-line rounded-lg px-3 py-2 text-xs">زبان اصلی</button></div>
+              {!parsedSchema.length && <p className="text-xs text-muted">این محتوا فیلد شخصی‌سازی ندارد؛ متن کامل همچنان قابل بازبینی است.</p>}
               
               <div className="pt-2 border-t border-line">
                 <PromptWizard
                   fields={parsedSchema}
-                  promptBody={body}
+                  language={previewLanguage}
+                  promptBody={previewLanguage === "fa" ? bodyFa || body : body}
                   onRendered={(rendered) => setPreviewRendered(rendered)}
                 />
               </div>
@@ -1025,7 +1103,7 @@ export default function AdminPromptAddEdit() {
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>{isEditMode ? "بروزرسانی نهایی پرامپت" : "ذخیره و انتشار پرامپت"}</span>
+                  <span>{isActive ? "انتشار پس از بازبینی" : "ذخیرهٔ پیش‌نویس"}</span>
                 </>
               )}
             </button>

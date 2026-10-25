@@ -10,6 +10,8 @@ datasource db {
 }
 
 model Prompt {
+  relatedUseCases String[] @default([])
+  editorial Json?
   useCase       String?
   resourceType  String   @default("prompt")
   isDemo        Boolean  @default(false)

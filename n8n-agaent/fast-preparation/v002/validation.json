@@ -1,0 +1,6 @@
+{
+  "status": "passed",
+  "checks": 9,
+  "scope": "deterministic local fixtures only; not a real model run or latency proof",
+  "realLatencyMeasured": false
+}

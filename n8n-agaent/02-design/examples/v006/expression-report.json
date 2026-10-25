@@ -1,0 +1,86 @@
+{
+  "kind": "JavaScript VM simulation; not n8n runtime",
+  "passed": 16,
+  "checks": [
+    {
+      "agent": "design",
+      "case": "catalog supplied",
+      "passed": true
+    },
+    {
+      "agent": "design",
+      "case": "old webhook request",
+      "passed": true
+    },
+    {
+      "agent": "design",
+      "case": "explicit empty override",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "catalog supplied",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "catalog supplied",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "catalog supplied",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "catalog supplied",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "old webhook request",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "old webhook request",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "old webhook request",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "old webhook request",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "explicit empty override",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "explicit empty override",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "explicit empty override",
+      "passed": true
+    },
+    {
+      "agent": "qa",
+      "case": "explicit empty override",
+      "passed": true
+    },
+    {
+      "case": "legacy Code v002 correctly identified as incompatible",
+      "passed": true,
+      "observed": "Promty output validation: unsupported root property"
+    }
+  ]
+}

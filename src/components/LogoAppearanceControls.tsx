@@ -30,11 +30,11 @@ export default function LogoAppearanceControls({ src, value, onChange, onSave, s
         <div className="grid gap-4 sm:grid-cols-2">
           <label htmlFor="logo-desktop-size" className="space-y-2 text-xs text-secondary">
             <span className="flex justify-between gap-2">اندازه لوگو در دسکتاپ <output htmlFor="logo-desktop-size">{value.desktopSize} px</output></span>
-            <input id="logo-desktop-size" type="range" min={24} max={64} value={value.desktopSize} onChange={event => update('desktopSize', Number(event.target.value))} className={rangeClass} />
+            <input id="logo-desktop-size" type="range" min={24} max={133} value={value.desktopSize} onChange={event => update('desktopSize', Number(event.target.value))} className={rangeClass} />
           </label>
           <label htmlFor="logo-mobile-size" className="space-y-2 text-xs text-secondary">
             <span className="flex justify-between gap-2">اندازه لوگو در موبایل <output htmlFor="logo-mobile-size">{value.mobileSize} px</output></span>
-            <input id="logo-mobile-size" type="range" min={24} max={52} value={value.mobileSize} onChange={event => update('mobileSize', Number(event.target.value))} className={rangeClass} />
+            <input id="logo-mobile-size" type="range" min={24} max={133} value={value.mobileSize} onChange={event => update('mobileSize', Number(event.target.value))} className={rangeClass} />
           </label>
         </div>
         <fieldset disabled={!value.gradientEnabled} className="space-y-4 disabled:opacity-45">

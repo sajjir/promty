@@ -1,0 +1,18 @@
+{
+  "status": "prepared_not_applied",
+  "basisWorkflowId": "93Uq9lGFxbSJMGoY",
+  "basisSnapshotDate": "2026-10-22",
+  "model": "deepseek/deepseek-v4.1-flash",
+  "candidateNodes": 11,
+  "modelRequestsPerRun": 1,
+  "sheetReadsPerRun": 2,
+  "modelAutoRetries": 0,
+  "semanticSecondModelReview": false,
+  "serverDeadlineSeconds": 30,
+  "realLatencyMeasured": false,
+  "published": false,
+  "sha256": "60856acc3916384c1cd1868cc0a6d9fb96d090b827a5dee73f731083ec20652d",
+  "systemChars": 5040,
+  "priorDesignSystemChars": 14098,
+  "priorQASystemChars": 18276
+}
