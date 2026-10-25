@@ -1,3 +1,6 @@
+import HomepageChipsControls from '../components/HomepageChipsControls';
+import MediaLibraryButton from '../components/MediaLibraryButton';
+import { getHomepageChipsError, normalizeHomepageChips, type HomepageChip } from '../lib/homepageChips';
 import PromptCardTemplateControls from '../components/PromptCardTemplateControls';
 import { normalizePromptCardTemplate, type PromptCardTemplate } from '../lib/promptCardTemplates';
 import HomepageSectionsControls from '../components/HomepageSectionsControls';
@@ -86,6 +89,9 @@ export default function AdminDashboard() {
 
   const [promptCardTemplate, setPromptCardTemplate] = useState<PromptCardTemplate>(() => normalizePromptCardTemplate());
   const [homepageSections, setHomepageSections] = useState<HomepageSection[]>(() => normalizeHomepageSections());
+
+  const [brandingPanel,setBrandingPanel] = useState<'appearance'|'homepage'>('appearance');
+  const [homepageChips,setHomepageChips] = useState<HomepageChip[]>(()=>normalizeHomepageChips());
 
   // Dedicated Branding state
   const [siteTitleLocal, setSiteTitleLocal] = useState("");
@@ -210,6 +216,7 @@ export default function AdminDashboard() {
         setSiteLogoLocal(s.siteLogo || "");
         setLogoAppearanceLocal(normalizeLogoAppearance(s.logoAppearance));
         setHomepageSections(normalizeHomepageSections(s.homepageSections));
+        setHomepageChips(normalizeHomepageChips(s.homepageChips));
         setPromptCardTemplate(normalizePromptCardTemplate(s.promptCardTemplate));
       }
 
@@ -510,6 +517,8 @@ export default function AdminDashboard() {
   const handleSaveBranding = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
+    const chipsError = getHomepageChipsError(homepageChips);
+    if(chipsError){setBrandingError(chipsError);return;}
     const sectionsError = getHomepageSectionsError(homepageSections);
     if (sectionsError) { setBrandingError(sectionsError); return; }
     const logoError = getLogoAppearanceError(logoAppearanceLocal);
@@ -534,6 +543,7 @@ export default function AdminDashboard() {
           siteLogo: siteLogoLocal,
           logoAppearance: logoAppearanceLocal,
           homepageSections,
+          homepageChips,
           promptCardTemplate,
         })
       });
@@ -1537,6 +1547,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
+              <div className="flex flex-wrap gap-2" role="tablist" aria-label="تنظیمات ظاهر"><button type="button" role="tab" aria-selected={brandingPanel==='appearance'} className="rounded-xl border border-line px-4 py-3 text-sm aria-selected:bg-brand-soft aria-selected:text-brand" onClick={()=>setBrandingPanel('appearance')}>هویت و ظاهر</button><button type="button" role="tab" aria-selected={brandingPanel==='homepage'} className="rounded-xl border border-line px-4 py-3 text-sm aria-selected:bg-brand-soft aria-selected:text-brand" onClick={()=>setBrandingPanel('homepage')}>هوم‌پیج و سناریوها</button></div>
+              <div hidden={brandingPanel!=='appearance'}>
               {/* Logo Upload & Preview Card */}
               <div className="bg-surface-soft/70 border border-line/80 rounded-2xl p-5 space-y-4">
                 <h4 className="text-xs font-black text-primary flex items-center gap-2">
@@ -1593,11 +1605,14 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
+                <MediaLibraryButton onSelect={urls=>setSiteLogoLocal(urls[0])}/>
                 <LogoAppearanceControls src={siteLogoLocal} value={logoAppearanceLocal} onChange={setLogoAppearanceLocal} onSave={handleSaveLogoAppearance} saving={brandingLoading || logoUploading} />
               </div>
 
+              </div>
               {/* Branding Text Fields */}
               <form onSubmit={handleSaveBranding} className="space-y-5">
+                <div hidden={brandingPanel!=='appearance'} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-secondary block">
@@ -1679,9 +1694,13 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                </div>
+                <div hidden={brandingPanel!=='homepage'} className="space-y-5">
+                <HomepageChipsControls value={homepageChips} onChange={setHomepageChips} />
                 <PromptCardTemplateControls value={promptCardTemplate} onChange={setPromptCardTemplate} />
 
                 <HomepageSectionsControls value={homepageSections} onChange={setHomepageSections} />
+                </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                   <p className="text-[11px] text-muted">

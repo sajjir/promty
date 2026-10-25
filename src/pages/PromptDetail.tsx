@@ -154,7 +154,7 @@ function TaxonomyBlock({ prompt }: { prompt: Prompt }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3.5 text-xs text-secondary">
-        <div className="col-span-2"><span className="block text-muted">کاربرد اصلی</span><Link to={`/?useCase=${prompt.useCase || ''}`} className="text-brand">{useCasePath(prompt.useCase) || 'نیازمند تعیین کاربرد'}</Link></div>
+        <div className="col-span-2"><span className="block text-muted">کاربرد اصلی</span><Link to={prompt.useCase?`/use-case/${prompt.useCase}`:'/'} className="text-brand">{useCasePath(prompt.useCase) || 'نیازمند تعیین کاربرد'}</Link></div>
         <div>نوع منبع: {resourceTypes[prompt.resourceType || 'prompt']}</div>
         <div>خروجی: {(prompt.outputFormats || []).map(value => outputLabels[value] || value).join('، ')}</div>
         {prompt.tools && prompt.tools.length > 0 && (
@@ -752,7 +752,7 @@ export default function PromptDetail() {
         <nav className="flex items-center gap-1.5 text-xs text-muted font-bold">
           <Link to="/" className="hover:text-secondary transition">خانه</Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <Link to={`/?useCase=${prompt.useCase || ""}`} className="text-muted bg-surface-soft px-2 py-0.5 rounded-md border border-line hover:text-brand focus-visible:ring-2 focus-visible:ring-brand">{getUseCase(prompt.useCase)?.title || "آرشیو"}</Link>
+          <Link to={prompt.useCase?`/use-case/${prompt.useCase}`:'/'} className="text-muted bg-surface-soft px-2 py-0.5 rounded-md border border-line hover:text-brand focus-visible:ring-2 focus-visible:ring-brand">{getUseCase(prompt.useCase)?.title || "آرشیو"}</Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-primary truncate max-w-[150px]">{prompt.title}</span>
         </nav>
@@ -781,7 +781,7 @@ export default function PromptDetail() {
           )}
 
           <Link
-            to="/"
+            to={(()=>{try{const p=sessionStorage.getItem('promty:archive-return');return p&&/^\/(?:\?|$|use-case\/|tool\/|domain\/)/.test(p)?p:'/';}catch{return '/';}})()}
             className="flex items-center gap-1 text-xs font-bold text-brand hover:bg-brand-solid/5 px-3 py-1.5 rounded-lg transition"
           >
             <span>بازگشت به آرشیو پرامپت‌ها</span>

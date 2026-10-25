@@ -1,3 +1,4 @@
+import MediaLibraryButton from '../components/MediaLibraryButton';
 import AgentAnalysisProposal from '../components/AgentAnalysisProposal';
 import { normalizeAgentAnalysis } from '../lib/normalizeAgentAnalysis';
 import type { PromptEditorial } from '../types';
@@ -379,6 +380,8 @@ export default function AdminPromptAddEdit() {
       bodyFa,
       fieldsSchema: parsedSchema,
       sampleImage,
+      coverImage: existingCover,
+      mediaGallery: existingGallery,
       isPremium,
       isActive,
       sourceText: undefined,
@@ -1006,14 +1009,14 @@ export default function AdminPromptAddEdit() {
               <h3 className="text-xs font-bold text-primary">۳. موتور پردازش تصویر و رسانه اختصاصی</h3>
             </div>
 
-            {isEditMode && (existingCover || (existingGallery && existingGallery.length > 0)) && (
+            {(existingCover || (existingGallery && existingGallery.length > 0)) && (
               <div className="bg-surface-soft/50 p-4 rounded-xl border border-line space-y-3 text-right">
                 <span className="text-[11px] font-bold text-secondary block">🖼️ پیش‌نمایش رسانه‌های فعلی این پرامپت:</span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {existingCover && (
                     <div className="space-y-1">
                       <div className="relative aspect-video rounded-lg overflow-hidden border border-line bg-surface shadow-xs">
-                        <img src={existingCover} alt="کاور فعلی" className="w-full h-full object-cover" />
+                        <button type="button" onClick={()=>setExistingCover('')} className="absolute top-1 right-1 bg-surface rounded-lg p-2 text-xs text-danger-text">برداشتن کاور</button><img src={existingCover} alt="کاور فعلی" className="w-full h-full object-cover" />
                       </div>
                       <span className="text-[9px] font-black text-caution-text block text-center">کاور فعلی</span>
                     </div>
@@ -1021,14 +1024,14 @@ export default function AdminPromptAddEdit() {
                   {existingGallery && existingGallery.length > 0 && existingGallery.map((url, idx) => (
                     <div key={idx} className="space-y-1">
                       <div className="relative aspect-video rounded-lg overflow-hidden border border-line bg-surface shadow-xs">
-                        <img src={url} alt={`گالری ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button type="button" onClick={()=>setExistingGallery(old=>old.filter((_,i)=>i!==idx))} aria-label={`برداشتن تصویر گالری ${idx+1}`} className="absolute top-1 right-1 bg-surface rounded-lg p-2 text-xs text-danger-text">×</button><img src={url} alt={`گالری ${idx + 1}`} className="w-full h-full object-cover" />
                       </div>
                       <span className="text-[9px] font-bold text-muted block text-center">گالری فعلی {idx + 1}</span>
                     </div>
                   ))}
                 </div>
                 <p className="text-[10px] font-semibold text-caution-text mt-2">
-                  ⚠️ آپلود تصاویر جدید، تصاویر فعلی را در دیتابیس جایگزین خواهد کرد.
+                  کاور جدید جایگزین کاور فعلی می‌شود؛ تصاویر گالری به موارد انتخاب‌شده افزوده می‌شوند.
                 </p>
               </div>
             )}
@@ -1054,6 +1057,7 @@ export default function AdminPromptAddEdit() {
                 </div>
               </div>
 
+              <MediaLibraryButton onSelect={urls=>{setCoverFile(null);setExistingCover(urls[0]);}}/>
               {/* Gallery Images Input */}
               <div className="space-y-1.5 text-right">
                 <label className="text-xs font-bold text-secondary block">گالری نمونه خروجی‌ها (اختیاری)</label>
@@ -1077,7 +1081,8 @@ export default function AdminPromptAddEdit() {
             </div>
           </div>
 
-          {/* Submit Action Box */}
+          <div className="flex flex-wrap gap-3"><MediaLibraryButton multiple label="انتخاب گالری از کتابخانه" onSelect={urls=>setExistingGallery(old=>[...new Set([...old,...urls])])}/><MediaLibraryButton label="انتخاب تصویر نمونه از کتابخانه" onSelect={urls=>setSampleImage(urls[0])}/></div>
+                    {/* Submit Action Box */}
           <div className="bg-surface p-4 border border-line rounded-2xl shadow-sm flex items-center justify-end gap-3 mt-auto">
             <Link
               to="/admin"

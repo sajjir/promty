@@ -1,3 +1,5 @@
+import HomepageQuickChips from '../components/HomepageQuickChips';
+import { Z } from '../lib/zIndex';
 import HomepageShelves from '../components/HomepageShelves';
 import ArchiveMultiSelect from "../components/ArchiveMultiSelect";
 import { archiveFilterKeys, readFilterValues, setFilterValues, SelectionUpdate } from "../lib/archiveFilters";
@@ -20,8 +22,15 @@ import { motion, AnimatePresence } from "motion/react";
 
 export default function Homepage() {
   const navigate = useNavigate();
-  const { toolSlug, domainSlug } = useParams<{ toolSlug?: string; domainSlug?: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { toolSlug, domainSlug, useCaseSlug } = useParams<{ toolSlug?: string; domainSlug?: string; useCaseSlug?:string }>();
+  const [urlParams, setSearchParams] = useSearchParams();
+  const searchParams = new URLSearchParams(urlParams);
+  if(useCaseSlug)searchParams.set('useCase',useCaseSlug);
+  if(toolSlug)searchParams.set('tool',toolSlug);
+  if(domainSlug)searchParams.set('domain',domainSlug);
+  const [headerOffset,setHeaderOffset] = useState(80);
+  useEffect(()=>{const header=document.getElementById('main-nav-bar');if(!header)return;const update=()=>setHeaderOffset(header.getBoundingClientRect().height+8);update();const observer=new ResizeObserver(update);observer.observe(header);return()=>observer.disconnect();},[]);
+  useEffect(()=>{try{sessionStorage.setItem('promty:archive-return',window.location.pathname+window.location.search);}catch{}},[urlParams.toString(),useCaseSlug,toolSlug,domainSlug]);
   // Router search-param updates do not queue like React state updates. Preserve
   // the latest pending URL so rapid checkbox actions cannot overwrite each other.
   const paramsRef = useRef(new URLSearchParams(searchParams));
@@ -87,7 +96,7 @@ export default function Homepage() {
     if (key === 'group') setFilterValues(next, 'useCase', values.length ? readFilterValues(next, 'useCase').filter(slug => useCaseInGroups(slug, values)) : []);
     next.delete('page');
     paramsRef.current = next;
-    setSearchParams(next);
+    if((useCaseSlug||toolSlug||domainSlug)&&['useCase','group','tool','domain'].includes(key))navigate('/?'+next.toString());else setSearchParams(next);
   };
   const removeSelection = (key: string, value: string) => updateSelections(key, current => current.filter(selected => selected !== value));
 
@@ -331,11 +340,6 @@ export default function Homepage() {
     }
   };
 
-  const handleLoadMore = () => {
-    if (isLoadingMore || !hasMore) return;
-    loadPrompts(page + 1, true);
-  };
-
   const handleRemoveLastFilter = () => {
     if (filterHistory.length === 0) return;
     const last = filterHistory[filterHistory.length - 1];
@@ -366,39 +370,10 @@ export default function Homepage() {
   useEffect(() => {
     ++requestVersion.current;
     setPrompts([]); setHasMore(false); setLoading(true);
-    const timer = setTimeout(() => loadPrompts(1), searchQuery.trim() ? 300 : 0);
+    const pageFromUrl=Number(searchParams.get('page')||1);
+    const timer = setTimeout(() => loadPrompts(Number.isSafeInteger(pageFromUrl)&&pageFromUrl>0?pageFromUrl:1), searchQuery.trim() ? 300 : 0);
     return () => { clearTimeout(timer); ++requestVersion.current; };
   }, [searchParams.toString(), latestSection.limit]);
-
-  // Sync route parameters (toolSlug, domainSlug) with active filter states
-  useEffect(() => {
-    if (dbTaxonomies.length > 0) {
-      let changed = false;
-      const newParams = new URLSearchParams(searchParams);
-      if (toolSlug) {
-        const found = dbTaxonomies.find(
-          t => t.slug?.toLowerCase() === toolSlug.toLowerCase() && t.type?.toLowerCase() === "tool"
-        );
-        if (found && searchParams.get("tool") !== found.slug) {
-          newParams.set("tool", found.slug);
-          changed = true;
-        }
-      }
-      if (domainSlug) {
-        const found = dbTaxonomies.find(
-          t => t.slug?.toLowerCase() === domainSlug.toLowerCase() && t.type?.toLowerCase() === "domain"
-        );
-        if (found && searchParams.get("domain") !== found.slug) {
-          newParams.set("domain", found.slug);
-          changed = true;
-        }
-      }
-      if (changed) {
-        setSearchParams(newParams, { replace: true });
-        navigate(`/?${newParams.toString()}`, { replace: true });
-      }
-    }
-  }, [toolSlug, domainSlug, dbTaxonomies]);
 
   // Find taxonomy suggestions matching the user's input
   const taxonomySuggestions = React.useMemo(() => {
@@ -487,7 +462,7 @@ export default function Homepage() {
 
   const handleClearFilters = () => {
     paramsRef.current = new URLSearchParams();
-    setSearchParams(new URLSearchParams());
+    if(useCaseSlug||toolSlug||domainSlug)navigate('/');else setSearchParams(new URLSearchParams());
 
   };
 
@@ -508,7 +483,7 @@ export default function Homepage() {
           </div>
 
           <h1 className="text-3xl md:text-5xl font-black text-primary tracking-tight leading-tight md:leading-normal">
-            {branding.heroTitle ? (
+            {useCaseSlug ? <span>پرامپت‌های {getUseCase(useCaseSlug)?.title || 'کاربرد انتخاب‌شده'}</span> : (toolSlug||domainSlug) ? <span>پرامپت‌های {getTranslation(toolSlug||domainSlug||'',toolSlug?'tool':'domain')}</span> : branding.heroTitle ? (
               <span>{branding.heroTitle}</span>
             ) : (
               <>
@@ -555,6 +530,7 @@ export default function Homepage() {
               </div>
             </div>
 
+            <HomepageQuickChips chips={branding.homepageChips} />
             {/* Smart Auto-Suggestions Overlay */}
             <AnimatePresence>
               {showSuggestions && (
@@ -785,17 +761,18 @@ export default function Homepage() {
           )}
         </AnimatePresence>
 
-        {/* Active Applied Filters Summary */}
-        {(filterHistory.length > 0) && (
-          <div className="flex flex-wrap items-center gap-1.5 bg-surface-soft p-2.5 rounded-xl border border-line">
-            <span className="text-[10px] text-muted font-bold ml-1.5">فیلترهای اعمال‌شده:</span>
-            {filterHistory.map(item => <button key={`${item.type}-${item.value}`} aria-label={`حذف فیلتر ${item.label}`} onClick={() => removeSelection(item.type,item.value)} className="rounded-lg border border-line bg-surface px-2 py-1 text-xs">{item.label} ×</button>)}
-          </div>
-        )}
       </div>
 
       {/* Prompts Layout Grid */}
       <div className="space-y-4">
+        {(filterHistory.length>0||searchQuery||searchParams.has('sort'))&&<nav aria-label="فیلترهای فعال" style={{top:headerOffset,zIndex:Z.STICKY_BOX}} className="sticky flex flex-wrap items-center gap-2 bg-surface border border-line rounded-xl p-3 shadow-sm">
+          <span className="text-xs font-bold">فیلترهای فعال</span>
+          {searchQuery&&<button type="button" onClick={()=>setSearchQuery('')} className="rounded-lg border border-line p-2 text-xs">جستجو: {searchQuery} ×</button>}
+          {filterHistory.map(item=><button key={`${item.type}-${item.value}`} aria-label={`حذف فیلتر ${item.label}`} onClick={()=>removeSelection(item.type,item.value)} className="rounded-lg border border-line p-2 text-xs">{item.label} ×</button>)}
+          {searchParams.has('sort')&&<button type="button" onClick={()=>updateFilter('sort','')} className="rounded-lg border border-line p-2 text-xs">مرتب‌سازی: {sortBy==='usage'?'بیشترین کپی':sortBy==='title'?'عنوان':sortBy==='latest'?'جدیدترین':'ارتباط'} ×</button>}
+          <button type="button" onClick={handleClearFilters} className="text-xs text-danger-text mr-auto p-2">پاک‌سازی همه</button>
+        </nav>}
+
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-lg font-black text-primary flex items-center gap-2">
@@ -845,24 +822,12 @@ export default function Homepage() {
               title={searchQuery.trim() ? 'نتایج جستجو' : filterHistory.length ? 'نتایج فیلترها' : latestSection.title}
               description={searchQuery.trim() ? `منابع مرتبط با «${searchQuery.trim()}»` : filterHistory.length ? 'محتواهای منتشرشده مطابق فیلترهای انتخابی شما' : 'تازه‌ترین پرامپت‌ها، مهارت‌ها و راهنماهای منتشرشده'} />
 
-            {/* Load More Button */}
-            {hasMore && (
-              <div className="flex justify-center pt-4">
-                <button
-                  id="load-more-btn"
-                  onClick={handleLoadMore}
-                  disabled={isLoadingMore}
-                  className="px-8 py-3.5 bg-surface hover:bg-surface-soft text-primary hover:text-brand border-2 border-line hover:border-brand/30 active:border-brand rounded-2xl shadow-sm hover:shadow-md font-bold text-xs transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
-                >
-                  {isLoadingMore ? (
-                    <Loader className="w-4 h-4 text-brand" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-brand group-hover:translate-y-0.5 transition-transform" />
-                  )}
-                  <span>{isLoadingMore ? "در حال بارگذاری..." : "نمایش منابع بیشتر"}</span>
-                </button>
-              </div>
-            )}
+            {/* Crawlable pagination preserves the full filter URL. */}
+            {totalPromptsCount>latestSection.limit&&<nav aria-label="صفحه‌بندی آرشیو" className="flex justify-center items-center gap-4 pt-5">
+              {page>1&&<Link className="rounded-xl border border-line px-4 py-3 text-sm" to={(()=>{const p=new URLSearchParams(searchParams);p.set('page',String(page-1));return '?'+p.toString()+'#prompt-archive-view';})()}>صفحهٔ قبل</Link>}
+              <span className="text-xs text-muted">صفحهٔ {page.toLocaleString('fa-IR')} از {Math.ceil(totalPromptsCount/latestSection.limit).toLocaleString('fa-IR')}</span>
+              {hasMore&&<Link className="rounded-xl border border-line px-4 py-3 text-sm" to={(()=>{const p=new URLSearchParams(searchParams);p.set('page',String(page+1));return '?'+p.toString()+'#prompt-archive-view';})()}>صفحهٔ بعد</Link>}
+            </nav>}
           </div>
         ) : (
           <div className="bg-surface border border-line rounded-2xl p-12 text-center text-muted space-y-3 shadow-sm">

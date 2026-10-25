@@ -89,8 +89,8 @@ export default function ArchiveDiscovery({ params, counts, onChange }: {
         <div className="flex flex-wrap gap-2" role="group" aria-label="نیاز به تصویر ورودی">
           <button type="button" aria-pressed={!needsReferenceImage} onClick={() => onChange('referenceImage', [])}
             className={`min-h-11 rounded-lg border px-3 py-2 text-xs font-semibold ${!needsReferenceImage ? 'border-brand bg-surface text-brand' : 'border-line bg-surface text-secondary'}`}>همه منابع</button>
-          <button type="button" aria-pressed={needsReferenceImage} onClick={() => onChange('referenceImage', ['required'])}
-            className={`min-h-11 rounded-lg border px-3 py-2 text-xs font-semibold ${needsReferenceImage ? 'border-brand bg-brand-solid text-white' : 'border-line bg-surface text-secondary hover:border-brand'}`}>
+          <button type="button" aria-pressed={needsReferenceImage} disabled={counts.referenceImage!==undefined&&!counts.referenceImage.required&&!needsReferenceImage} onClick={() => onChange('referenceImage', ['required'])}
+            className={`min-h-11 rounded-lg border px-3 py-2 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${needsReferenceImage ? 'border-brand bg-brand-solid text-white' : 'border-line bg-surface text-secondary hover:border-brand'}`}>
             نیازمند تصویر ورودی <span className="mr-1.5">({(counts.referenceImage?.required || 0).toLocaleString('fa-IR')})</span>
           </button>
         </div>
@@ -99,8 +99,8 @@ export default function ArchiveDiscovery({ params, counts, onChange }: {
     </div>
     <div className="flex flex-wrap gap-2" aria-label="گروه کاربردها">
       <button type="button" aria-pressed={!groups.length} onClick={() => onChange('group', [])} className={`min-h-11 rounded-xl border px-3 py-2 text-sm ${!groups.length ? 'border-brand bg-brand-soft text-brand' : 'border-line text-secondary'}`}>همه کاربردها</button>
-      {roots.map(item => <button key={item.slug} type="button" aria-pressed={groups.includes(item.slug)} onClick={() => toggleGroup(item.slug)}
-        className={`min-h-11 rounded-xl border px-3 py-2 text-sm ${groups.includes(item.slug) ? 'border-brand bg-brand-soft text-brand' : 'border-line text-secondary'}`}>
+      {roots.map(item => <button key={item.slug} type="button" aria-pressed={groups.includes(item.slug)} disabled={counts.groups!==undefined&&!counts.groups[item.slug]&&!groups.includes(item.slug)} onClick={() => toggleGroup(item.slug)}
+        className={`min-h-11 rounded-xl border px-3 py-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed ${groups.includes(item.slug) ? 'border-brand bg-brand-soft text-brand' : 'border-line text-secondary'}`}>
         {item.title} ({counts.groups?.[item.slug] || 0})
       </button>)}
     </div>

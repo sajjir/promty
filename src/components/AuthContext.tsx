@@ -1,3 +1,4 @@
+import { normalizeHomepageChips, type HomepageChip } from '../lib/homepageChips';
 import { normalizePromptCardTemplate, type PromptCardTemplate } from '../lib/promptCardTemplates';
 import { normalizeHomepageSections, type HomepageSection } from '../lib/homepageSections';
 import React, { createContext, useContext, useState, useEffect } from "react";
@@ -22,6 +23,7 @@ export interface PublicSettings {
   siteLogo: string;
   logoAppearance: LogoAppearance;
   homepageSections: HomepageSection[];
+  homepageChips: HomepageChip[];
   promptCardTemplate: PromptCardTemplate;
   aiTimeoutSeconds: number;
   isWebhookConfigured: boolean;
@@ -80,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     siteLogo: "",
     logoAppearance: normalizeLogoAppearance(),
     homepageSections: normalizeHomepageSections(),
+    homepageChips: normalizeHomepageChips(),
     promptCardTemplate: normalizePromptCardTemplate(),
     aiTimeoutSeconds: 60,
     isWebhookConfigured: false,
@@ -108,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           siteLogo: data.siteLogo || "",
           logoAppearance: normalizeLogoAppearance(data.logoAppearance),
           homepageSections: normalizeHomepageSections(data.homepageSections),
+          homepageChips: normalizeHomepageChips(data.homepageChips),
           promptCardTemplate: normalizePromptCardTemplate(data.promptCardTemplate),
           aiTimeoutSeconds: typeof data.aiTimeoutSeconds === "number" ? data.aiTimeoutSeconds : 60,
           isWebhookConfigured: !!data.isWebhookConfigured,

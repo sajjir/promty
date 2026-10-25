@@ -166,7 +166,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked, variant = "g
           <span className="prompt-fan-badge">{prompt.isPremium ? 'ویژه' : 'رایگان'}</span>
         </div>
         <h3 className="prompt-fan-title line-clamp-3">{prompt.title}</h3>
-        <span className="prompt-fan-category line-clamp-2">{categoryLabel}</span>
+        <Link to={prompt.useCase?`/use-case/${prompt.useCase}`:'/'} className="prompt-fan-category line-clamp-2" onClick={e=>e.stopPropagation()}>{categoryLabel}</Link>
         {prompt.requiresReferenceImage === true && <span data-reference-image="required" className="mt-2 inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-black/20 px-2 py-1 text-[10px] text-white">
           <ImagePlus className="h-3 w-3 shrink-0" aria-hidden="true" />نیازمند تصویر ورودی
         </span>}
@@ -286,7 +286,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked, variant = "g
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5 text-muted text-xs">
             <IconComponent className="w-3.5 h-3.5 text-brand" />
-            <span className="font-bold">{categoryLabel}</span>
+            <Link to={prompt.useCase?`/use-case/${prompt.useCase}`:'/'} className="font-bold hover:text-brand">{categoryLabel}</Link>
 
           </div>
           {prompt.difficulty && (

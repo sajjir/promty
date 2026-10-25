@@ -1,3 +1,4 @@
+import SeoHeadSync from './components/SeoHeadSync';
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Homepage from "./pages/Homepage";
@@ -61,12 +62,14 @@ function SeoFooter() {
 function AppContent() {
   return (
     <div id="app-shell" className="min-h-screen bg-canvas text-primary font-sans antialiased flex flex-col selection:bg-brand-solid/20 selection:text-brand">
+      <SeoHeadSync />
       <SiteHeader />
 
       {/* Global Body Container */}
       <main id="main-content" tabIndex={-1} className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-8">
         <Routes>
           <Route path="/" element={<Homepage />} />
+          <Route path="/use-case/:useCaseSlug" element={<Homepage />} />
           <Route path="/tool/:toolSlug" element={<Homepage />} />
           <Route path="/domain/:domainSlug" element={<Homepage />} />
           <Route path="/prompts/:id" element={<PromptDetail />} />
@@ -76,6 +79,7 @@ function AppContent() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/prompts/new" element={<AdminPromptAddEdit />} />
           <Route path="/admin/prompts/:id/edit" element={<AdminPromptAddEdit />} />
+          <Route path="*" element={<section><h1>صفحه پیدا نشد</h1><a href="/">بازگشت به خانه</a></section>} />
         </Routes>
       </main>
 

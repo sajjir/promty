@@ -39,8 +39,8 @@ export default function ArchiveMultiSelect({ label, options, selected, onChange,
       <div className="flex justify-between items-center mb-2 text-xs"><span>{label} — انتخاب چندگانه</span><button type="button" className="text-brand underline" onClick={() => onChange([])}>پاک کردن انتخاب‌ها</button></div>
       {options.length > 8 && <input aria-label={`جستجو در ${label}`} value={query} onChange={e => setQuery(e.target.value)} placeholder="جستجو در گزینه‌ها" className="w-full border border-line bg-surface-soft rounded-lg px-2 py-2 mb-2 text-xs text-primary" />}
       <div className="max-h-64 overflow-y-auto space-y-1">
-        {visible.map(option => <label key={option.value} htmlFor={`${id}-${option.value}`} className="flex cursor-pointer items-center gap-2 rounded-lg p-2 hover:bg-surface-soft text-sm text-primary">
-          <input id={`${id}-${option.value}`} type="checkbox" checked={selected.includes(option.value)} onChange={() => onChange(current => current.includes(option.value) ? current.filter(value => value !== option.value) : [...current, option.value])} className="accent-violet-500 shrink-0" />
+        {visible.map(option => <label key={option.value} htmlFor={`${id}-${option.value}`} className={`flex items-center gap-2 rounded-lg p-2 text-sm text-primary ${option.count===0&&!selected.includes(option.value)?'opacity-40 cursor-not-allowed':'cursor-pointer hover:bg-surface-soft'}`}>
+          <input id={`${id}-${option.value}`} type="checkbox" checked={selected.includes(option.value)} disabled={option.count===0&&!selected.includes(option.value)} onChange={() => onChange(current => current.includes(option.value) ? current.filter(value => value !== option.value) : [...current, option.value])} className="accent-violet-500 shrink-0" />
           <span className="min-w-0 flex-1 flex items-center gap-2">{option.icon && <option.icon className="h-4 w-4 shrink-0 text-brand" aria-hidden="true" />}<span>{option.label}</span></span>{option.count !== undefined && <span className="text-xs text-muted">{option.count}</span>}
         </label>)}
         {!visible.length && <p className="text-xs text-muted p-2">گزینه‌ای پیدا نشد.</p>}

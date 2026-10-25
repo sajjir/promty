@@ -38,7 +38,7 @@ export default function HomepageShelves({bookmarkedIds,configuration,template}:{
       {shelf.prompts.length ? <>
         <PromptCollection template={template} prompts={shelf.prompts} bookmarkedIds={bookmarkedIds} sectionId={`homepage-${shelf.id}`} title={shelf.title}
           description={shelf.source==='trending' ? 'محتواهایی با بیشترین کپی ثبت‌شده از زمان انتشار' : 'جدیدترین محتواهای منتشرشده در دستهٔ منتخب'} />
-        {shelf.total > shelf.prompts.length && <Link className="inline-block text-xs text-brand font-bold" to={shelf.source==='trending' ? '/?sort=usage#prompt-archive-view' : `/?group=${encodeURIComponent(shelf.group)}${shelf.useCase ? '&useCase='+encodeURIComponent(shelf.useCase) : ''}#prompt-archive-view`}>مشاهدهٔ همهٔ {shelf.total.toLocaleString('fa-IR')} منبع ←</Link>}
+        {shelf.total > shelf.prompts.length && <Link className="inline-block text-xs text-brand font-bold" to={shelf.source==='trending' ? '/?sort=usage#prompt-archive-view' : shelf.useCase ? `/use-case/${encodeURIComponent(shelf.useCase)}#prompt-archive-view` : `/?group=${encodeURIComponent(shelf.group)}#prompt-archive-view`}>مشاهدهٔ همهٔ {shelf.total.toLocaleString('fa-IR')} منبع ←</Link>}
       </> : <section className="rounded-3xl border border-line bg-surface p-8 text-center" aria-label={shelf.title}><h2 className="text-lg font-bold text-primary">{shelf.title}</h2><p className="mt-3 text-sm text-muted">{shelf.source==='trending' ? 'هنوز کپی‌ای برای نمایش در ترندها ثبت نشده است.' : 'در این دسته هنوز محتوایی منتشر نشده است.'}</p></section>}
     </div>)}
   </div>;

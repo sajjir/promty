@@ -1,3 +1,6 @@
+import { getHomepageChipsError, normalizeHomepageChips, type HomepageChip } from './src/lib/homepageChips';
+import { registerMediaLibrary, encodeMedia } from './src/server/mediaLibrary';
+import { buildSeo, injectSeo, sitemap } from './src/server/seo';
 import { normalizePromptCardTemplate, getPromptCardTemplateError, type PromptCardTemplate } from './src/lib/promptCardTemplates';
 import { normalizeHomepageSections, getHomepageSectionsError, type HomepageSection } from './src/lib/homepageSections';
 import { buildHomepageSections } from './src/server/buildHomepageSections';
@@ -5,7 +8,7 @@ import { normalizeAgentAnalysis } from './src/lib/normalizeAgentAnalysis';
 import { readAgentResponse } from './src/server/readAgentResponse';
 import { getUseCase, resourceTypes, normalizeArchivePrompt, normalizeIntent } from './src/lib/archiveCatalog';
 import { getLogoAppearanceError, normalizeLogoAppearance, type LogoAppearance } from './src/lib/logoAppearance';
-import { buildArchiveFacets } from './src/server/repositories/filterPrompts';
+import { buildArchiveFacets, filterPrompts } from './src/server/repositories/filterPrompts';
 import { archiveFilterKeys, filterValues } from './src/lib/archiveFilters';
 import "dotenv/config";
 import crypto from "node:crypto";
@@ -46,7 +49,6 @@ if (operationalProduction && !process.env.DATABASE_URL?.trim() && process.env.ST
 }
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString("hex");
 const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[char]!));
-const safeJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -121,6 +123,7 @@ interface DBSettings {
   siteLogo?: string;         // آدرس لوگو
   logoAppearance?: LogoAppearance;
   homepageSections?: HomepageSection[];
+  homepageChips?: HomepageChip[];
   promptCardTemplate?: PromptCardTemplate;
   aiTimeoutSeconds?: number; // مدت زمان تایم اوت هوش مصنوعی (پیش‌فرض 60 ثانیه)
 }
@@ -452,191 +455,6 @@ function resolveUserRole(
   return "USER";
 }
 
-async function getPageMetadata(urlPath: string) {
-  let title = "پرامپتی | مرجع و شخصی‌سازی پرامپت‌های آماده هوش مصنوعی";
-  let description = "دانلود، بهینه‌سازی و کپی سریع پرامپت‌های مهندسی‌شده برای ابزارهای تصویرسازی و متنی مانند ChatGPT، Claude و Midjourney.";
-  let imageUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800";
-  let jsonLd = "";
-
-  const toolMatch = urlPath.match(/^\/tool\/([^/]+)/i);
-  const domainMatch = urlPath.match(/^\/domain\/([^/]+)/i);
-  const promptMatch = urlPath.match(/^\/prompts\/([^/]+)/i);
-
-  const baseUrl = "https://promty.ir";
-  const pageUrl = `${baseUrl}${urlPath}`;
-
-  const TRANSLATIONS_LOCAL: Record<string, string> = {
-    "chatgpt": "ChatGPT",
-    "claude": "Claude",
-    "gemini": "Gemini",
-    "grok": "Grok",
-    "midjourney": "Midjourney",
-    "flux": "Flux",
-    "stable-diffusion": "Stable Diffusion",
-    "ideogram": "Ideogram",
-    "veo": "Veo",
-    "kling": "Kling",
-    "runway": "Runway",
-    "marketing": "بازاریابی (Marketing)",
-    "programming": "برنامه‌نویسی (Programming)",
-    "photography": "عکاسی (Photography)",
-    "design": "طراحی و هنر (Design)",
-    "business": "کسب‌وکار (Business)",
-    "education": "آموزش (Education)"
-  };
-
-  if (toolMatch) {
-    const slug = toolMatch[1].toLowerCase();
-    const displayName = TRANSLATIONS_LOCAL[slug] || slug;
-    title = `پرامپت‌های تخصصی ${displayName} | قالب آماده شخصی‌سازی - Promty`;
-    description = `آرشیو جامع پرامپت‌های مهندسی‌شده و کاملاً متغیر برای ابزار هوش مصنوعی ${displayName}. دسترسی و کپی فوری در Promty.ir.`;
-    
-    // BreadcrumbList JSON-LD
-    const breadcrumbs = {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "خانه",
-          "item": baseUrl
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": `ابزار ${displayName}`,
-          "item": pageUrl
-        }
-      ]
-    };
-    jsonLd = `<script type="application/ld+json">${safeJsonLd(breadcrumbs)}</script>`;
-
-  } else if (domainMatch) {
-    const slug = domainMatch[1].toLowerCase();
-    const displayName = TRANSLATIONS_LOCAL[slug] || slug;
-    title = `پرامپت‌های حوزه ${displayName} | مهندسی پرامپت آماده - Promty`;
-    description = `مجموعه بهترین نمونه‌های پرامپت بهینه‌سازی شده در حوزه ${displayName} برای دریافت باکیفیت‌ترین خروجی‌ها در هوش مصنوعی.`;
-    
-    // BreadcrumbList JSON-LD
-    const breadcrumbs = {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "خانه",
-          "item": baseUrl
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": `حوزه ${displayName}`,
-          "item": pageUrl
-        }
-      ]
-    };
-    jsonLd = `<script type="application/ld+json">${safeJsonLd(breadcrumbs)}</script>`;
-
-  } else if (promptMatch) {
-    const id = promptMatch[1];
-    try {
-      const prompt = await promptRepo.getById(id);
-      if (prompt && prompt.isActive) {
-        title = `${prompt.title} | قالب پرامپت آماده و شخصی‌سازی - Promty`;
-        description = prompt.description || `دانلود، ویرایش و کپی سریع پرامپت مهندسی‌شده "${prompt.title}" مخصوص ${prompt.category || "هوش مصنوعی"} در وبسایت پرامپتی.`;
-        if (prompt.sampleImage) {
-          imageUrl = prompt.sampleImage;
-        }
-
-        // Schema Engine Injection
-        // Structured content contains no inferred ratings or invented review counts.
-        const mainEntitySchema: any = {
-          "@context": "https://schema.org",
-          "@type": "HowTo",
-          "name": prompt.title,
-          "description": prompt.description || description,
-          "image": imageUrl,
-          "step": [
-            {
-              "@type": "HowToStep",
-              "name": "شخصی‌سازی متغیرها",
-              "text": "فیلدهای متغیر موجود در پرامپت را با مقادیر دلخواه پر کنید."
-            },
-            {
-              "@type": "HowToStep",
-              "name": "کپی و استفاده",
-              "text": "دکمه کپی پرامپت را فشار دهید و در چت باکس هوش مصنوعی کپی کنید."
-            }
-          ],
-
-        };
-
-        const breadcrumbs = {
-          "@context": "https://schema.org",
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "خانه",
-              "item": baseUrl
-            },
-            {
-              "@type": "ListItem",
-              "position": 2,
-              "name": prompt.category || "پرامپت‌ها",
-              "item": `${baseUrl}/prompts/${prompt.id}`
-            }
-          ]
-        };
-
-        jsonLd = `
-          <script type="application/ld+json">${safeJsonLd(breadcrumbs)}</script>
-          <script type="application/ld+json">${safeJsonLd(mainEntitySchema)}</script>
-        `;
-      }
-    } catch (e) {
-      console.error("Failed to query prompt for SEO:", e);
-    }
-  } else {
-    // General breadcrumbs for Homepage
-    const breadcrumbs = {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "خانه",
-          "item": baseUrl
-        }
-      ]
-    };
-    jsonLd = `<script type="application/ld+json">${safeJsonLd(breadcrumbs)}</script>`;
-  }
-
-  // Generate complete HTML meta chunk
-  const metaHtml = `
-    <!-- Custom Meta Tags injected dynamically -->
-    <title>${escapeHtml(title)}</title>
-    <meta name="description" content="${escapeHtml(description)}" />
-    <meta property="og:title" content="${escapeHtml(title)}" />
-    <meta property="og:description" content="${escapeHtml(description)}" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="${escapeHtml(pageUrl)}" />
-    <meta property="og:image" content="${escapeHtml(imageUrl)}" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${escapeHtml(title)}" />
-    <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${escapeHtml(imageUrl)}" />
-    ${jsonLd}
-  `;
-
-  return metaHtml;
-}
-
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT || 3005);
@@ -729,7 +547,7 @@ async function startServer() {
   });
   // Draft content must never leak through detail, media, render, copy, or saved lists.
   app.use(async (req, res, next) => {
-    const match = req.path.match(/^\/api\/prompts\/([^/]+)(?:\/|$)/) || req.path.match(/^\/dl\/prompts\/([^/]+)(?:\/|$)/) || req.path.match(/^\/prompts\/([^/]+)$/);
+    const match = req.path.match(/^\/api\/prompts\/([^/]+)(?:\/|$)/) || req.path.match(/^\/dl\/prompts\/([^/]+)(?:\/|$)/);
     const reserved = ["submit", "analyze-public", "facets"];
     const id = req.path === "/api/render-prompt" ? req.body?.promptId : match?.[1];
     if (id && !reserved.includes(id)) {
@@ -746,13 +564,20 @@ async function startServer() {
   };
   app.use("/dl", (req, res, next) => {
     // Static serving normalizes dot segments; reject every alternate path before it can do so.
-    if (req.path !== "/brand/logo.webp" && !/^\/prompts\/[a-zA-Z0-9_-]{1,80}\/[a-zA-Z0-9_-]+\.webp$/.test(req.path)) return res.status(404).end();
+    if (req.path !== "/brand/logo.webp" && !/^\/library\/[a-zA-Z0-9_-]+\.webp$/.test(req.path) && !/^\/prompts\/[a-zA-Z0-9_-]{1,80}\/[a-zA-Z0-9_-]+\.webp$/.test(req.path)) return res.status(404).end();
     next();
   });
   // Auth-aware media must not be cached after unpublishing.
+  app.use('/dl/library', async (req,res,next)=>{
+    if(isManager((req as any).user))return next();
+    try {const item=(await mediaLibrary.inventory()).find(x=>x.url==='/dl/library'+req.path);if(!item?.public)return res.status(404).end();next();}
+    catch {res.status(503).end();}
+  });
   app.use("/dl", (_req, res, next) => { res.setHeader("Cache-Control", "private, no-store"); next(); }, express.static(path.join(process.cwd(), "dl"), { maxAge: 0 }));
 
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 6, fields: 2, parts: 8 } });
+
+  const mediaLibrary = registerMediaLibrary(app, requireManager, upload, promptRepo, () => readDB().settings || {});
 
   // API - Process and upload media cover/gallery
   app.post("/api/upload/:promptId", requireManager, async (req, res, next) => {
@@ -778,6 +603,7 @@ async function startServer() {
 
       // Decode and validate every image before creating directories or writing files.
       for (const file of [coverFile, ...galleryFiles].filter(Boolean) as Express.Multer.File[]) {
+        try { file.buffer = await encodeMedia(file.buffer); } catch { return res.status(400).json({success:false,message:'تصویر معتبر و مستقل PNG، JPEG، WebP یا SVG لازم است.'}); }
         const metadata = await sharp(file.buffer, { limitInputPixels: 25000000 }).metadata();
         if (!["jpeg", "png", "webp"].includes(metadata.format || "") || !metadata.width || !metadata.height || metadata.width > 8000 || metadata.height > 8000 || (metadata.pages || 1) > 1) return res.status(400).json({ success: false, message: "تصویر معتبر JPEG/PNG/WebP با ابعاد مجاز لازم است." });
         await sharp(file.buffer, { limitInputPixels: 25000000 }).webp().toBuffer();
@@ -795,7 +621,8 @@ async function startServer() {
         const fileName = "cover.webp";
         const filePath = path.join(targetDir, fileName);
 
-        // Convert file buffer to webp using sharp and write to disk
+        if (fs.existsSync(filePath)) await mediaLibrary.store(fs.readFileSync(filePath));
+        // Keep the previous upload in the shared library before replacing the cover.
         await sharp(coverFile.buffer)
           .webp({ quality: 85 })
           .toFile(filePath);
@@ -2312,6 +2139,7 @@ async function startServer() {
         siteLogo: s.siteLogo || "",
         logoAppearance: normalizeLogoAppearance(s.logoAppearance),
         homepageSections: normalizeHomepageSections(s.homepageSections),
+        homepageChips: normalizeHomepageChips(s.homepageChips),
         promptCardTemplate: normalizePromptCardTemplate(s.promptCardTemplate),
         aiTimeoutSeconds: typeof s.aiTimeoutSeconds === "number" ? s.aiTimeoutSeconds : 60,
       }
@@ -2334,9 +2162,16 @@ async function startServer() {
       siteLogo,
       logoAppearance,
       homepageSections,
+      homepageChips,
       promptCardTemplate,
       aiTimeoutSeconds,
     } = req.body;
+
+    if (homepageChips !== undefined) {
+      const error = getHomepageChipsError(homepageChips);
+      if (error) return res.status(400).json({success:false,message:error});
+      if (homepageChips.some((chip:any) => chip.icon && !fs.existsSync(path.join(process.cwd(),chip.icon.slice(1))))) return res.status(400).json({success:false,message:"آیکن انتخاب‌شده دیگر در کتابخانه موجود نیست."});
+    }
 
     if (promptCardTemplate !== undefined) {
       const error = getPromptCardTemplateError(promptCardTemplate);
@@ -2374,6 +2209,7 @@ async function startServer() {
       footerCopyright: footerCopyright !== undefined ? (footerCopyright || "") : (prev.footerCopyright || "تمامی حقوق مادی و معنوی برای پرامپتی محفوظ است."),
       siteLogo: siteLogo !== undefined ? siteLogo : (prev.siteLogo || ""),
       ...(logoAppearance !== undefined ? { logoAppearance: normalizeLogoAppearance({ ...normalizeLogoAppearance(prev.logoAppearance), ...logoAppearance }) } : {}),
+      ...(homepageChips !== undefined ? { homepageChips: normalizeHomepageChips(homepageChips) } : {}),
       ...(homepageSections !== undefined ? { homepageSections: normalizeHomepageSections(homepageSections) } : {}),
       ...(promptCardTemplate !== undefined ? { promptCardTemplate } : {}),
       aiTimeoutSeconds: cleanTimeout,
@@ -2389,19 +2225,14 @@ async function startServer() {
         return res.status(400).json({ success: false, message: "فایل لوگو ارسال نشده است." });
       }
 
-      const sourceText = req.file.buffer.toString("utf8");
-      const isSvgSource = /<(?:[\w.-]+:)?svg\b/i.test(sourceText);
-      if (isSvgSource && (/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet|<(?:[\w.-]+:)?(?:script|foreignObject)\b|\son[\w:-]+\s*=/i.test(sourceText) || /\b(?:href|src)\s*=\s*["'](?!#)[^"']+["']/i.test(sourceText) || Array.from(sourceText.matchAll(/url\(([^)]*)\)/gi)).some(([, value]) => !value.trim().replace(/^["']|["']$/g, "").startsWith("#")))) {
-        return res.status(400).json({ success: false, message: "SVG لوگو باید بدون اسکریپت، محتوای تعاملی و منابع خارجی باشد." });
+      let encoded: Buffer;
+      try {
+        const safeImage = await encodeMedia(req.file.buffer);
+        encoded = await sharp(safeImage).resize({width:512,height:512,fit:'inside',withoutEnlargement:true}).webp({quality:90}).toBuffer();
+      } catch {
+        return res.status(400).json({success:false,message:'لوگو باید تصویر مستقل و معتبر SVG، PNG، JPEG یا WebP باشد.'});
       }
-      const image = sharp(req.file.buffer, { limitInputPixels: 20000000 });
-      const meta = await image.metadata();
-      if (!["png", "jpeg", "webp", "svg"].includes(meta.format || "") || (meta.format === "svg" && !isSvgSource) || (meta.pages || 1) !== 1 || !meta.width || !meta.height || meta.width > 8192 || meta.height > 8192) return res.status(400).json({ success: false, message: "لوگو باید تصویر SVG، PNG، JPEG یا WebP معتبر باشد." });
-      const encoded = await image.resize({ width: 512, height: 512, fit: "inside", withoutEnlargement: meta.format !== "svg" }).webp({ quality: 90 }).toBuffer();
-      const brandDir = path.join(process.cwd(), "dl", "brand");
-      fs.mkdirSync(brandDir, { recursive: true });
-      fs.writeFileSync(path.join(brandDir, "logo.webp"), encoded);
-      const logoUrl = "/dl/brand/logo.webp?v=" + Date.now();
+      const logoUrl = await mediaLibrary.store(encoded);
 
       const db = readDB();
       if (!db.settings) db.settings = {} as any;
@@ -2430,6 +2261,7 @@ async function startServer() {
       siteLogo: s.siteLogo || "",
       logoAppearance: normalizeLogoAppearance(s.logoAppearance),
       homepageSections: normalizeHomepageSections(s.homepageSections),
+        homepageChips: normalizeHomepageChips(s.homepageChips),
       promptCardTemplate: normalizePromptCardTemplate(s.promptCardTemplate),
       aiTimeoutSeconds: typeof s.aiTimeoutSeconds === "number" ? s.aiTimeoutSeconds : 60,
     });
@@ -2928,40 +2760,28 @@ ${sourceText}
     next(err);
   });
 
-  // Serve index.html with server-side injected SEO metadata
-  app.get("*", async (req, res, next) => {
-    // If it's an API route or static asset/file, let it pass through
-    if (req.path.startsWith("/api") || req.path.includes(".")) {
-      return next();
-    }
-
+  app.get('/api/homepage/chips',async(_req,res)=>{try{const rows=(await promptRepo.getAll({isActive:true})).prompts;const chips=normalizeHomepageChips(readDB().settings?.homepageChips).filter(c=>c.enabled);const counts=Object.fromEntries(chips.map(c=>[c.id,filterPrompts(rows,{isActive:true,useCase:c.useCase,...(c.tool?{tool:c.tool}:{})}).length]));res.json({success:true,counts});}catch{res.status(503).json({success:false});}});
+  const seoOrigin = new URL(process.env.APP_ORIGIN || 'https://promty.ir').origin;
+  app.get('/api/seo',async(req,res)=>{try{const raw=String(req.query.path||'/');if(raw.length>3000||!raw.startsWith('/')||raw.startsWith('//'))return res.status(400).json({success:false});const page=await buildSeo(promptRepo,raw,seoOrigin,normalizeHomepageSections(readDB().settings?.homepageSections)[0].limit);res.json({head:page.head,content:page.content,status:page.status});}catch{res.status(503).json({success:false});}});
+  app.get('/robots.txt', (_req,res) => res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\nDisallow: /dashboard\nSitemap: ${seoOrigin}/sitemap.xml\n`));
+  app.get('/sitemap.xml', async (_req,res) => {
+    try { const {prompts}=await promptRepo.getAll({isActive:true});res.type('application/xml').send(sitemap(prompts,seoOrigin)); }
+    catch {res.status(503).type('text/plain').send('Sitemap temporarily unavailable');}
+  });
+  app.get('/prompt/:id',(req,res)=>res.redirect(301,'/prompts/'+encodeURIComponent(req.params.id)));
+  app.get('*', async (req,res,next)=>{
+    if(req.path.startsWith('/api')||req.path.startsWith('/dl')||req.path.startsWith('/assets')||req.path.includes('.'))return next();
     try {
-      const isProd = process.env.NODE_ENV === "production";
-      const indexPath = isProd 
-        ? path.join(process.cwd(), "dist", "index.html")
-        : path.join(process.cwd(), "index.html");
-
-      if (fs.existsSync(indexPath)) {
-        let html = fs.readFileSync(indexPath, "utf-8");
-        
-        // Fetch dynamic page SEO & Schema meta
-        const metaTags = await getPageMetadata(req.path);
-        
-        // Remove standard title tag first if exists to prevent duplication
-        html = html.replace(/<title>.*?<\/title>/gi, "");
-        
-        // Inject right before </head>
-        html = html.replace("</head>", `${metaTags}\n  </head>`);
-        
-        if (res.locals.cspNonce) html = html.replace(/<script\b/g, `<script nonce="${res.locals.cspNonce}"`);
-        res.setHeader("Cache-Control", "private, no-store");
-        res.setHeader("Content-Type", "text/html");
-        return res.status(200).send(html);
-      }
-    } catch (err) {
-      console.error("SEO Metadata Injection failed:", err);
-    }
-    next();
+      const indexPath=path.join(process.cwd(),process.env.NODE_ENV==='production'?'dist/index.html':'index.html');
+      if(!fs.existsSync(indexPath))return next();
+      const size=normalizeHomepageSections(readDB().settings?.homepageSections)[0].limit;
+      const page=await buildSeo(promptRepo,req.originalUrl,seoOrigin,size);
+      let html=injectSeo(fs.readFileSync(indexPath,'utf8'),page);
+      if(res.locals.cspNonce)html=html.replace(/<script\b/g,`<script nonce="${res.locals.cspNonce}"`);
+      res.setHeader('Cache-Control','private, no-store');
+      if(page.noindex)res.setHeader('X-Robots-Tag','noindex, follow');
+      return res.status(page.status).type('html').send(html);
+    }catch {res.status(503).set('X-Robots-Tag','noindex').type('html').send('<h1>محتوا موقتاً در دسترس نیست</h1>');}
   });
 
   // Vite development integration or static files production build integration
@@ -2975,7 +2795,7 @@ ${sourceText}
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      res.status(404).set("X-Robots-Tag", "noindex").type("text/plain").send("Not found");
     });
   }
 
