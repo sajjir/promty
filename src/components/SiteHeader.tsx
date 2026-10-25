@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, TrendingUp, FileText, WandSparkles, Bot, Bookmark, Home, LayoutDashboard, LogIn, Menu, X } from 'lucide-react';
+import { BookOpen, TrendingUp, FileText, WandSparkles, Bot, Bookmark, Home, LayoutDashboard, LogIn } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { useTheme } from './ThemeProvider';
 import ThemeSwitcher from './ThemeSwitcher';
 import UserMenu from './UserMenu';
 import BrandLogo from './BrandLogo';
 import { Z } from '../lib/zIndex';
+import './hamburger.css';
 
 export default function SiteHeader() {
   const { user, logout, siteTitle, branding, setPhoneModalOpen, isAdmin, isSuperAdmin } = useAuth();
@@ -59,7 +60,7 @@ export default function SiteHeader() {
             ]}
             onSignOut={logout} />
           : <button id="open-auth-modal-btn" title="ورود / ثبت‌نام" onClick={() => setPhoneModalOpen(true)} className="flex min-h-11 items-center gap-2 rounded-xl bg-brand-solid px-3 py-2.5 text-sm font-semibold text-white hover:bg-brand-hover"><LogIn className="h-4 w-4" /><span className="hidden sm:inline">ورود / ثبت‌نام</span></button>}
-          <button ref={mobileButtonRef} aria-label={mobileOpen ? 'بستن منوی اصلی' : 'باز کردن منوی اصلی'} aria-expanded={mobileOpen} aria-controls="mobile-navigation" className="flex h-11 w-11 items-center justify-center rounded-xl text-secondary hover:bg-surface-soft" onClick={() => { setMobileOpen(!mobileOpen); setAccountOpen(false); }}>{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+          <button ref={mobileButtonRef} aria-label={mobileOpen ? 'بستن منوی اصلی' : 'باز کردن منوی اصلی'} aria-expanded={mobileOpen} aria-controls="mobile-navigation" className="promty-hamburger flex h-11 w-11 items-center justify-center rounded-xl text-secondary hover:bg-surface-soft" onClick={() => { setMobileOpen(!mobileOpen); setAccountOpen(false); }}><svg viewBox="0 0 32 32" aria-hidden="true"><path className="hamburger-line hamburger-top-bottom" d="M27 10 13 10C10.8 10 9 8.2 9 6 9 3.5 10.8 2 13 2 15.2 2 17 3.8 17 6L17 26C17 28.2 18.8 30 21 30 23.2 30 25 28.2 25 26 25 23.8 23.2 22 21 22L7 22"/><path className="hamburger-line" d="M7 16 27 16"/></svg></button>
         </div>
       </div>
       {mobileOpen && <div ref={mobilePanelRef} id="mobile-navigation" className="header-navigation-panel border-t border-line bg-surface px-4 py-3 overflow-y-auto"><div className="max-w-7xl mx-auto grid gap-3 md:grid-cols-2">

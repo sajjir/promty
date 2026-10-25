@@ -1,3 +1,4 @@
+import { promptImageAlt } from '../lib/promptImages';
 import { getUseCase, resourceTypes, outputLabels, useCasePath } from "../lib/archiveCatalog";
 import Loader from "../components/Loader";
 import DownloadButton from "../components/DownloadButton";
@@ -640,7 +641,9 @@ export default function PromptDetail() {
 
           if (currentPrompt) {
             // Find related prompts: same category or sharing tags/tools/domains, excluding current prompt
-            const related = list
+            const relatedResponse = currentPrompt.useCase ? await fetch(`/api/prompts?useCase=${encodeURIComponent(currentPrompt.useCase)}&isActive=true&limit=6`).catch(()=>null) : null;
+            const relatedSource = relatedResponse?.ok ? (await relatedResponse.json()).data || [] : list;
+            const related = relatedSource
               .filter((p: Prompt) => p.id !== currentPrompt?.id && p.isActive)
               .map((p: Prompt) => {
                 let score = 0;
@@ -653,7 +656,7 @@ export default function PromptDetail() {
               })
               .filter(item => item.score > 0)
               .sort((a, b) => b.score - a.score)
-              .slice(0, 3)
+              .slice(0, 5)
               .map(item => item.prompt);
 
             setRelatedPrompts(related);
@@ -836,14 +839,16 @@ export default function PromptDetail() {
               {prompt.coverImage ? (
                 <img
                   src={prompt.coverImage}
-                  alt={prompt.title}
+                  alt={promptImageAlt(prompt)}
+                  width={1600} height={900}
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover animate-fade-in"
                 />
               ) : prompt.sampleImage ? (
                 <img
                   src={prompt.sampleImage}
-                  alt={prompt.title}
+                  alt={promptImageAlt(prompt)}
+                  width={1600} height={900}
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover animate-fade-in"
                 />
@@ -882,7 +887,8 @@ export default function PromptDetail() {
                   >
                     <img
                       src={url}
-                      alt={`${prompt.title} - نمونه خروجی ${index + 1}`}
+                      alt={promptImageAlt(prompt,index)}
+                      width={1600} height={900}
                       referrerPolicy="no-referrer"
                       loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-300 cursor-pointer hover:scale-105"
@@ -1052,6 +1058,7 @@ export default function PromptDetail() {
 
       </div>
 
+      {prompt.useCase&&<nav aria-label="آرشیو همین کاربرد"><Link to={`/use-case/${encodeURIComponent(prompt.useCase)}`} className="inline-flex text-brand text-sm underline">همهٔ پرامپت‌های {getUseCase(prompt.useCase)?.title||'همین کاربرد'} ←</Link></nav>}
       {/* Related Prompts Grid Section */}
       {relatedPrompts.length > 0 && (
         <section className="space-y-4 pt-4 border-t border-line">

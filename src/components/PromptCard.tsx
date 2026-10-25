@@ -1,3 +1,4 @@
+import { promptImageAlt } from '../lib/promptImages';
 import { getUseCase, resourceTypes, outputLabels } from "../lib/archiveCatalog";
 import { getPromptCopyError } from "./PromptWizard";
 import { usePromptLanguage } from "../lib/usePromptLanguage";
@@ -157,7 +158,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked, variant = "g
     const Symbol = getToolIcon(prompt.tools?.[0]);
     return <article id={`prompt-card-${cardId}`} className="prompt-fan-card"
       style={{'--fan-tone':tone,'--fan-dark':dark} as React.CSSProperties}>
-      {cover && <img className="prompt-fan-cover" src={cover} alt="" loading="lazy" draggable={false} referrerPolicy="no-referrer" />}
+      {cover && <img className="prompt-fan-cover" src={cover} alt={promptImageAlt(prompt)} width={600} height={800} loading="lazy" draggable={false} referrerPolicy="no-referrer" />}
       <div className="prompt-fan-scrim" aria-hidden="true" />
       {!cover && <Symbol className="prompt-fan-symbol" aria-hidden="true" />}
       <div className="prompt-fan-content">
@@ -207,7 +208,8 @@ export default function PromptCard({ prompt, isInitiallyBookmarked, variant = "g
     coverElement = (
       <img
         src={prompt.coverImage}
-        alt={prompt.title}
+        alt={promptImageAlt(prompt)}
+        width={1600} height={900}
         referrerPolicy="no-referrer"
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
       />
@@ -218,7 +220,8 @@ export default function PromptCard({ prompt, isInitiallyBookmarked, variant = "g
     coverElement = (
       <img
         src={thumbnailUrl}
-        alt={prompt.title}
+        alt={promptImageAlt(prompt)}
+        width={1600} height={900}
         referrerPolicy="no-referrer"
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
       />

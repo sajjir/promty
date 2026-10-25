@@ -1,0 +1,4 @@
+.promty-hamburger svg{width:32px;height:32px;transition:transform .6s cubic-bezier(.4,0,.2,1)}
+.hamburger-line{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:2.5;transition:stroke-dasharray .6s cubic-bezier(.4,0,.2,1),stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)}
+.hamburger-top-bottom{stroke-dasharray:12 63}.promty-hamburger[aria-expanded=true] svg{transform:rotate(-45deg)}.promty-hamburger[aria-expanded=true] .hamburger-top-bottom{stroke-dasharray:20 300;stroke-dashoffset:-32.42}
+@media(prefers-reduced-motion:reduce){.promty-hamburger svg,.hamburger-line{transition:none}}

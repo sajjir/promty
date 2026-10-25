@@ -1,3 +1,4 @@
+import { promptImageAlt, publicImageUrls } from '../lib/promptImages';
 import type { Prompt } from '../types';
 import type { IPromptRepository } from './repositories/IPromptRepository';
 import { getUseCase, useCases } from '../lib/archiveCatalog';
@@ -41,8 +42,8 @@ export async function buildSeo(repo: IPromptRepository, raw: string, origin: str
             }
             catch { }
             const uc = getUseCase(p.useCase);
-            const related = all.filter(x => x.id !== p.id && x.useCase === p.useCase).slice(0, 6);
-            content = `<article><h1>${escape(p.title)}</h1><p>${escape(description)}</p>${p.requiresReferenceImage ? '<p>این پرامپت نیازمند تصویر ورودی است.</p>' : ''}${image ? `<figure><img src="${escape(image)}" alt="${escape(p.title)}"><figcaption>تصویر نمونهٔ ثبت‌شده</figcaption></figure>` : ''}<h2>متن قالب پرامپت</h2><pre dir="auto">${escape(p.body)}</pre>${p.bodyFa ? `<h2>نسخهٔ فارسی</h2><pre dir="rtl">${escape(p.bodyFa)}</pre>` : ''}<h2>فیلدهای شخصی‌سازی</h2><ul>${(p.fieldsSchema || []).map(f => `<li>${escape(f.label)} <code>{{${escape(f.key)}}}</code>${f.required ? ' (الزامی)' : ''}${f.placeholder ? ': ' + escape(f.placeholder) : ''}</li>`).join('')}</ul>${uc ? `<p><a href="${useCaseHref(uc.slug)}">${escape(uc.title)}</a></p>` : ''}<nav aria-label="منابع مرتبط">${related.map(x => `<p><a href="${promptHref(x)}">${escape(x.title)}</a></p>`).join('')}</nav></article>`;
+            const related = all.filter(x => x.id !== p.id && x.useCase === p.useCase).slice(0, 5);
+            content = `<article><h1>${escape(p.title)}</h1><p>${escape(description)}</p>${p.requiresReferenceImage ? '<p>این پرامپت نیازمند تصویر ورودی است.</p>' : ''}${image ? `<figure><img src="${escape(image)}" alt="${escape(promptImageAlt(p))}" width="1600" height="900" style="width:100%;height:auto;aspect-ratio:16/9;object-fit:contain"><figcaption>تصویر نمونهٔ ثبت‌شده</figcaption></figure>` : ''}<h2>متن قالب پرامپت</h2><pre dir="auto">${escape(p.body)}</pre>${p.bodyFa ? `<h2>نسخهٔ فارسی</h2><pre dir="rtl">${escape(p.bodyFa)}</pre>` : ''}<h2>فیلدهای شخصی‌سازی</h2><ul>${(p.fieldsSchema || []).map(f => `<li>${escape(f.label)} <code>{{${escape(f.key)}}}</code>${f.required ? ' (الزامی)' : ''}${f.placeholder ? ': ' + escape(f.placeholder) : ''}</li>`).join('')}</ul>${uc ? `<p><a href="${useCaseHref(uc.slug)}">${escape(uc.title)}</a></p>` : ''}<nav aria-label="منابع مرتبط">${related.map(x => `<p><a href="${promptHref(x)}">${escape(x.title)}</a></p>`).join('')}</nav></article>`;
             structured = [breadcrumb([{ name: 'خانه', url: origin }, ...(uc ? [{ name: uc.title, url: origin + useCaseHref(uc.slug) }] : []), { name: p.title, url: canonical }]), { '@context': 'https://schema.org', '@type': 'CreativeWork', name: p.title, description, url: canonical, text: p.body, inLanguage: p.language || undefined, keywords: [...(p.tools || []), ...(p.tags || [])].join(', '), ...(image ? { image } : {}), ...(p.fieldsSchema?.length ? { hasPart: p.fieldsSchema.map(f => ({ '@type': 'CreativeWork', name: f.label, text: f.key })) } : {}) }];
         }
     }
@@ -111,6 +112,6 @@ export function injectSeo(html: string, result: Awaited<ReturnType<typeof buildS
 export function sitemap(prompts: Prompt[], origin: string) {
     const rows = prompts.filter(p => p.isActive);
     const facets = (['tool', 'domain'] as const).flatMap(type => [...new Set(rows.flatMap(p => (type === 'tool' ? p.tools : p.domains) || []).map(x => x.toLowerCase()))].filter(x => /^[a-z0-9-]+$/.test(x)).map(slug => ({ path: `/${type}/${encodeURIComponent(slug)}`, lastmod: '' })));
-    const urls = [{ path: '/', lastmod: '' }, ...facets, ...useCases.filter(u => rows.some(p => p.useCase === u.slug)).map(u => ({ path: useCaseHref(u.slug), lastmod: '' })), ...rows.map(p => ({ path: promptHref(p), lastmod: p.updatedAt }))];
-    return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + urls.map(u => `<url><loc>${escape(origin + u.path)}</loc>${u.lastmod && !isNaN(Date.parse(u.lastmod)) ? `<lastmod>${new Date(u.lastmod).toISOString()}</lastmod>` : ''}</url>`).join('') + '</urlset>';
+    const urls = [{ path: '/', lastmod: '' }, ...facets, ...useCases.filter(u => rows.some(p => p.useCase === u.slug)).map(u => ({ path: useCaseHref(u.slug), lastmod: '' })), ...rows.map(p => ({ path: promptHref(p), lastmod: p.updatedAt, images: publicImageUrls(p,origin) }))];
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' + urls.map(u => `<url><loc>${escape(origin + u.path)}</loc>${u.lastmod && !isNaN(Date.parse(u.lastmod)) ? `<lastmod>${new Date(u.lastmod).toISOString()}</lastmod>` : ''}${('images' in u ? u.images as string[] : []).map(image=>`<image:image><image:loc>${escape(image)}</image:loc></image:image>`).join('')}</url>`).join('') + '</urlset>';
 }

@@ -1,9 +1,10 @@
+import ActiveFilterChips from '../components/ActiveFilterChips';
+import ArchiveFilterDialog from '../components/ArchiveFilterDialog';
+import { filterSelectionCount } from '../lib/filterDraft';
 import HomepageQuickChips from '../components/HomepageQuickChips';
 import { Z } from '../lib/zIndex';
 import HomepageShelves from '../components/HomepageShelves';
-import ArchiveMultiSelect from "../components/ArchiveMultiSelect";
 import { archiveFilterKeys, readFilterValues, setFilterValues, SelectionUpdate } from "../lib/archiveFilters";
-import ArchiveDiscovery from "../components/ArchiveDiscovery";
 import { getUseCase, useCaseGroups, resourceTypes, outputLabels, useCaseInGroups } from "../lib/archiveCatalog";
 import Loader from "../components/Loader";
 import PromptBackdrop from '../components/PromptBackdrop';
@@ -116,6 +117,7 @@ export default function Homepage() {
     if (type === "group") return useCaseGroups.find(g => g.slug === slug)?.title || slug;
     if (type === "resourceType") return resourceTypes[slug as keyof typeof resourceTypes] || slug;
     if (type === "outputFormat") return outputLabels[slug] || slug;
+    if (type === "access") return slug === "premium" ? "پریمیوم" : "رایگان";
     if (type === "referenceImage" && slug === "required") return "نیازمند تصویر ورودی";
     const term = dbTaxonomies.find(
       (t) => t.slug?.toLowerCase() === slug.toLowerCase() && t.type?.toLowerCase() === type.toLowerCase()
@@ -519,11 +521,10 @@ export default function Homepage() {
                 {searchQuery && <button type="button" aria-label="پاک کردن جستجو" onClick={() => setSearchQuery('')} className="promty-search-clear">
                   <X className="h-4 w-4" aria-hidden="true" />
                 </button>}
-                <button type="button" className="promty-search-filter" aria-label={showFilters ? 'بستن فیلترهای جستجو' : 'باز کردن فیلترهای جستجو'} aria-expanded={showFilters} aria-controls="advanced-archive-filters"
+                <button type="button" className="promty-search-filter" aria-label={showFilters ? 'بستن فیلترهای جستجو' : 'باز کردن فیلترهای جستجو'} aria-expanded={showFilters} aria-controls="archive-filter-dialog"
                   onClick={() => {
                     setShowSuggestions(false);
-                    setShowFilters(value => !value);
-                    document.getElementById('archive-filter-panel')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+                    setShowFilters(true);
                   }}>
                   <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
                 </button>
@@ -685,92 +686,25 @@ export default function Homepage() {
         </div>
       </section>
 
-      {/* Advanced Faceted Sidebar/Filter Panel */}
-      <div id="archive-filter-panel" className="scroll-mt-24 bg-surface border border-line rounded-2xl shadow-sm p-5 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-brand-solid/10 text-brand rounded-xl">
-              <SlidersHorizontal className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-black text-primary">پیدا کردن منبع مناسب</h2>
-              <p className="text-[11px] text-muted">کاربرد اصلی، ابزار مکمل و خروجی مورد انتظار</p>
-            </div>
-          </div>
-
-          <div className="flex items-center flex-wrap gap-2">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              aria-expanded={showFilters} aria-controls="advanced-archive-filters"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                showFilters
-                  ? "bg-brand-solid text-white shadow-sm"
-                  : "bg-surface-soft text-secondary hover:bg-surface-soft border border-line"
-              }`}
-            >
-              <ListFilter className="w-4 h-4" />
-              <span>{showFilters ? "پنهان‌سازی فیلترها" : "فیلتر پیشرفته"}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showFilters ? "rotate-180" : ""}`} />
-            </button>
-
-            {(filterHistory.length > 0) && (
-              <button
-                onClick={handleClearFilters}
-                className="flex items-center gap-1 px-3 py-2 bg-danger-soft hover:bg-danger-soft text-danger-text text-xs font-bold rounded-xl transition"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>حذف فیلترها</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        <ArchiveDiscovery params={searchParams} counts={archiveFacets} onChange={updateSelections} />
-        <div className="space-y-1.5 max-w-sm">
-          <span className="text-sm text-muted">ابزار (اختیاری)</span>
-          <ArchiveMultiSelect label="ابزار مکمل" placeholder="همه ابزارها" selected={readFilterValues(searchParams,'tool')} onChange={values => updateSelections('tool',values)}
-            options={tools.map(opt => ({ value: opt.slug, label: opt.titleFa, count: facets?.tools?.[opt.slug.toLowerCase()] || 0 }))} />
-        </div>
-
-        {/* Expandable Advanced Filters Grid */}
-        <AnimatePresence>
-          {showFilters && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              id="advanced-archive-filters"
-              className="border-t border-line pt-5"
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-
-                {[
-                  { key: 'intent', label: 'هدف مکمل', placeholder: 'همه هدف‌ها', options: intents, counts: facets?.intents },
-                  { key: 'domain', label: 'حوزه موضوعی', placeholder: 'همه حوزه‌ها', options: domains, counts: facets?.domains },
-                  { key: 'difficulty', label: 'سطح دشواری', placeholder: 'همه سطح‌ها', options: difficulties, counts: facets?.difficulties },
-                  { key: 'language', label: 'زبان', placeholder: 'همه زبان‌ها', options: languages, counts: facets?.languages },
-                ].map(facet => <div key={facet.key} className="space-y-1.5">
-                  <span className="text-xs font-bold text-muted block">{facet.label}</span>
-                  <ArchiveMultiSelect label={facet.label} placeholder={facet.placeholder} selected={readFilterValues(searchParams,facet.key)} onChange={values => updateSelections(facet.key,values)}
-                    options={facet.options.map(opt => ({ value: opt.slug, label: opt.titleFa, count: facet.counts?.[opt.slug.toLowerCase()] || 0 }))} />
-                </div>)}
-
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
+      <div id="archive-filter-panel" className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3">
+        <button type="button" onClick={()=>{setShowSuggestions(false);setShowFilters(true);}} aria-haspopup="dialog" aria-controls="archive-filter-dialog" aria-expanded={showFilters} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-solid px-4 py-2 text-sm font-bold text-white">
+          <SlidersHorizontal className="h-4 w-4" aria-hidden="true"/>فیلترها {filterSelectionCount(searchParams)>0&&<span className="rounded-full bg-white/20 px-2 text-xs">{filterSelectionCount(searchParams).toLocaleString('fa-IR')}</span>}
+        </button>
+        <label className="mr-auto min-w-0 text-xs text-muted"><span className="sr-only">مرتب‌سازی آرشیو</span><select aria-label="مرتب‌سازی آرشیو" value={sortBy} onChange={e=>setSortBy(e.target.value)} className="min-h-11 max-w-full rounded-xl border border-line bg-surface px-2 py-2 text-sm text-primary">
+          <option value="relevance">مرتبط‌ترین‌ها</option><option value="usage">بیشترین کپی</option><option value="latest">جدیدترین‌ها</option><option value="title">الفبایی (عنوان)</option>
+        </select></label>
       </div>
+      {showFilters&&<ArchiveFilterDialog params={searchParams} taxonomies={{tool:tools,intent:intents,domain:domains,difficulty:difficulties,language:languages}} onClose={()=>setShowFilters(false)} onApply={next=>{
+        paramsRef.current=next;
+        const keepRoute=(!useCaseSlug||(readFilterValues(next,'useCase').length===1&&readFilterValues(next,'useCase')[0]===useCaseSlug))&&(!toolSlug||(readFilterValues(next,'tool').length===1&&readFilterValues(next,'tool')[0]===toolSlug))&&(!domainSlug||(readFilterValues(next,'domain').length===1&&readFilterValues(next,'domain')[0]===domainSlug));
+        if(keepRoute)setSearchParams(next);else navigate('/?'+next.toString());
+      }}/>}
 
       {/* Prompts Layout Grid */}
       <div className="space-y-4">
-        {(filterHistory.length>0||searchQuery||searchParams.has('sort'))&&<nav aria-label="فیلترهای فعال" style={{top:headerOffset,zIndex:Z.STICKY_BOX}} className="sticky flex flex-wrap items-center gap-2 bg-surface border border-line rounded-xl p-3 shadow-sm">
-          <span className="text-xs font-bold">فیلترهای فعال</span>
-          {searchQuery&&<button type="button" onClick={()=>setSearchQuery('')} className="rounded-lg border border-line p-2 text-xs">جستجو: {searchQuery} ×</button>}
-          {filterHistory.map(item=><button key={`${item.type}-${item.value}`} aria-label={`حذف فیلتر ${item.label}`} onClick={()=>removeSelection(item.type,item.value)} className="rounded-lg border border-line p-2 text-xs">{item.label} ×</button>)}
-          {searchParams.has('sort')&&<button type="button" onClick={()=>updateFilter('sort','')} className="rounded-lg border border-line p-2 text-xs">مرتب‌سازی: {sortBy==='usage'?'بیشترین کپی':sortBy==='title'?'عنوان':sortBy==='latest'?'جدیدترین':'ارتباط'} ×</button>}
-          <button type="button" onClick={handleClearFilters} className="text-xs text-danger-text mr-auto p-2">پاک‌سازی همه</button>
+        {(filterHistory.length>0||searchQuery||searchParams.has('sort'))&&<nav aria-label="فیلترهای فعال" style={{top:headerOffset,zIndex:Z.STICKY_BOX}} className="sticky space-y-1 rounded-xl border border-line bg-surface p-2 shadow-sm">
+          <div className="flex items-center justify-between gap-2"><span className="text-[11px] font-bold text-muted">فیلترهای فعال</span><button type="button" onClick={handleClearFilters} className="min-h-11 px-2 text-xs text-danger-text">پاک‌سازی همه</button></div>
+          <ActiveFilterChips items={[...(searchQuery?[{type:'q',value:searchQuery,label:`جستجو: ${searchQuery}`}]:[]),...filterHistory,...(searchParams.has('sort')?[{type:'sort',value:sortBy,label:sortBy==='usage'?'بیشترین کپی':sortBy==='title'?'عنوان':sortBy==='latest'?'جدیدترین':'مرتبط‌ترین‌ها'}]:[])]} onRemove={item=>item.type==='q'?setSearchQuery(''):item.type==='sort'?updateFilter('sort',''):removeSelection(item.type,item.value)} onEdit={()=>setShowFilters(true)}/>
         </nav>}
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -794,20 +728,7 @@ export default function Homepage() {
               {loading ? "در حال دریافت..." : `نمایش ${filteredPrompts.length} از ${totalPromptsCount} منبع`}
             </span>
 
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-muted font-bold shrink-0">مرتب‌سازی:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="text-xs bg-surface border border-line rounded-lg py-1 px-2 outline-none font-bold text-secondary focus:border-brand cursor-pointer"
-              >
-                <option value="relevance">مرتبط‌ترین‌ها</option>
-                <option value="usage">بیشترین کپی</option>
-                <option value="latest">جدیدترین‌ها</option>
-                <option value="title">الفبایی (عنوان)</option>
-              </select>
-            </div>
+
           </div>
         </div>
 

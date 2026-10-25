@@ -7,6 +7,7 @@ export interface PromptFilters {
   category?: string; isActive?: boolean; page?: number; limit?: number;
   q?: string; tool?: FilterSelection; domain?: FilterSelection; intent?: FilterSelection; difficulty?: FilterSelection; language?: FilterSelection;
   referenceImage?: FilterSelection; // Currently only "required"; false/missing is not proof of no image prerequisite.
+  access?: FilterSelection; // free | premium; choices combine with OR.
   sort?: string;
 }
 export interface IPromptRepository {
