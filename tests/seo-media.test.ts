@@ -102,7 +102,10 @@ test('HTTP SEO and shared media: auth, safe SVG, unpublished privacy, reuse, in-
             response = await call(route);
             assert.equal(response.status, 404, route);
             assert.match(response.headers.get('content-type')!, /text\/html/);
-            assert.match(await response.text(), /noindex/);
+            const missingHtml=await response.text();
+            assert.match(missingHtml, /noindex/);
+            assert.match(missingHtml, /not-found-face/);
+            assert.match(missingHtml, /این صفحه پیدا نشد/);
         }
         assert.equal((await call('/prompts/draft', { headers })).status, 404);
         response = await call('/prompts/public');
@@ -136,6 +139,12 @@ test('HTTP SEO and shared media: auth, safe SVG, unpublished privacy, reuse, in-
         assert.equal(response.status, 200);
         assert.deepEqual((await (await call('/api/settings/public')).json()).homepageChips, [chip]);
         assert.equal((await (await call('/api/homepage/chips')).json()).counts.cartoon, 1);
+        const recovery=await call('/not-found');
+        assert.equal(recovery.status,404);
+        const recoveryHtml=await recovery.text();
+        assert.match(recoveryHtml,/href="\/use-case\/vis-09\?tool=gemini#prompt-archive-view"/);
+        assert.ok(recoveryHtml.includes(url));
+        assert.match(recoveryHtml,/عکس کارتونی/);
         assert.equal((await call(url)).status, 200);
         assert.equal((await call('/api/admin/media?url=' + encodeURIComponent(url), { method: 'DELETE', headers })).status, 409);
         assert.equal((await jsonPost('/api/settings', { homepageChips: [] })).status, 200);

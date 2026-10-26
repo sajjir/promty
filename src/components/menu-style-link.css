@@ -1,0 +1,8 @@
+/* Match the account menu's rounded rows, spacing and soft highlight. */
+.menu-style-link{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:10px;border-radius:11px;color:var(--ui-primary);background:transparent;text-align:start;font-size:13px;line-height:1.8;text-decoration:none;transition:background .15s ease,color .15s ease}
+.menu-style-link svg{width:18px;height:18px;flex-shrink:0;color:var(--ui-muted);transition:color .15s ease}
+.menu-style-link:hover,.menu-style-link:focus-visible,.menu-style-link[aria-current="page"]{background:var(--ui-soft);color:var(--ui-brand);text-decoration:none}
+.menu-style-link:hover svg,.menu-style-link:focus-visible svg,.menu-style-link[aria-current="page"] svg{color:inherit}
+.menu-style-link:focus-visible{outline:2px solid var(--ui-brand);outline-offset:-2px}
+.menu-style-link-fit{width:fit-content;max-width:100%}
+@media(prefers-reduced-motion:reduce){.menu-style-link,.menu-style-link svg{transition:none}}

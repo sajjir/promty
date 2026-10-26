@@ -1,3 +1,4 @@
+import {homepageChipCounts} from './src/server/homepageChipCounts';
 import {PrismaBlogRepository} from './src/server/blogRepository';
 import {registerBlogRoutes} from './src/server/blogRoutes';
 import { getHomepageChipsError, normalizeHomepageChips, type HomepageChip } from './src/lib/homepageChips';
@@ -2765,9 +2766,9 @@ ${sourceText}
     next(err);
   });
 
-  app.get('/api/homepage/chips',async(_req,res)=>{try{const rows=(await promptRepo.getAll({isActive:true})).prompts;const chips=normalizeHomepageChips(readDB().settings?.homepageChips).filter(c=>c.enabled);const counts=Object.fromEntries(chips.map(c=>[c.id,filterPrompts(rows,{isActive:true,useCase:c.useCase,...(c.tool?{tool:c.tool}:{})}).length]));res.json({success:true,counts});}catch{res.status(503).json({success:false});}});
+  app.get('/api/homepage/chips',async(_req,res)=>{try{const rows=(await promptRepo.getAll({isActive:true})).prompts;const chips=normalizeHomepageChips(readDB().settings?.homepageChips).filter(c=>c.enabled);const counts=homepageChipCounts(rows,chips);res.json({success:true,counts});}catch{res.status(503).json({success:false});}});
   const seoOrigin = new URL(process.env.APP_ORIGIN || 'https://promty.ir').origin;
-  app.get('/api/seo',async(req,res)=>{try{const raw=String(req.query.path||'/');if(raw.length>3000||!raw.startsWith('/')||raw.startsWith('//'))return res.status(400).json({success:false});const page=await buildSeo(promptRepo,raw,seoOrigin,normalizeHomepageSections(readDB().settings?.homepageSections)[0].limit,blogRepo||undefined);res.json({head:page.head,content:page.content,status:page.status});}catch{res.status(503).json({success:false});}});
+  app.get('/api/seo',async(req,res)=>{try{const raw=String(req.query.path||'/');if(raw.length>3000||!raw.startsWith('/')||raw.startsWith('//'))return res.status(400).json({success:false});const page=await buildSeo(promptRepo,raw,seoOrigin,normalizeHomepageSections(readDB().settings?.homepageSections)[0].limit,blogRepo||undefined,normalizeHomepageChips(readDB().settings?.homepageChips));res.json({head:page.head,content:page.content,status:page.status});}catch{res.status(503).json({success:false});}});
   app.get('/robots.txt', (_req,res) => res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\nDisallow: /dashboard\nSitemap: ${seoOrigin}/sitemap.xml\n`));
   app.get('/sitemap.xml', async (_req,res) => {
     try { const {prompts}=await promptRepo.getAll({isActive:true});res.type('application/xml').send(sitemap(prompts,seoOrigin,blogRepo?await blogRepo.sitemapPosts():undefined)); }
@@ -2780,7 +2781,7 @@ ${sourceText}
       const indexPath=path.join(process.cwd(),process.env.NODE_ENV==='production'?'dist/index.html':'index.html');
       if(!fs.existsSync(indexPath))return next();
       const size=normalizeHomepageSections(readDB().settings?.homepageSections)[0].limit;
-      const page=await buildSeo(promptRepo,req.originalUrl,seoOrigin,size,blogRepo||undefined);
+      const page=await buildSeo(promptRepo,req.originalUrl,seoOrigin,size,blogRepo||undefined,normalizeHomepageChips(readDB().settings?.homepageChips));
       let html=injectSeo(fs.readFileSync(indexPath,'utf8'),page);
       if(res.locals.cspNonce)html=html.replace(/<script\b/g,`<script nonce="${res.locals.cspNonce}"`);
       res.setHeader('Cache-Control','private, no-store');

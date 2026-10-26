@@ -21,7 +21,7 @@ export default function SiteHeader() {
   const displayName = user?.name || (user?.phone ? `۰${user.phone.slice(-10)}` : user?.email) || 'کاربر پرامپتی';
   const role = isSuperAdmin ? 'مدیر کل' : isAdmin ? 'مدیر' : 'کاربر';
 
-  useEffect(() => { setMobileOpen(false); setAccountOpen(false); }, [location.pathname]);
+  useEffect(() => { setMobileOpen(false); setAccountOpen(false); }, [location.pathname, location.search]);
   useEffect(() => {
     if (!mobileOpen) return;
     const outside = (event: PointerEvent | FocusEvent) => {
@@ -67,9 +67,9 @@ export default function SiteHeader() {
         <nav aria-label="منوی اصلی" className="grid content-start gap-1">
           <NavLink to="/" end className={({isActive})=>`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium ${isActive?'bg-brand/10 text-brand':'text-secondary hover:bg-surface-soft'}`}><Home className="h-4 w-4" />خانه</NavLink>
           <NavLink to="/blog" className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-secondary hover:bg-surface-soft"><BookOpen className="h-4 w-4"/>بلاگ و آموزش</NavLink>
-          {[{label:'ترندها',Icon:TrendingUp}].map(({label,Icon})=><span key={label} aria-disabled="true" className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-secondary"><Icon className="h-4 w-4" />{label}<span className="mr-auto text-[10px] text-muted">به‌زودی</span></span>)}
+          <Link to="/?sort=usage#prompt-archive-view" className="menu-style-link"><TrendingUp aria-hidden="true"/>ترندها<span className="mr-auto text-[10px] text-muted">بیشترین کپی</span></Link>
         </nav>
-        <nav aria-label="بخش‌های آینده" className="grid content-start gap-1">{[{label:'پرامپت‌ها',Icon:FileText},{label:'مهارت‌ها (Skills)',Icon:WandSparkles},{label:'AGENTS.md',Icon:Bot}].map(({label,Icon})=><span key={label} aria-disabled="true" className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-secondary"><Icon className="h-4 w-4 shrink-0" />{label}<span className="mr-auto text-[10px] text-muted">به‌زودی</span></span>)}</nav>
+        <nav aria-label="انواع محتوا" className="grid content-start gap-1">{[{label:'پرامپت‌ها',Icon:FileText,type:'prompt'},{label:'مهارت‌ها (Skills)',Icon:WandSparkles,type:'skill'},{label:'AGENTS.md',Icon:Bot,type:'agent-guide'}].map(({label,Icon,type})=><Link key={type} to={`/?resourceType=${type}#prompt-archive-view`} aria-current={location.pathname==='/'&&location.search===`?resourceType=${type}`?'page':undefined} className="menu-style-link"><Icon aria-hidden="true"/>{label}</Link>)}</nav>
         {!user && <div className="border-t border-line pt-3 md:col-span-2"><p className="mb-2 text-xs text-muted">حالت نمایش</p><ThemeSwitcher /></div>}
       </div></div>}
     </header>

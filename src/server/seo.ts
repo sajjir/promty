@@ -1,3 +1,6 @@
+import NotFoundContent from '../components/NotFoundContent';
+import {normalizeHomepageChips,type HomepageChip} from '../lib/homepageChips';
+import {homepageChipCounts} from './homepageChipCounts';
 import BlogArticle,{BlogIndexContent,RelatedArticles} from '../components/BlogContent';
 import {blogHref,type BlogRepository,type BlogSummary} from '../lib/blogTypes';
 import {createElement} from 'react';
@@ -24,7 +27,7 @@ const breadcrumb = (entries: {
     name: string;
     url: string;
 }[]) => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: entries.map((p, i) => ({ '@type': 'ListItem', position: i + 1, name: p.name, item: p.url })) });
-export async function buildSeo(repo: IPromptRepository, raw: string, origin: string, pageSize = 20, blog?:BlogRepository) {
+export async function buildSeo(repo: IPromptRepository, raw: string, origin: string, pageSize = 20, blog?:BlogRepository, homepageChips?:HomepageChip[]) {
     const url = new URL(raw, origin);
     const pathname = url.pathname;
     let title = 'پرامپتی | آرشیو و شخصی‌سازی پرامپت‌های هوش مصنوعی', description = 'پرامپت‌ها، مهارت‌ها و راهنماهای آماده را بر اساس کاربرد پیدا و شخصی‌سازی کنید.', status = 200, noindex = false, content = '', canonical = origin + pathname;
@@ -138,6 +141,11 @@ export async function buildSeo(repo: IPromptRepository, raw: string, origin: str
     }
     else
         fail();
+    if(status===404){
+        const chips=normalizeHomepageChips(homepageChips);
+        const published=blogRoute?(await repo.getAll({isActive:true})).prompts.filter(p=>p.isActive):all;
+        content=renderToStaticMarkup(createElement(NotFoundContent,{chips,counts:homepageChipCounts(published,chips)}));
+    }
     const head = `<title>${escape(title)}</title><meta name="description" content="${escape(description)}"><meta name="robots" content="${noindex ? 'noindex, follow' : 'index, follow'}"><link rel="canonical" href="${escape(canonical)}"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${escape(description)}"><meta property="og:url" content="${escape(canonical)}"><meta property="og:type" content="${ogType}">${image ? `<meta property="og:image" content="${escape(image)}">` : ''}${structured.map(x => `<script type="application/ld+json">${json(x)}</script>`).join('')}`;
     return { head, content, status, noindex };
 }

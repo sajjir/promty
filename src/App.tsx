@@ -1,7 +1,10 @@
+import './components/menu-style-link.css';
+import NotFoundPage from './pages/NotFoundPage';
+import './components/not-found.css';
 import './components/blog.css';
 import SeoHeadSync from './components/SeoHeadSync';
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Homepage from "./pages/Homepage";
 import PromptDetail from "./pages/PromptDetail";
 import AdminLogin from "./pages/AdminLogin";
@@ -21,14 +24,18 @@ import { ThemeProvider } from "./components/ThemeProvider";
 const BlogPages=React.lazy(()=>import('./pages/BlogPages'));
 
 function AppContent() {
+  const {pathname,search}=useLocation();
+  const [routeStatus,setRouteStatus]=React.useState<{status:number;key:string}|null>(null);
+  const captureStatus=React.useCallback((status:number,key:string)=>setRouteStatus({status,key}),[]);
+  const missing=routeStatus?.key===pathname+search&&routeStatus.status===404;
   return (
     <div id="app-shell" className="min-h-screen bg-canvas text-primary font-sans antialiased flex flex-col selection:bg-brand-solid/20 selection:text-brand">
-      <SeoHeadSync />
+      <SeoHeadSync onStatus={captureStatus} />
       <SiteHeader />
 
       {/* Global Body Container */}
       <main id="main-content" tabIndex={-1} className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-8">
-        <Routes>
+        {missing?<NotFoundPage/>:<Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/blog" element={<React.Suspense fallback={<p role="status">در حال دریافت آموزش…</p>}><BlogPages /></React.Suspense>} />
           <Route path="/blog/:slug" element={<React.Suspense fallback={<p role="status">در حال دریافت آموزش…</p>}><BlogPages /></React.Suspense>} />
@@ -45,8 +52,8 @@ function AppContent() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/prompts/new" element={<AdminPromptAddEdit />} />
           <Route path="/admin/prompts/:id/edit" element={<AdminPromptAddEdit />} />
-          <Route path="*" element={<section><h1>صفحه پیدا نشد</h1><a href="/">بازگشت به خانه</a></section>} />
-        </Routes>
+          <Route path="*" element={<NotFoundPage/>} />
+        </Routes>}
       </main>
 
       {/* Footer Area */}

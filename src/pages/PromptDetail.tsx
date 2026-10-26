@@ -19,7 +19,7 @@ import {
   PlayCircle, Copy, Compass,
   Tag,
   Check, ChevronLeft, Trash2,
-  Pencil, X, Bookmark
+  Pencil, X, Bookmark, Home
 } from "lucide-react";
 
 function parseOption(opt: string) {
@@ -1059,7 +1059,7 @@ export default function PromptDetail() {
 
       </div>
 
-      {prompt.useCase&&<nav aria-label="آرشیو همین کاربرد"><Link to={`/use-case/${encodeURIComponent(prompt.useCase)}`} className="inline-flex text-brand text-sm underline">همهٔ پرامپت‌های {getUseCase(prompt.useCase)?.title||'همین کاربرد'} ←</Link></nav>}
+      {prompt.useCase&&<nav aria-label="آرشیو همین کاربرد"><Link to={`/use-case/${encodeURIComponent(prompt.useCase)}`} className="menu-style-link menu-style-link-fit"><ChevronLeft aria-hidden="true"/><span>همهٔ پرامپت‌های {getUseCase(prompt.useCase)?.title||'همین کاربرد'}</span></Link></nav>}
       <RelatedBlogPosts promptId={prompt.id}/>
       {/* Related Prompts Grid Section */}
       {relatedPrompts.length > 0 && (
@@ -1116,17 +1116,19 @@ export default function PromptDetail() {
       {/* Responsive floating copy and bookmark actions */}
       <div className="fixed bottom-0 inset-x-0 px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] z-40 lg:inset-x-auto lg:left-1/2 lg:-translate-x-1/2 lg:w-[min(560px,calc(100vw-48px))] lg:bottom-4">
         <div className="flex items-center gap-2 w-full p-2 bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/10">
-          {/* Bookmark Button (25% width) */}
+          {/* Equal compact navigation actions keep most space for copying. */}
+          <Link to="/" aria-label="رفتن به صفحه اصلی" title="صفحه اصلی" className="w-12 h-14 shrink-0 flex items-center justify-center rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 active:scale-95 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"><Home className="w-5 h-5" aria-hidden="true"/></Link>
           <button
             onClick={handleBookmarkToggle}
-            className="w-1/4 h-14 flex flex-col sm:flex-row items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-800 text-muted hover:bg-slate-700 active:scale-95 transition-all text-xs font-bold cursor-pointer"
+            aria-label={isBookmarked ? "حذف از نشان‌شده‌ها" : "افزودن به نشان‌شده‌ها"}
+            aria-pressed={isBookmarked}
+            className="w-12 h-14 shrink-0 flex items-center justify-center rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 active:scale-95 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
             title={isBookmarked ? "نشان شده" : "افزودن به نشان‌شده‌ها"}
           >
-            <Bookmark className={`w-4 h-4 transition-colors ${isBookmarked ? "fill-amber-400 text-caution-text" : "text-muted"}`} />
-            <span className="text-[11px] truncate">{isBookmarked ? "نشان‌شده" : "نشان"}</span>
+            <Bookmark aria-hidden="true" className={`w-5 h-5 transition-colors ${isBookmarked ? "fill-amber-400 text-amber-400" : "text-slate-200"}`} />
           </button>
 
-          {/* Copy Button (75% width) */}
+          {/* Copy remains the primary action. */}
           <button
             onClick={async () => {
               if (!await copyPromptText(renderedBody)) return;
@@ -1134,7 +1136,7 @@ export default function PromptDetail() {
               setMobileCopied(true);
               setTimeout(() => setMobileCopied(false), 2000);
             }}
-            className="w-3/4 h-14 flex items-center justify-center gap-2 py-3 bg-brand-solid hover:bg-brand-solid text-white rounded-xl shadow-lg shadow-brand/30 active:scale-95 transition-all text-sm font-black cursor-pointer"
+            className="flex-1 min-w-0 h-14 flex items-center justify-center gap-2 py-3 bg-brand-solid hover:bg-brand-solid text-white rounded-xl shadow-lg shadow-brand/30 active:scale-95 transition-all text-sm font-black cursor-pointer"
           >
             {mobileCopied ? (
               <>
