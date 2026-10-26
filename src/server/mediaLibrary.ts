@@ -16,7 +16,7 @@ export async function encodeMedia(buffer: Buffer) {
         throw new Error('تصویر معتبر PNG، JPEG، WebP یا SVG تا ابعاد ۸۰۰۰ لازم است.');
     return image.resize({ width: 2400, height: 2400, fit: 'inside', withoutEnlargement: m.format !== 'svg' }).webp({ quality: 88 }).toBuffer();
 }
-export function registerMediaLibrary(app: Express, manager: RequestHandler, upload: ReturnType<typeof multer>, repo: IPromptRepository, settings: () => any) {
+export function registerMediaLibrary(app: Express, manager: RequestHandler, upload: ReturnType<typeof multer>, repo: IPromptRepository, settings: () => any, extraReferences:()=>Promise<{url:string;public:boolean;label:string}[]> = async()=>[]) {
     const root = path.join(process.cwd(), 'dl');
     const clean = (url: string) => url.split('?')[0];
     async function inventory() {
@@ -28,6 +28,7 @@ export function registerMediaLibrary(app: Express, manager: RequestHandler, uplo
         for (const chip of Array.isArray(s.homepageChips) ? s.homepageChips : [])
             if (typeof chip.icon === 'string' && chip.icon)
                 refs.push({ url: clean(chip.icon), public: !!chip.enabled, label:chip.title||'سناریوی هوم‌پیج' });
+        refs.push(...(await extraReferences()).map(ref=>({...ref,url:clean(ref.url)})));
         const items: {
             url: string;
             name: string;

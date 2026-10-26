@@ -118,7 +118,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         if (data.siteTitle) {
           setSiteTitleState(data.siteTitle);
-          document.title = data.siteTitle;
         }
       }
       const resConf = await fetch("/api/config");
@@ -342,7 +341,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const setSiteTitle = (title: string) => {
     setSiteTitleState(title);
-    document.title = title;
   };
 
   const updateProfile = async (name: string, email?: string): Promise<{ success: boolean; message?: string; user?: User }> => {

@@ -243,7 +243,7 @@ export default function PromptCard({ prompt, isInitiallyBookmarked, variant = "g
   return (
     <div
       id={`prompt-card-${cardId}`}
-      className="bg-surface rounded-xl overflow-hidden border border-line hover:border-line transition-all duration-300 hover:shadow-md flex flex-col h-full group"
+      className="relative isolate bg-surface rounded-xl overflow-hidden border border-line hover:border-line transition-all duration-300 hover:shadow-md flex flex-col h-full group"
     >
       <div role="status" aria-live="polite" className={feedback ? "bg-surface-elevated text-primary px-3 py-2 text-xs font-bold border-b border-line" : "sr-only"}>{feedback}</div>
       {/* Sample Image */}

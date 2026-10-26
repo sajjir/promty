@@ -1,3 +1,4 @@
+import RelatedBlogPosts from '../components/RelatedBlogPosts';
 import { promptImageAlt } from '../lib/promptImages';
 import { getUseCase, resourceTypes, outputLabels, useCasePath } from "../lib/archiveCatalog";
 import Loader from "../components/Loader";
@@ -1059,6 +1060,7 @@ export default function PromptDetail() {
       </div>
 
       {prompt.useCase&&<nav aria-label="آرشیو همین کاربرد"><Link to={`/use-case/${encodeURIComponent(prompt.useCase)}`} className="inline-flex text-brand text-sm underline">همهٔ پرامپت‌های {getUseCase(prompt.useCase)?.title||'همین کاربرد'} ←</Link></nav>}
+      <RelatedBlogPosts promptId={prompt.id}/>
       {/* Related Prompts Grid Section */}
       {relatedPrompts.length > 0 && (
         <section className="space-y-4 pt-4 border-t border-line">

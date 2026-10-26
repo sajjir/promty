@@ -22,6 +22,8 @@ import { motion, AnimatePresence } from "motion/react";
 import LogoAppearanceControls from '../components/LogoAppearanceControls';
 import { getLogoAppearanceError, normalizeLogoAppearance, type LogoAppearance } from '../lib/logoAppearance';
 
+const AdminBlogManager=React.lazy(()=>import('../components/AdminBlogManager'));
+
 interface TaxonomyTerm {
   id: string;
   type: "intent" | "domain" | "tool" | "language" | "difficulty" | "outputFormat" | "fieldType";
@@ -63,7 +65,7 @@ export default function AdminDashboard() {
   useEffect(() => { setPromptPage(p => Math.min(p, Math.max(1, Math.ceil(prompts.length / 20)))); }, [prompts.length]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"prompts" | "taxonomies" | "graph" | "branding" | "ai" | "roles">("prompts");
+  const [activeTab, setActiveTab] = useState<"prompts" | "taxonomies" | "graph" | "branding" | "ai" | "roles" | "blog">("prompts");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Users & Role Delegation states
@@ -901,6 +903,7 @@ export default function AdminDashboard() {
 
       {/* Navigation Command Center Tabs */}
       <div className="flex border-b border-line gap-1 overflow-x-auto pb-0.5">
+        <button onClick={()=>setActiveTab("blog")} className={`px-4 py-3 text-sm font-bold border-b-2 shrink-0 ${activeTab==="blog"?"border-brand text-brand bg-brand-soft":"border-transparent text-muted"}`}>مدیریت بلاگ و آموزش</button>
         <button
           onClick={() => setActiveTab("prompts")}
           className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold transition-all border-b-2 rounded-t-xl shrink-0 cursor-pointer ${
@@ -985,6 +988,7 @@ export default function AdminDashboard() {
       {/* Main Tab Contents */}
       <div className="bg-surface border border-line rounded-3xl p-6 shadow-sm">
         <AnimatePresence mode="wait">
+          {activeTab==="blog"&&<div key="blog-tab"><React.Suspense fallback={<p role="status">در حال دریافت مدیریت آموزش…</p>}><AdminBlogManager/></React.Suspense></div>}
 
           {/* TAB 1: Prompts Listing */}
           {activeTab === "prompts" && (

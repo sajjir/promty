@@ -36,6 +36,7 @@ model Prompt {
   forkedFromId  String?
   forkedFrom    Prompt?  @relation("PromptForks", fields: [forkedFromId], references: [id])
   forks         Prompt[] @relation("PromptForks")
+  blogLinks     BlogPostPrompt[]
   savedBy       SavedPrompt[]
   presets       PromptPreset[]
 
@@ -142,3 +143,36 @@ model PromptPreset {
   updatedAt DateTime @updatedAt
 }
 
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}
+model BlogPost {
+ id String @id @default(cuid())
+ slug String @unique
+ title String
+ excerpt String
+ contentMd String @db.Text
+ authorName String @default("تحریریه پرامپتی")
+ category String @default("راهنما")
+ coverImage String?
+ coverImageAlt String?
+ deletedAt DateTime?
+ status PostStatus @default(DRAFT)
+ publishedAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ promptLinks BlogPostPrompt[]
+ @@index([status,publishedAt])
+ @@index([deletedAt])
+}
+model BlogPostPrompt {
+ postId String
+ promptId String
+ sortOrder Int @default(0)
+ post BlogPost @relation(fields:[postId],references:[id],onDelete:Cascade)
+ prompt Prompt @relation(fields:[promptId],references:[id],onDelete:Cascade)
+ @@id([postId,promptId])
+ @@index([promptId])
+}
