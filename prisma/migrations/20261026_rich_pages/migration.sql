@@ -1,0 +1,6 @@
+ALTER TABLE "BlogPost" ADD COLUMN "contentFormat" TEXT NOT NULL DEFAULT 'markdown';
+CREATE TABLE "SitePage" (
+ "slug" TEXT PRIMARY KEY, "title" TEXT NOT NULL, "excerpt" TEXT NOT NULL, "contentHtml" TEXT NOT NULL,
+ "status" "PostStatus" NOT NULL DEFAULT 'DRAFT', "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ "updatedAt" TIMESTAMP(3) NOT NULL
+);

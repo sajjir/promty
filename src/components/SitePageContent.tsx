@@ -1,0 +1,4 @@
+import React from 'react';
+import type {SitePage} from '../lib/sitePages';
+import {parseArticleContent} from '../lib/richContent';
+export default function SitePageContent({page,preview=false}:{page:SitePage;preview?:boolean}){const content=parseArticleContent(page.contentHtml,'html');return <article className="trust-page" dir="rtl"><nav className="trust-breadcrumb" aria-label="مسیر صفحه"><a href="/">خانه</a><span>/</span><span aria-current="page">{page.title}</span></nav><header className="trust-page-header"><h1>{page.title}</h1><p>{page.excerpt}</p></header>{preview&&<p className="blog-preview-note">پیش‌نمایش مدیر؛ برای اعمال روی سایت ذخیره کنید.</p>}<div className="blog-prose">{content.blocks.map((b,i)=>b.kind==='html'?<div key={i} dangerouslySetInnerHTML={{__html:b.html}}/>:null)}</div><nav className="trust-page-related"><a href="/">آرشیو پرامپت‌ها</a><a href="/blog">بلاگ و آموزش</a><a href="/contact">ارتباط با پرامپتی</a></nav></article>;}

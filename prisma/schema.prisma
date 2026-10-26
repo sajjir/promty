@@ -154,6 +154,7 @@ model BlogPost {
  title String
  excerpt String
  contentMd String @db.Text
+ contentFormat String @default("markdown")
  authorName String @default("تحریریه پرامپتی")
  category String @default("راهنما")
  coverImage String?
@@ -175,4 +176,14 @@ model BlogPostPrompt {
  prompt Prompt @relation(fields:[promptId],references:[id],onDelete:Cascade)
  @@id([postId,promptId])
  @@index([promptId])
+}
+
+model SitePage {
+ slug String @id
+ title String
+ excerpt String
+ contentHtml String @db.Text
+ status PostStatus @default(DRAFT)
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
 }

@@ -1,10 +1,10 @@
 import React from 'react';
-import {parseSafeMarkdown} from '../lib/safeMarkdown';
+import {parseArticleContent} from '../lib/richContent';
 import {blogHref,type BlogPost,type BlogSummary,type BlogPrompt} from '../lib/blogTypes';
 import {blogDate,BlogPromptCard} from './BlogCards';
 export {BlogCards,BlogIndexContent,RelatedArticles} from './BlogCards';
 export default function BlogArticle({post,preview=false}:{post:BlogPost;preview?:boolean}){
- const parsed=parseSafeMarkdown(post.contentMd);const available=new Map(post.prompts.filter(p=>p.isActive||preview).map(p=>[p.id,p]));
+ const parsed=parseArticleContent(post.contentMd,post.contentFormat);const available=new Map(post.prompts.filter(p=>p.isActive||preview).map(p=>[p.id,p]));
  return <article className="blog-article" dir="rtl"><nav className="trust-breadcrumb" aria-label="مسیر صفحه"><a href="/">خانه</a><span>/</span><a href="/blog">بلاگ و آموزش</a><span>/</span><span aria-current="page">{post.title}</span></nav>
  {preview&&<p className="blog-preview-note">پیش‌نمایش مدیر — این نمایش به معنی انتشار مقاله نیست.</p>}
  <header className="trust-page-header"><span className="blog-category">{post.category}</span><h1>{post.title}</h1><p>{post.excerpt}</p><div className="blog-meta"><span>نویسنده: {post.authorName}</span>{post.publishedAt&&<time dateTime={post.publishedAt}>انتشار: {blogDate(post.publishedAt)}</time>}{post.publishedAt&&<time dateTime={post.updatedAt}>به‌روزرسانی: {blogDate(post.updatedAt)}</time>}</div></header>

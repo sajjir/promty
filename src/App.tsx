@@ -1,3 +1,5 @@
+import './components/rich-editor.css';
+import SitePage from './pages/SitePage';
 import './components/menu-style-link.css';
 import NotFoundPage from './pages/NotFoundPage';
 import './components/not-found.css';
@@ -37,6 +39,7 @@ function AppContent() {
       <main id="main-content" tabIndex={-1} className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-8">
         {missing?<NotFoundPage/>:<Routes>
           <Route path="/" element={<Homepage />} />
+          <Route path="/pages/:slug" element={<SitePage/>} />
           <Route path="/blog" element={<React.Suspense fallback={<p role="status">در حال دریافت آموزش…</p>}><BlogPages /></React.Suspense>} />
           <Route path="/blog/:slug" element={<React.Suspense fallback={<p role="status">در حال دریافت آموزش…</p>}><BlogPages /></React.Suspense>} />
           <Route path="/guide" element={<TrustPage path="/guide" />} />

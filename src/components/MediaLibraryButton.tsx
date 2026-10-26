@@ -9,17 +9,17 @@ type Item = {
     uses: number;
     createdAt: string;
 };
-function Thumbnail({ url, name, token }: {
+function Thumbnail({ url, name, sessionKey }: {
     url: string;
     name: string;
-    token: string | null;
+    sessionKey: string | null;
 }) {
     const [src, setSrc] = useState('');
-    useEffect(() => { const controller = new AbortController(); let blobUrl = ''; void fetch('/api/admin/media/file?url=' + encodeURIComponent(url), { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal }).then(r => r.ok ? r.blob() : Promise.reject()).then(blob => { if (!controller.signal.aborted) {
+    useEffect(() => { const controller = new AbortController(); let blobUrl = ''; void fetch('/api/admin/media/file?url=' + encodeURIComponent(url), { headers: {  }, signal: controller.signal }).then(r => r.ok ? r.blob() : Promise.reject()).then(blob => { if (!controller.signal.aborted) {
         blobUrl = URL.createObjectURL(blob);
         setSrc(blobUrl);
     } }).catch(() => { }); return () => { controller.abort(); if (blobUrl)
-        URL.revokeObjectURL(blobUrl); }; }, [url, token]);
+        URL.revokeObjectURL(blobUrl); }; }, [url, sessionKey]);
     return src ? <img src={src} alt={name} className="w-full h-24 object-contain rounded-lg bg-surface-soft"/> : <span className="flex h-24 items-center justify-center text-[10px] text-muted">در حال دریافت تصویر…</span>;
 }
 export default function MediaLibraryButton({ onSelect, multiple = false, label = 'انتخاب از کتابخانه' }: {
@@ -27,7 +27,7 @@ export default function MediaLibraryButton({ onSelect, multiple = false, label =
     multiple?: boolean;
     label?: string;
 }) {
-    const { token } = useAuth();
+    const { user } = useAuth();const sessionKey=user?.id||null;
     const dialog = useRef<HTMLDialogElement>(null);
     const [open, setOpen] = useState(false);
     const [items, setItems] = useState<Item[]>([]);
@@ -35,7 +35,7 @@ export default function MediaLibraryButton({ onSelect, multiple = false, label =
     const [query, setQuery] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
-    const headers = { Authorization: `Bearer ${token}` };
+    const headers = {  };
     const load = async () => { const res = await fetch('/api/admin/media', { headers }); const data = await res.json(); if (!res.ok)
         throw Error('دریافت کتابخانه انجام نشد.'); setItems(data.items); };
     useEffect(() => { if (!open)
@@ -100,7 +100,7 @@ export default function MediaLibraryButton({ onSelect, multiple = false, label =
   <p className="text-xs text-muted">تصاویر همهٔ ادمین‌ها؛ انتخاب تصویر آن را در فرم قرار می‌دهد و با ذخیرهٔ فرم اعمال می‌شود. SVG امن هنگام آپلود به WebP تبدیل می‌شود.</p>
   <div className="flex flex-wrap gap-3"><input aria-label="جستجوی رسانه" value={query} onChange={e => setQuery(e.target.value)} placeholder="جستجو در نام فایل‌ها" className="border border-line bg-surface-soft rounded-xl p-3 text-sm flex-1 min-w-0"/><label className="cursor-pointer rounded-xl bg-brand-solid text-white p-3 text-xs">آپلود تصویر جدید<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" disabled={busy} className="sr-only" onChange={e => { void upload(e.target.files?.[0]); e.target.value = ''; }}/></label></div>
   {error && <p role="alert" className="text-danger-text text-sm">{error}</p>}
-  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[50dvh] overflow-y-auto">{items.filter(x => x.name.includes(query)).map(item => <div key={item.url} className={`border rounded-xl p-2 ${selected.includes(item.url) ? 'border-brand bg-brand-soft' : 'border-line'}`}><button type="button" disabled={busy} aria-pressed={selected.includes(item.url)} className="w-full text-right" onClick={() => setSelected(old => old.includes(item.url) ? old.filter(x => x !== item.url) : multiple ? [...old, item.url] : [item.url])}><Thumbnail url={item.url} name={item.name} token={token}/><span className="block text-[10px] truncate my-2" dir="ltr">{item.name}</span></button><div className="text-[10px] text-muted flex justify-between items-center"><span>{item.uses} محل استفاده</span><button type="button" disabled={busy || item.uses > 0 || item.url === '/dl/brand/logo.webp'} onClick={() => void remove(item)} className="text-danger-text disabled:opacity-40 px-2 min-h-9">حذف</button></div></div>)}</div>
+  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[50dvh] overflow-y-auto">{items.filter(x => x.name.includes(query)).map(item => <div key={item.url} className={`border rounded-xl p-2 ${selected.includes(item.url) ? 'border-brand bg-brand-soft' : 'border-line'}`}><button type="button" disabled={busy} aria-pressed={selected.includes(item.url)} className="w-full text-right" onClick={() => setSelected(old => old.includes(item.url) ? old.filter(x => x !== item.url) : multiple ? [...old, item.url] : [item.url])}><Thumbnail url={item.url} name={item.name} sessionKey={sessionKey}/><span className="block text-[10px] truncate my-2" dir="ltr">{item.name}</span></button><div className="text-[10px] text-muted flex justify-between items-center"><span>{item.uses} محل استفاده</span><button type="button" disabled={busy || item.uses > 0 || item.url === '/dl/brand/logo.webp'} onClick={() => void remove(item)} className="text-danger-text disabled:opacity-40 px-2 min-h-9">حذف</button></div></div>)}</div>
   {!items.length && <p className="text-sm text-muted">هنوز تصویری در کتابخانه نیست.</p>}
   <div className="flex justify-end gap-3"><button type="button" onClick={() => setOpen(false)} className="border border-line rounded-xl px-4 py-3 text-xs">انصراف</button><button type="button" disabled={busy || !selected.length} onClick={() => void apply()} className="bg-brand-solid text-white rounded-xl px-4 py-3 text-xs disabled:opacity-40">{busy ? 'در حال انجام…' : `انتخاب (${selected.length})`}</button></div></div>
  </dialog>, document.body)}</>;

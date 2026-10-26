@@ -1,3 +1,5 @@
+import {PrismaPageRepository} from './src/server/sitePageRepository';
+import {registerPageRoutes} from './src/server/sitePageRoutes';
 import {homepageChipCounts} from './src/server/homepageChipCounts';
 import {PrismaBlogRepository} from './src/server/blogRepository';
 import {registerBlogRoutes} from './src/server/blogRoutes';
@@ -57,6 +59,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 let prisma: PrismaClient | null = null;
 let blogRepo:PrismaBlogRepository|null=null;
+let pageRepo:PrismaPageRepository|null=null;
 let promptRepo: IPromptRepository;
 let taxonomyRepo: ITaxonomyRepository;
 let relationshipRepo: IRelationshipRepository;
@@ -471,6 +474,7 @@ async function startServer() {
       await prisma.$connect();
       promptRepo = new PrismaPromptRepository(prisma);
       blogRepo = new PrismaBlogRepository(prisma);
+      pageRepo = new PrismaPageRepository(prisma);
       taxonomyRepo = new PrismaTaxonomyRepository(prisma);
       relationshipRepo = new PrismaRelationshipRepository(prisma);
       console.log("[DB] Using Prisma database backend.");
@@ -529,7 +533,7 @@ async function startServer() {
     if (operationalProduction) {
       const nonce = crypto.randomBytes(18).toString("base64");
       res.locals.cspNonce = nonce;
-      res.setHeader("Content-Security-Policy", `default-src 'self'; script-src 'self' 'nonce-${nonce}' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'`);
+      res.setHeader("Content-Security-Policy", `default-src 'self'; script-src 'self' 'nonce-${nonce}' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com https://www.youtube-nocookie.com https://www.aparat.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'`);
     }
     if (req.path.startsWith("/api")) res.setHeader("Cache-Control", "no-store");
     if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
@@ -583,7 +587,8 @@ async function startServer() {
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 6, fields: 2, parts: 8 } });
 
   registerBlogRoutes(app,blogRepo,requireManager);
-  const mediaLibrary = registerMediaLibrary(app, requireManager, upload, promptRepo, () => readDB().settings || {}, () => blogRepo ? blogRepo.mediaReferences() : Promise.resolve([]));
+  registerPageRoutes(app,pageRepo,requireManager);
+  const mediaLibrary = registerMediaLibrary(app, requireManager, upload, promptRepo, () => readDB().settings || {}, async () => [...(blogRepo?await blogRepo.mediaReferences():[]),...(pageRepo?await pageRepo.mediaReferences():[])]);
 
   // API - Process and upload media cover/gallery
   app.post("/api/upload/:promptId", requireManager, async (req, res, next) => {
@@ -2768,10 +2773,10 @@ ${sourceText}
 
   app.get('/api/homepage/chips',async(_req,res)=>{try{const rows=(await promptRepo.getAll({isActive:true})).prompts;const chips=normalizeHomepageChips(readDB().settings?.homepageChips).filter(c=>c.enabled);const counts=homepageChipCounts(rows,chips);res.json({success:true,counts});}catch{res.status(503).json({success:false});}});
   const seoOrigin = new URL(process.env.APP_ORIGIN || 'https://promty.ir').origin;
-  app.get('/api/seo',async(req,res)=>{try{const raw=String(req.query.path||'/');if(raw.length>3000||!raw.startsWith('/')||raw.startsWith('//'))return res.status(400).json({success:false});const page=await buildSeo(promptRepo,raw,seoOrigin,normalizeHomepageSections(readDB().settings?.homepageSections)[0].limit,blogRepo||undefined,normalizeHomepageChips(readDB().settings?.homepageChips));res.json({head:page.head,content:page.content,status:page.status});}catch{res.status(503).json({success:false});}});
+  app.get('/api/seo',async(req,res)=>{try{const raw=String(req.query.path||'/');if(raw.length>3000||!raw.startsWith('/')||raw.startsWith('//'))return res.status(400).json({success:false});const page=await buildSeo(promptRepo,raw,seoOrigin,normalizeHomepageSections(readDB().settings?.homepageSections)[0].limit,blogRepo||undefined,normalizeHomepageChips(readDB().settings?.homepageChips),pageRepo||undefined);res.json({head:page.head,content:page.content,status:page.status});}catch{res.status(503).json({success:false});}});
   app.get('/robots.txt', (_req,res) => res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\nDisallow: /dashboard\nSitemap: ${seoOrigin}/sitemap.xml\n`));
   app.get('/sitemap.xml', async (_req,res) => {
-    try { const {prompts}=await promptRepo.getAll({isActive:true});res.type('application/xml').send(sitemap(prompts,seoOrigin,blogRepo?await blogRepo.sitemapPosts():undefined)); }
+    try { const {prompts}=await promptRepo.getAll({isActive:true});res.type('application/xml').send(sitemap(prompts,seoOrigin,blogRepo?await blogRepo.sitemapPosts():undefined,pageRepo?await pageRepo.sitemapPages():undefined)); }
     catch {res.status(503).type('text/plain').send('Sitemap temporarily unavailable');}
   });
   app.get('/prompt/:id',(req,res)=>res.redirect(301,'/prompts/'+encodeURIComponent(req.params.id)));
@@ -2781,7 +2786,7 @@ ${sourceText}
       const indexPath=path.join(process.cwd(),process.env.NODE_ENV==='production'?'dist/index.html':'index.html');
       if(!fs.existsSync(indexPath))return next();
       const size=normalizeHomepageSections(readDB().settings?.homepageSections)[0].limit;
-      const page=await buildSeo(promptRepo,req.originalUrl,seoOrigin,size,blogRepo||undefined,normalizeHomepageChips(readDB().settings?.homepageChips));
+      const page=await buildSeo(promptRepo,req.originalUrl,seoOrigin,size,blogRepo||undefined,normalizeHomepageChips(readDB().settings?.homepageChips),pageRepo||undefined);
       let html=injectSeo(fs.readFileSync(indexPath,'utf8'),page);
       if(res.locals.cspNonce)html=html.replace(/<script\b/g,`<script nonce="${res.locals.cspNonce}"`);
       res.setHeader('Cache-Control','private, no-store');

@@ -60,5 +60,22 @@ test('PostgreSQL + HTTP: role checks, draft privacy, publish/unpublish, optimist
   const restored=(await(await call('/api/admin/blog',{headers})).json()).data;assert.equal(restored.length,2);assert.ok(restored.every((p:any)=>p.status==='DRAFT'&&!p.deletedAt));
   const first=restored.find((p:any)=>p.id===id);response=await remove({ids:[first.id],revisions:{[first.id]:first.updatedAt}});assert.equal(response.status,200);assert.equal((await response.json()).count,1);
 
+  const pageSave=(body:any,auth:any=headers)=>call('/api/admin/pages/'+body.slug,{method:'PUT',headers:{...auth,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  assert.equal((await call('/api/admin/pages')).status,403);
+  const pageInput={slug:'custom-guide',title:'Custom guide',excerpt:'Description',contentHtml:'<h2>Rich body</h2><p><img src="'+cover+'" alt="Inline"></p><script>bad()</script><iframe src="https://www.youtube.com/embed/abcdefghijk"></iframe>',status:'DRAFT',updatedAt:null};
+  assert.equal((await pageSave(pageInput,reader)).status,403);
+  response=await pageSave(pageInput);assert.equal(response.status,200);let sitePage=(await response.json()).page;
+  assert.equal((await call('/pages/custom-guide')).status,404);assert.equal((await call('/api/pages/custom-guide')).status,404);
+  response=await pageSave({...sitePage,status:'PUBLISHED'});assert.equal(response.status,200);sitePage=(await response.json()).page;
+  assert.ok(!sitePage.contentHtml.includes('<script>'));assert.match(sitePage.contentHtml,/youtube-nocookie/);
+  response=await call('/pages/custom-guide');assert.equal(response.status,200);assert.match(await response.text(),/Rich body/);
+  assert.match(await(await call('/sitemap.xml')).text(),/pages\/custom-guide/);assert.equal((await call(cover)).status,200);
+  assert.equal((await pageSave({...sitePage,updatedAt:'2000-01-01'})).status,409);
+  assert.equal((await call('/api/admin/media?url='+encodeURIComponent(cover),{method:'DELETE',headers})).status,409);
+  response=await pageSave({...sitePage,status:'DRAFT'});assert.equal(response.status,200);assert.equal((await call('/pages/custom-guide')).status,404);assert.equal((await call(cover)).status,404);
+  const rich=await save({...input,slug:'rich-guide',contentFormat:'html',contentMd:'<h2>Rich article</h2><blockquote>Quote</blockquote><p>[prompt:active]</p><iframe src="https://www.aparat.com/video/video/embed/videohash/Ab12C/vt/frame"></iframe><script>bad()</script>',status:'PUBLISHED'});
+  assert.equal(rich.status,201);const richPost=(await rich.json()).post;assert.equal(richPost.contentFormat,'html');assert.ok(!richPost.contentMd.includes('<script>'));
+  const richHtml=await(await call('/blog/rich-guide')).text();assert.match(richHtml,/<blockquote>Quote/);assert.match(richHtml,/aparat.com/);assert.match(richHtml,/href="\/prompts\/active"/);
+
  }finally{child.kill('SIGTERM');if(child.exitCode===null)await new Promise<void>(resolve=>child.once('exit',()=>resolve()));await db.$disconnect();fs.rmSync(dir,{recursive:true,force:true});}
 });

@@ -1,0 +1,35 @@
+import {useEffect,useState} from 'react';
+import {EditorContent,useEditor} from '@tiptap/react';
+import {Node,mergeAttributes} from '@tiptap/core';
+import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
+import TextAlign from '@tiptap/extension-text-align';
+import {TextStyle,Color} from '@tiptap/extension-text-style';
+import {TableKit} from '@tiptap/extension-table';
+import MediaLibraryButton from './MediaLibraryButton';
+import {cleanRichHtml,videoEmbedUrl} from '../lib/richContent';
+import './rich-editor.css';
+const Video=Node.create({name:'videoEmbed',group:'block',atom:true,addAttributes(){return {src:{default:''},title:{default:'ویدیوی آموزشی'}};},parseHTML(){return [{tag:'iframe[src]'}];},renderHTML({HTMLAttributes}){return ['iframe',mergeAttributes(HTMLAttributes,{src:videoEmbedUrl(HTMLAttributes.src)||'',title:HTMLAttributes.title||'ویدیوی آموزشی',width:640,height:360,loading:'lazy',allowfullscreen:'',sandbox:'allow-scripts allow-same-origin allow-presentation',referrerpolicy:'strict-origin-when-cross-origin'})];}});
+export default function RichTextEditor({value,onChange,label='متن محتوا'}:{value:string;onChange:(value:string)=>void;label?:string}){
+ const [mode,setMode]=useState<'visual'|'html'>('visual'),[panel,setPanel]=useState(''),[url,setUrl]=useState(''),[alt,setAlt]=useState(''),[error,setError]=useState('');
+ const editor=useEditor({extensions:[StarterKit.configure({heading:{levels:[2,3,4]},link:{openOnClick:false}}),Image.configure({allowBase64:false}),TextAlign.configure({types:['heading','paragraph']}),TextStyle,Color,TableKit,Video],content:cleanRichHtml(value),shouldRerenderOnTransaction:true,editorProps:{attributes:{dir:'rtl',role:'textbox','aria-label':label,'aria-multiline':'true',class:'rich-prose blog-prose'}},onUpdate:({editor})=>onChange(editor.getHTML())});
+ useEffect(()=>{if(editor&&editor.getHTML()!==value)editor.commands.setContent(cleanRichHtml(value),{emitUpdate:false});},[value,editor]);
+ if(!editor)return <p role="status">در حال آماده‌سازی ویرایشگر…</p>;
+ const tool=(title:string,action:()=>void,active=false)=><button key={title} type="button" title={title} aria-label={title} aria-pressed={active} onMouseDown={e=>e.preventDefault()} onClick={action}>{title}</button>;
+ return <div className="rich-editor"><div className="rich-mode" role="group" aria-label="حالت ویرایشگر"><strong>{label}</strong><button type="button" aria-pressed={mode==='visual'} onClick={()=>{const safe=cleanRichHtml(value);if(safe!==value){onChange(safe);setError('بخش‌های غیرمجاز HTML حذف شدند.');}setMode('visual');}}>دیداری</button><button type="button" aria-pressed={mode==='html'} onClick={()=>setMode('html')}>کد HTML</button></div>
+ {mode==='visual'&&<><div className="rich-toolbar" role="toolbar" aria-label="قالب‌بندی محتوا">
+ <select aria-label="قالب پاراگراف" value={editor.isActive('heading',{level:2})?'h2':editor.isActive('heading',{level:3})?'h3':editor.isActive('heading',{level:4})?'h4':'p'} onChange={e=>e.target.value==='p'?editor.chain().focus().setParagraph().run():editor.chain().focus().toggleHeading({level:Number(e.target.value.slice(1)) as 2|3|4}).run()}><option value="p">پاراگراف</option><option value="h2">عنوان ۲</option><option value="h3">عنوان ۳</option><option value="h4">عنوان ۴</option></select>
+ {tool('پررنگ',()=>editor.chain().focus().toggleBold().run(),editor.isActive('bold'))}{tool('مورب',()=>editor.chain().focus().toggleItalic().run(),editor.isActive('italic'))}{tool('زیرخط',()=>editor.chain().focus().toggleUnderline().run(),editor.isActive('underline'))}{tool('خط‌خورده',()=>editor.chain().focus().toggleStrike().run(),editor.isActive('strike'))}
+ {tool('نقل‌قول',()=>editor.chain().focus().toggleBlockquote().run(),editor.isActive('blockquote'))}{tool('کد',()=>editor.chain().focus().toggleCodeBlock().run(),editor.isActive('codeBlock'))}{tool('فهرست',()=>editor.chain().focus().toggleBulletList().run(),editor.isActive('bulletList'))}{tool('فهرست شماره‌دار',()=>editor.chain().focus().toggleOrderedList().run(),editor.isActive('orderedList'))}
+ {(['right','center','left','justify'] as const).map((align,i)=>tool(['راست‌چین','وسط‌چین','چپ‌چین','تراز متن'][i],()=>editor.chain().focus().setTextAlign(align).run(),editor.isActive({textAlign:align})))}
+ <label className="rich-color">رنگ<input aria-label="رنگ متن" type="color" value={editor.getAttributes('textStyle').color||'#6c47ff'} onChange={e=>editor.chain().focus().setColor(e.target.value).run()}/></label>
+ {tool('پیوند',()=>{setPanel(panel==='link'?'':'link');setUrl(editor.getAttributes('link').href||'');setError('');})}{tool('حذف پیوند',()=>editor.chain().focus().unsetLink().run())}{tool('تصویر',()=>{setPanel(panel==='image'?'':'image');setError('');})}{tool('ویدیو',()=>{setPanel(panel==='video'?'':'video');setUrl('');setError('');})}
+ {tool('جدول',()=>editor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:true}).run())}{editor.isActive('table')&&<>{tool('افزودن ردیف',()=>editor.chain().focus().addRowAfter().run())}{tool('افزودن ستون',()=>editor.chain().focus().addColumnAfter().run())}{tool('حذف جدول',()=>editor.chain().focus().deleteTable().run())}</>}
+ {tool('خط جداکننده',()=>editor.chain().focus().setHorizontalRule().run())}{tool('پاک‌کردن قالب',()=>editor.chain().focus().unsetAllMarks().clearNodes().run())}{tool('برگردان',()=>editor.chain().focus().undo().run())}{tool('انجام دوباره',()=>editor.chain().focus().redo().run())}
+ </div>
+ {panel&&<div className="rich-insert">{panel==='image'?<><label>توضیح تصویر (Alt)<input value={alt} onChange={e=>setAlt(e.target.value)} placeholder="تصویر چه چیزی را نشان می‌دهد؟"/></label><MediaLibraryButton label="بارگذاری / انتخاب تصویر میان متن" onSelect={urls=>{if(!alt.trim()){setError('ابتدا توضیح تصویر را وارد کنید.');return;}if(urls[0])editor.chain().focus().setImage({src:urls[0],alt:alt.trim()}).run();setPanel('');}}/></>:<><label>{panel==='video'?'لینک یوتیوب/آپارات یا کد iframe آن':'آدرس پیوند'}<input dir="ltr" value={url} onChange={e=>setUrl(e.target.value)}/></label><button type="button" onClick={()=>{if(panel==='link'){if(!/^(https?:\/\/|mailto:|\/(?!\/)|#)/i.test(url.trim())){setError('پیوند معتبر وارد کنید.');return;}editor.chain().focus().extendMarkRange('link').setLink({href:url.trim()}).run();}else{const src=videoEmbedUrl(url.match(/src=["']([^"']+)["']/i)?.[1]||url.trim());if(!src){setError('فقط لینک ویدیوی یوتیوب یا آپارات معتبر است.');return;}editor.chain().focus().insertContent({type:'videoEmbed',attrs:{src}}).run();}setPanel('');setError('');}}>درج</button></>}<button type="button" onClick={()=>setPanel('')}>بستن</button></div>}
+ <EditorContent editor={editor}/></>}
+ {mode==='html'&&<textarea className="rich-source" aria-label="کد HTML محتوا" dir="ltr" rows={18} maxLength={80000} value={value} onChange={e=>onChange(e.target.value)}/>}
+ {error&&<p role="status" className="text-sm text-muted">{error}</p>}<p className="rich-help">تصویر در محل نشانگر درج می‌شود. HTML هنگام ذخیره پاک‌سازی می‌شود؛ اسکریپت و iframe ناشناس پذیرفته نیست.</p>
+ </div>;
+}

@@ -1,6 +1,7 @@
 import {PrismaClient} from '@prisma/client';
 import type {BlogPost,BlogSummary,BlogRepository} from '../lib/blogTypes';
-import {parseSafeMarkdown,safeContentUrl} from '../lib/safeMarkdown';
+import {safeContentUrl} from '../lib/safeMarkdown';
+import {parseArticleContent,cleanRichHtml} from '../lib/richContent';
 export class BlogError extends Error{constructor(message:string,public status=400){super(message);}}
 const publicWhere=()=>({deletedAt:null,status:'PUBLISHED' as const,publishedAt:{lte:new Date()}});
 const summarySelect={deletedAt:true,id:true,slug:true,title:true,excerpt:true,authorName:true,category:true,coverImage:true,coverImageAlt:true,status:true,publishedAt:true,createdAt:true,updatedAt:true};
@@ -17,10 +18,12 @@ export function validateBlogInput(raw:any){
  const coverImageAlt=typeof raw.coverImageAlt==='string'?raw.coverImageAlt.trim():'';
  if(coverImageAlt.length>300||coverImage&&!coverImageAlt)throw new BlogError('برای تصویر، متن جایگزین توصیفی وارد کنید.');
  if(!Array.isArray(raw.relatedPromptIds)||raw.relatedPromptIds.length>30||raw.relatedPromptIds.some((x:any)=>typeof x!=='string'||!/^[a-zA-Z0-9_-]{1,100}$/.test(x)))throw new BlogError('پرامپت‌های مرتبط معتبر نیستند.');
- const parsed=parseSafeMarkdown(contentMd);if(parsed.promptIds.length>20)throw new BlogError('حداکثر ۲۰ کارت در متن مجاز است.');
+ const contentFormat=raw.contentFormat===undefined?'markdown':raw.contentFormat;if(!['markdown','html'].includes(contentFormat))throw new BlogError('قالب محتوا معتبر نیست.');
+ const storedContent=contentFormat==='html'?cleanRichHtml(contentMd):contentMd;
+ const parsed=parseArticleContent(storedContent,contentFormat);if(parsed.promptIds.length>20)throw new BlogError('حداکثر ۲۰ کارت در متن مجاز است.');
  const relatedPromptIds=[...new Set<string>([...raw.relatedPromptIds,...parsed.promptIds])];
  if(relatedPromptIds.length>30)throw new BlogError('حداکثر ۳۰ پرامپت مرتبط مجاز است.');
- return {slug,title,excerpt,contentMd,authorName,category,coverImage:coverImage||null,coverImageAlt:coverImageAlt||null,status:raw.status as 'DRAFT'|'PUBLISHED',relatedPromptIds};
+ return {slug,title,excerpt,contentMd:storedContent,contentFormat,authorName,category,coverImage:coverImage||null,coverImageAlt:coverImageAlt||null,status:raw.status as 'DRAFT'|'PUBLISHED',relatedPromptIds};
 }
 export class PrismaBlogRepository implements BlogRepository {
  constructor(private db:PrismaClient){}
@@ -61,6 +64,6 @@ export class PrismaBlogRepository implements BlogRepository {
    return {count:result.count};
   });
  }
- async mediaReferences(){const rows=await this.db.blogPost.findMany({select:{deletedAt:true,title:true,coverImage:true,contentMd:true,status:true,publishedAt:true}});return rows.flatMap(p=>[p.coverImage,...parseSafeMarkdown(p.contentMd).imageUrls].filter((url):url is string=>!!url).map(url=>({url,public:!p.deletedAt&&p.status==='PUBLISHED'&&!!p.publishedAt&&p.publishedAt<=new Date(),label:p.title})));}
+ async mediaReferences(){const rows=await this.db.blogPost.findMany({select:{deletedAt:true,title:true,coverImage:true,contentMd:true,contentFormat:true,status:true,publishedAt:true}});return rows.flatMap(p=>[p.coverImage,...parseArticleContent(p.contentMd,p.contentFormat as any).imageUrls].filter((url):url is string=>!!url).map(url=>({url,public:!p.deletedAt&&p.status==='PUBLISHED'&&!!p.publishedAt&&p.publishedAt<=new Date(),label:p.title})));}
  async sitemapPosts(){return serialize(await this.db.blogPost.findMany({where:publicWhere(),select:summarySelect,orderBy:{id:'asc'}}));}
 }

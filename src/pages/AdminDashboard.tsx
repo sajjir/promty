@@ -1,3 +1,4 @@
+import AdminPromptThumbnail from '../components/AdminPromptThumbnail';
 import HomepageChipsControls from '../components/HomepageChipsControls';
 import MediaLibraryButton from '../components/MediaLibraryButton';
 import { getHomepageChipsError, normalizeHomepageChips, type HomepageChip } from '../lib/homepageChips';
@@ -7,7 +8,7 @@ import HomepageSectionsControls from '../components/HomepageSectionsControls';
 import { normalizeHomepageSections, getHomepageSectionsError, type HomepageSection } from '../lib/homepageSections';
 import Loader from "../components/Loader";
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Prompt, Stats } from "../types";
 import { useAuth } from "../components/AuthContext";
 import {
@@ -22,6 +23,7 @@ import { motion, AnimatePresence } from "motion/react";
 import LogoAppearanceControls from '../components/LogoAppearanceControls';
 import { getLogoAppearanceError, normalizeLogoAppearance, type LogoAppearance } from '../lib/logoAppearance';
 
+const AdminPageManager=React.lazy(()=>import('../components/AdminPageManager'));
 const AdminBlogManager=React.lazy(()=>import('../components/AdminBlogManager'));
 
 interface TaxonomyTerm {
@@ -65,6 +67,7 @@ export default function AdminDashboard() {
   useEffect(() => { setPromptPage(p => Math.min(p, Math.max(1, Math.ceil(prompts.length / 20)))); }, [prompts.length]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [adminParams]=useSearchParams();
   const [activeTab, setActiveTab] = useState<"prompts" | "taxonomies" | "graph" | "branding" | "ai" | "roles" | "blog">("prompts");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -92,7 +95,7 @@ export default function AdminDashboard() {
   const [promptCardTemplate, setPromptCardTemplate] = useState<PromptCardTemplate>(() => normalizePromptCardTemplate());
   const [homepageSections, setHomepageSections] = useState<HomepageSection[]>(() => normalizeHomepageSections());
 
-  const [brandingPanel,setBrandingPanel] = useState<'appearance'|'homepage'>('appearance');
+  const [brandingPanel,setBrandingPanel] = useState<'appearance'|'homepage'|'pages'>('appearance');
   const [homepageChips,setHomepageChips] = useState<HomepageChip[]>(()=>normalizeHomepageChips());
 
   // Dedicated Branding state
@@ -105,6 +108,7 @@ export default function AdminDashboard() {
   const [siteLogoLocal, setSiteLogoLocal] = useState("");
   const [logoAppearanceLocal, setLogoAppearanceLocal] = useState<LogoAppearance>(() => normalizeLogoAppearance());
   const [logoUploading, setLogoUploading] = useState(false);
+  useEffect(()=>{const tab=adminParams.get('tab');if(tab==='blog')setActiveTab('blog');if(tab==='pages'){setActiveTab('branding');setBrandingPanel('pages');}},[adminParams.toString()]);
   const [brandingLoading, setBrandingLoading] = useState(false);
   const [brandingSuccess, setBrandingSuccess] = useState<string | null>(null);
   const [brandingError, setBrandingError] = useState<string | null>(null);
@@ -1031,7 +1035,7 @@ export default function AdminDashboard() {
                         <tr key={p.id} className="hover:bg-surface-soft transition duration-150">
                           <td className="px-6 py-4 font-bold text-primary max-w-sm">
                             <div className="flex items-center gap-2">
-                              <span className="truncate max-w-[200px]">{p.title}</span>
+                              <AdminPromptThumbnail prompt={p}/><span className="truncate max-w-[200px]">{p.title}</span>
                               {p.id.startsWith("p_contrib_") && !p.isActive && (
                                 <span className="bg-caution-soft text-caution-text text-[10px] font-black px-2 py-0.5 rounded-full border border-caution-text animate-pulse shrink-0">
                                   مشارکت در انتظار تایید 📬
@@ -1551,7 +1555,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2" role="tablist" aria-label="تنظیمات ظاهر"><button type="button" role="tab" aria-selected={brandingPanel==='appearance'} className="rounded-xl border border-line px-4 py-3 text-sm aria-selected:bg-brand-soft aria-selected:text-brand" onClick={()=>setBrandingPanel('appearance')}>هویت و ظاهر</button><button type="button" role="tab" aria-selected={brandingPanel==='homepage'} className="rounded-xl border border-line px-4 py-3 text-sm aria-selected:bg-brand-soft aria-selected:text-brand" onClick={()=>setBrandingPanel('homepage')}>هوم‌پیج و سناریوها</button></div>
+              <div className="flex flex-wrap gap-2" role="tablist" aria-label="تنظیمات ظاهر"><button type="button" role="tab" aria-selected={brandingPanel==='appearance'} className="rounded-xl border border-line px-4 py-3 text-sm aria-selected:bg-brand-soft aria-selected:text-brand" onClick={()=>setBrandingPanel('appearance')}>هویت و ظاهر</button><button type="button" role="tab" aria-selected={brandingPanel==='homepage'} className="rounded-xl border border-line px-4 py-3 text-sm aria-selected:bg-brand-soft aria-selected:text-brand" onClick={()=>setBrandingPanel('homepage')}>هوم‌پیج و سناریوها</button><button type="button" role="tab" aria-selected={brandingPanel==='pages'} className="rounded-xl border border-line px-4 py-3 text-sm aria-selected:bg-brand-soft aria-selected:text-brand" onClick={()=>setBrandingPanel('pages')}>برگه‌ها</button></div>
+ {brandingPanel==='pages'&&<React.Suspense fallback={<p>در حال دریافت برگه‌ها…</p>}><AdminPageManager/></React.Suspense>}
               <div hidden={brandingPanel!=='appearance'}>
               {/* Logo Upload & Preview Card */}
               <div className="bg-surface-soft/70 border border-line/80 rounded-2xl p-5 space-y-4">
@@ -1615,7 +1620,7 @@ export default function AdminDashboard() {
 
               </div>
               {/* Branding Text Fields */}
-              <form onSubmit={handleSaveBranding} className="space-y-5">
+              <form hidden={brandingPanel==='pages'} onSubmit={handleSaveBranding} className="space-y-5">
                 <div hidden={brandingPanel!=='appearance'} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">

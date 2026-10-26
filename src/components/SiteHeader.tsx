@@ -1,3 +1,4 @@
+import AdminShortcuts from './AdminShortcuts';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, TrendingUp, FileText, WandSparkles, Bot, Bookmark, Home, LayoutDashboard, LogIn } from 'lucide-react';
@@ -50,6 +51,7 @@ export default function SiteHeader() {
           <BrandLogo src={branding.siteLogo} appearance={branding.logoAppearance} />
           <span className="min-w-0"><span className="brand-title block text-base font-extrabold"><span className="brand-actual-text block truncate">{siteTitle}</span><span aria-hidden="true" className="brand-hover-text block truncate">{siteTitle}</span></span><span className="hidden max-w-[240px] truncate text-[11px] text-muted lg:block">{branding.siteSubtitle || 'ایده‌های بهتر، با پرامپت‌های بهتر'}</span></span>
         </Link>
+        <AdminShortcuts/>
         <div className="flex shrink-0 items-center gap-2">
           {user ? <UserMenu user={{name:displayName,email:user.email || user.phone || '',avatarSrc:user.avatar || undefined,plan:role}}
             showName theme={theme} onThemeChange={setTheme} open={accountOpen}

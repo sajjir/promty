@@ -6,6 +6,7 @@ import { normalizeLogoAppearance, type LogoAppearance } from '../lib/logoAppeara
 
 export interface User {
   id: string;
+  createdAt?: string;
   email?: string | null;
   phone?: string | null;
   name?: string | null;
