@@ -1,0 +1,36 @@
+{
+  "status": "proposed-not-applied",
+  "date": "2026-10-26",
+  "workflowId": "93Uq9lGFxbSJMGoY",
+  "liveBaseline": {
+    "result": "failed-before-model",
+    "durationSeconds": 5.804,
+    "failedNode": "Read Terms",
+    "reason": "Google Sheets credential requires reconnect"
+  },
+  "modelBenchmark": null,
+  "manualReference": "fixtures/cartoon-reference.json",
+  "independentTests": {
+    "focusedPassed": 4,
+    "suitePassed": 69,
+    "suiteSkipped": 1,
+    "suiteFailed": 0,
+    "typecheck": "passed",
+    "suiteCommand": "node --import tsx --test tests/*.test.ts tests/*.test.tsx"
+  },
+  "hashes": {
+    "system-message.txt": "79915aa1cba843f7290fb453f7f780e55b033a7cc2523dc201c9f05b7a94bcf3",
+    "user-message.txt": "f68c438821b1d2bb2c153d9d85f3b00ef5153bff71b2f23fdee0b8b40fa27424",
+    "runtime-helpers.js": "2375dbde95ac41b11a43201e1e26c3c9db4ca53a02b50296325c9da2918dfcf3",
+    "output-schema.js": "b16f0580f8b6bbb6572dd6b3e728d2fb61be5a2be9007292aad54353cf36833e",
+    "Promty-Quality-Redacted-Template.json": "2ab9123cafe3a1eed4546551da9ad4a7a29436515f766a0eb602e053efe63bef"
+  },
+  "localPreview": {
+    "frontendStatus": 200,
+    "authenticatedSettingsStatus": 200,
+    "analyzeTimeoutSeconds": 45,
+    "build": "passed",
+    "apiRestart": "passed",
+    "workflowEndpointUnchanged": true
+  }
+}

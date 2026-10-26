@@ -1,0 +1,111 @@
+{
+  "title": "تبدیل عکس به تصویرسازی کارتونی پاستلی",
+  "description": "نمونهٔ مرجع دستی برای آزمون قرارداد؛ خروجی مدل جدید نیست.",
+  "useCase": "vis-09",
+  "relatedUseCases": [],
+  "resourceType": "prompt",
+  "intent": "visual-generation",
+  "domains": [
+    "design"
+  ],
+  "tools": [],
+  "task": "تبدیل عکس به کارتون دوبعدی",
+  "language": "english",
+  "difficulty": "beginner",
+  "outputFormats": [
+    "image"
+  ],
+  "tags": [
+    "کارتون",
+    "تصویر مرجع"
+  ],
+  "requiresReferenceImage": true,
+  "body": "PROMPT:\nConvert the entire uploaded photograph into a clean, colorful, hand-drawn 2D cartoon illustration. Preserve the original composition, camera angle, poses, facial expressions, recognizable identities, hairstyles, clothing, accessories, and all important background elements.\n\nILLUSTRATION STYLE:\n•Clean black outlines with [[line_weight]].\n•Flat pastel colors with [[shading_style]].\n•Simplified characters with cute proportions, expressive faces, and natural poses.\n•Smooth, slightly imperfect lines for an authentic illustrated feel.\n•Simplify realistic textures into clean shapes while retaining recognizable details.\n•Recreate the original environment, including buildings, trees, fountains, pathways, and other objects, in the same cartoon style.\n•Use a soft pastel palette with light blue skies, muted greens, warm skin tones, and gentle pinks.\n•Add subtle artistic details while maintaining the original scene’s atmosphere.\n\nPRESERVE THE ORIGINAL:\nKeep the same number of people, their positions, body proportions, clothing colors, interactions, and relative sizes. Maintain the original background layout and perspective. Do not add, remove, or reposition important objects.\n\nOUTPUT REQUIREMENTS:\nA polished, full-frame 2D illustration with consistent outlines, flat colors, and a playful, storybook aesthetic. The entire image must be illustrated, with zero photorealistic elements.\n\nAVOID: 3D rendering, photorealism, excessive shading, watercolor textures, blurry lines, distorted faces, extra fingers or limbs, changed outfits, altered poses, missing background details, and unwanted text or watermarks.\n\nAspect ratio: Match the uploaded photo exactly.\n\nPro tip: Upload one photo at a time and use this same prompt to transform different photos into a consistent cartoon style.",
+  "bodyFa": "پرامپت:\nتمام عکس آپلود شده را به یک تصویرسازی کارتونی ۲ بعدی تمیز، رنگارنگ و دست‌کشیده تبدیل کنید. ترکیب‌بندی اصلی، زاویه دوربین، پوزها، حالات چهره، هویت‌های قابل تشخیص، مدل‌های مو، لباس‌ها، اکسسوری‌ها و تمام عناصر مهم پس‌زمینه را حفظ کنید.\n\nسبک تصویرسازی:\n• خطوط دور مشکی تمیز با [[line_weight]].\n• رنگ‌های پاستلی تخت با [[shading_style]].\n• کاراکترهای ساده‌شده با نسبت‌های بامزه، چهره‌های گویا و پوزهای طبیعی.\n• خطوط نرم و کمی ناقص برای حس واقعی یک اثر تصویرسازی‌شده.\n• بافت‌های واقع‌گرایانه را به اشکال تمیز ساده کنید و در عین حال جزئیات قابل تشخیص را حفظ کنید.\n• محیط اصلی، از جمله ساختمان‌ها، درختان، فواره‌ها، مسیرها و سایر اشیاء را با همان سبک کارتونی بازآفرینی کنید.\n• از یک پالت پاستلی ملایم با آسمان آبی روشن، سبزهای مات، تناژهای گرم پوست و صورتی‌های ملایم استفاده کنید.\n• جزئیات هنری ظریف را ضمن حفظ اتمسفر صحنه اصلی اضافه کنید.\n\nاصالت را حفظ کنید:\nتعداد افراد، موقعیت‌ها، نسبت‌های بدن، رنگ لباس‌ها، تعاملات و اندازه‌های نسبی آن‌ها را ثابت نگه دارید. چیدمان و پرسپکتیو پس‌زمینه اصلی را حفظ کنید. اشیاء مهم را اضافه، حذف یا جابه‌جا نکنید.\n\nالزامات خروجی:\nیک تصویرسازی ۲ بعدی تمام‌کادر و پرداخت‌شده با خطوط منسجم، رنگ‌های تخت و زیبایی‌شناسی بازیگوشانه و کتاب داستانی. کل تصویر باید تصویرسازی‌شده باشد و هیچ عنصر واقع‌گرایانه‌ای نداشته باشد.\n\nپرهیز کنید از: رندر سه‌بعدی، واقع‌گرایی، سایه‌زنی بیش از حد، بافت‌های آبرنگی، خطوط تار، صورت‌های دفرمه، انگشتان یا اعضای اضافه بدن، لباس‌های تغییریافته، پوزهای تغییریافته، جزئیات گم‌شده پس‌زمینه، و متن یا واترمارک‌های ناخواسته.\n\nنسبت تصویر: دقیقا با عکس آپلودشده مطابقت داشته باشد.\n\nنکته حرفه‌ای: هر بار یک عکس آپلود کنید و از همین پرامپت برای تبدیل عکس‌های مختلف به یک سبک کارتونی هماهنگ استفاده کنید.",
+  "fieldsSchema": [
+    {
+      "key": "line_weight",
+      "label": "ضخامت خطوط دور",
+      "type": "select",
+      "required": true,
+      "sourceText": "slightly varied, hand-drawn line weight",
+      "defaultValue": "slightly varied, hand-drawn line weight",
+      "defaultValueFa": "وزن خط کمی متغیر و دست‌کشیده",
+      "advanced": false,
+      "allowCustom": false,
+      "options": [
+        "slightly varied, hand-drawn line weight|وزن خط کمی متغیر و دست‌کشیده",
+        "very subtly varied, hand-drawn line weight|وزن خط دست‌کشیده با تغییرات بسیار ظریف"
+      ]
+    },
+    {
+      "key": "shading_style",
+      "label": "شدت سایه‌زنی",
+      "type": "select",
+      "required": true,
+      "sourceText": "minimal cel shading",
+      "defaultValue": "minimal cel shading",
+      "defaultValueFa": "سایه‌زنی سل‌شید مینیمال",
+      "advanced": true,
+      "allowCustom": false,
+      "options": [
+        "minimal cel shading|سایه‌زنی سل‌شید مینیمال",
+        "very light, minimal cel shading|سایه‌زنی سل‌شید مینیمال و بسیار ملایم"
+      ]
+    }
+  ],
+  "editorial": {
+    "catalogVersion": "quality-fixture-v1",
+    "classificationReason": "بازآفرینی عکس با سبک مشخص",
+    "needsReview": true,
+    "reviewNotes": [],
+    "fixedConstraints": [
+      "حفظ هویت، چیدمان و لباس",
+      "سبک پاستلی دوبعدی و دست‌کشیده",
+      "حفظ نسبت تصویر اصلی"
+    ],
+    "improvementSuggestions": [],
+    "referenceImageReason": "اجرای دستور نیازمند عکس کاربر است.",
+    "referenceImageEvidence": "uploaded photograph",
+    "execution": {
+      "requiredCapabilities": [
+        "تبدیل عکس ورودی به تصویرسازی"
+      ],
+      "routes": []
+    },
+    "personalizationReview": {
+      "decision": "fields",
+      "reason": "دو تنظیم محدود در ضخامت خطوط و سایه‌زنی، در چارچوب سبک اصلی قابل تغییرند؛ هویت، پالت و ترکیب‌بندی ثابت می‌مانند.",
+      "dimensions": [
+        {
+          "sourceText": "slightly varied, hand-drawn line weight",
+          "label": "ضخامت خطوط دور",
+          "disposition": "field",
+          "key": "line_weight",
+          "reason": "گزینه‌ها در محدودهٔ صفت‌های متن اصلی باقی می‌مانند."
+        },
+        {
+          "sourceText": "minimal cel shading",
+          "label": "شدت سایه‌زنی",
+          "disposition": "field",
+          "key": "shading_style",
+          "reason": "گزینه‌ها در محدودهٔ صفت‌های متن اصلی باقی می‌مانند."
+        },
+        {
+          "sourceText": "Preserve the original composition",
+          "label": "ترکیب‌بندی",
+          "disposition": "fixed",
+          "key": null,
+          "reason": "نباید با شخصی‌سازی تغییر کند."
+        },
+        {
+          "sourceText": "uploaded photograph",
+          "label": "عکس مرجع",
+          "disposition": "prerequisite",
+          "key": null,
+          "reason": "کاربر باید عکس را در ابزار اجرا بارگذاری کند، نه در فیلد متنی."
+        }
+      ]
+    }
+  }
+}

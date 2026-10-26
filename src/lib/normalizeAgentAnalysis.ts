@@ -1,3 +1,4 @@
+import {checkPersonalization} from './agentPersonalization';
 import { verifySourceFidelity } from './agentSourceFidelity';
 import type { FieldSchema, Prompt, PromptEditorial } from '../types';
 import { getUseCase, resourceTypes, useCases, normalizeIntent } from './archiveCatalog';
@@ -102,6 +103,12 @@ export function normalizeAgentAnalysis(input: unknown, options: { sourceText?: s
       editorial.needsReview = true;
       editorial.reviewNotes.push('نیاز به تصویر ورودی مشخص نشده است؛ مقدار را بازبینی کنید.');
     }
+  }
+  if(options.sourceText!==undefined||raw.editorial?.personalizationReview!==undefined){
+    if(typeof raw.bodyFa!=='string'||!raw.bodyFa.trim())throw new Error('ترجمهٔ کامل فارسی در پاسخ ایجنت وجود ندارد.');
+    const review=checkPersonalization(body(raw.body),body(raw.bodyFa),raw.fieldsSchema,options.sourceText,raw.editorial?.personalizationReview);
+    if(editorial&&review)editorial.personalizationReview=review;
+    if(editorial&&!raw.fieldsSchema.length&&!review){editorial.needsReview=true;editorial.reviewNotes.push('هیچ فیلدی برنگشته و دلیل کافی برای ثابت‌بودن متن ارائه نشده است؛ شخصی‌سازی را پیش از انتشار بررسی کنید.');}
   }
   if (editorial) editorial.reviewNotes = [...new Set(editorial.reviewNotes)];
   return { title: raw.title.trim(), description: typeof raw.description === 'string' ? raw.description : '',

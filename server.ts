@@ -2340,7 +2340,7 @@ async function startServer() {
         const outputFormatsStr = tOutputFormats.length > 0 ? tOutputFormats.join(", ") : OUTPUT_FORMAT_OPTIONS.join(", ");
 
         // Send raw text and allowed taxonomies to n8n Webhook with configurable timeout
-        const timeoutSeconds = Math.max(10, Math.min(30, Number(settings?.aiTimeoutSeconds) || 30));
+        const timeoutSeconds = Math.max(10, Math.min(45, Number(settings?.aiTimeoutSeconds) || 45));
         const remainingMs = timeoutSeconds * 1000 - (Date.now() - analysisStartedAt);
         if (remainingMs < 1000) throw new Error("بودجهٔ زمانی تحلیل تمام شد؛ هیچ محتوایی کوتاه یا جایگزین نشد.");
         const abortController = new AbortController();

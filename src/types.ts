@@ -14,7 +14,13 @@ export interface FieldSchema {
   max?: number;       // for slider
 }
 
+export interface PersonalizationReview {
+  decision:'fields'|'fixed';
+  reason:string;
+  dimensions:{sourceText:string;label:string;disposition:'field'|'fixed'|'prerequisite';key:string|null;reason:string}[];
+}
 export interface PromptEditorial {
+  personalizationReview?:PersonalizationReview;
   sourceText?: string; // Admin-only original, never a claimed model reconstruction
   fixedConstraints?: string[];
   improvementSuggestions?: { title: string; reason: string; proposedChange: string }[];

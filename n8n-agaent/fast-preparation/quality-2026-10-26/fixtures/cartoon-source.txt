@@ -1,0 +1,24 @@
+PROMPT:
+Convert the entire uploaded photograph into a clean, colorful, hand-drawn 2D cartoon illustration. Preserve the original composition, camera angle, poses, facial expressions, recognizable identities, hairstyles, clothing, accessories, and all important background elements.
+
+ILLUSTRATION STYLE:
+•Clean black outlines with slightly varied, hand-drawn line weight.
+•Flat pastel colors with minimal cel shading.
+•Simplified characters with cute proportions, expressive faces, and natural poses.
+•Smooth, slightly imperfect lines for an authentic illustrated feel.
+•Simplify realistic textures into clean shapes while retaining recognizable details.
+•Recreate the original environment, including buildings, trees, fountains, pathways, and other objects, in the same cartoon style.
+•Use a soft pastel palette with light blue skies, muted greens, warm skin tones, and gentle pinks.
+•Add subtle artistic details while maintaining the original scene’s atmosphere.
+
+PRESERVE THE ORIGINAL:
+Keep the same number of people, their positions, body proportions, clothing colors, interactions, and relative sizes. Maintain the original background layout and perspective. Do not add, remove, or reposition important objects.
+
+OUTPUT REQUIREMENTS:
+A polished, full-frame 2D illustration with consistent outlines, flat colors, and a playful, storybook aesthetic. The entire image must be illustrated, with zero photorealistic elements.
+
+AVOID: 3D rendering, photorealism, excessive shading, watercolor textures, blurry lines, distorted faces, extra fingers or limbs, changed outfits, altered poses, missing background details, and unwanted text or watermarks.
+
+Aspect ratio: Match the uploaded photo exactly.
+
+Pro tip: Upload one photo at a time and use this same prompt to transform different photos into a consistent cartoon style.
